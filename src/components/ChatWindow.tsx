@@ -1,5 +1,5 @@
 // Main chat interface: renders message history, errors, and the input box.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useChat } from '../hooks/useChat'
 import { MessageBubble } from './MessageBubble'
 import type { Provider } from '../types'
@@ -15,6 +15,13 @@ interface Props {
 export function ChatWindow({ provider, language, track = 'dsa', focusId, chatCost = 1 }: Props) {
   const { messages, loading, error, sendMessage } = useChat(provider, language, track, focusId)
   const [input, setInput] = useState('')
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  // Keep the newest message in view. Without this the transcript silently
+  // grows below the fold and the user has to scroll after every exchange.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages, loading])
 
   const handleSend = () => {
     const text = input.trim()
@@ -37,6 +44,7 @@ export function ChatWindow({ provider, language, track = 'dsa', focusId, chatCos
           <MessageBubble key={msg.id} message={msg} />
         ))}
         {loading && <div className="typing-indicator">Thinking…</div>}
+        <div ref={bottomRef} />
       </div>
 
       {error && <div className="error-banner">{error}</div>}

@@ -24,12 +24,35 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// On 401, drop the stale token; route guards send the user to /login
+// On 401 the token is expired, revoked, or forged. Clearing it is not
+// enough: the page is already rendered and every subsequent call will fail,
+// leaving the user staring at error banners with no way out. Redirect.
+//
+// The `?expired=1` flag lets /login explain what happened instead of looking
+// like a random logout. The guard skips redirecting when we are already on an
+// auth page, so a failed login attempt does not reload the form underneath
+// the user.
 api.interceptors.response.use(
   (res) => res,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       localStorage.removeItem(TOKEN_KEY)
+
+      // Some 401s must NOT redirect:
+      //   - session restore (/auth/me on load). The landing and about pages
+      //     are public; a visitor with a stale token browsing them should
+      //     simply appear logged out, not be thrown to a login form.
+      //   - the auth pages themselves, or a failed login would reload the
+      //     form out from under the user mid-typing.
+      const silent = (error.config as { skipAuthRedirect?: boolean } | undefined)
+        ?.skipAuthRedirect
+      const path = window.location.pathname
+      const onAuthPage = path === '/login' || path === '/register'
+      const onPublicPage = path === '/' || path === '/about'
+
+      if (!silent && !onAuthPage && !onPublicPage) {
+        window.location.href = '/login?expired=1'
+      }
     }
     return Promise.reject(error)
   },
@@ -59,7 +82,11 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 }
 
 export async function fetchMe(): Promise<User> {
-  const { data } = await api.get<User>('/auth/me')
+  // Session restore: a 401 here just means "not logged in", which is a valid
+  // state on any public page. Never redirect off the back of it.
+  const { data } = await api.get<User>('/auth/me', {
+    skipAuthRedirect: true,
+  } as never)
   return data
 }
 
@@ -236,5 +263,13 @@ export async function exportLearningProfile(): Promise<unknown> {
 
 export async function fetchSubscriptions(): Promise<import('../types').Subscription[]> {
   const { data } = await api.get('/subscriptions/')
+  return data
+}
+
+
+export async function fetchContentItem(
+  contentId: string,
+): Promise<{ id: string; markdown: string }> {
+  const { data } = await api.get(`/tracks/items/${contentId}`)
   return data
 }
