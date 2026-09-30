@@ -273,3 +273,68 @@ export async function fetchContentItem(
   const { data } = await api.get(`/tracks/items/${contentId}`)
   return data
 }
+
+// ---------- Knowledge base uploads (teacher/admin) ----------
+// Teacher uploads wait for admin approval before chat can retrieve them;
+// admin uploads publish immediately. The API enforces both.
+
+export async function fetchLearnStatus(): Promise<import('../types').LearnStatus> {
+  const { data } = await api.get('/learn/status')
+  return data
+}
+
+export async function uploadKnowledge(params: {
+  track: import('../types').KnowledgeTrack
+  file?: File
+  text?: string
+  filename?: string
+}): Promise<import('../types').LearnTrainResult> {
+  if (params.file) {
+    const form = new FormData()
+    form.append('file', params.file)
+    form.append('track', params.track)
+    const { data } = await api.post('/learn/train', form)
+    return data
+  }
+  const { data } = await api.post('/learn/train', {
+    text: params.text ?? '',
+    filename: params.filename || undefined,
+    track: params.track,
+  })
+  return data
+}
+
+export async function fetchKnowledgeDocuments(
+  status?: import('../types').KnowledgeStatus,
+): Promise<import('../types').KnowledgeDocument[]> {
+  const { data } = await api.get('/learn/documents', {
+    params: status ? { status } : {},
+  })
+  return data
+}
+
+export async function fetchKnowledgeDocument(
+  id: string,
+): Promise<import('../types').KnowledgeDocumentDetail> {
+  const { data } = await api.get(`/learn/documents/${encodeURIComponent(id)}`)
+  return data
+}
+
+export async function deleteKnowledgeDocument(id: string): Promise<void> {
+  await api.delete(`/learn/documents/${encodeURIComponent(id)}`)
+}
+
+export async function approveKnowledgeDocument(
+  id: string,
+): Promise<import('../types').KnowledgeDocument> {
+  const { data } = await api.post(`/learn/documents/${encodeURIComponent(id)}/approve`)
+  return data
+}
+
+export async function rejectKnowledgeDocument(
+  id: string,
+  note = '',
+): Promise<import('../types').KnowledgeDocument> {
+  const { data } = await api.post(`/learn/documents/${encodeURIComponent(id)}/reject`, { note })
+  return data
+}
