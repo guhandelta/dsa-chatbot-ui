@@ -191,3 +191,49 @@ export interface Evidence {
     note: string
   } | null
 }
+
+// ---------- Knowledge base uploads (/learn) ----------
+
+export type KnowledgeStatus = 'pending' | 'published' | 'rejected'
+export type KnowledgeTrack = 'custom' | 'dsa' | 'algorithm' | 'language'
+
+export interface LearnStatus {
+  status: string
+  supported_formats: string[]
+  allowed_tracks: KnowledgeTrack[]
+  max_upload_mb: number
+  vector_store: string
+  embedding_provider: string
+  requires_review: boolean
+}
+
+export interface LearnTrainResult {
+  status: string
+  document_id: string
+  review_status: KnowledgeStatus
+  filename: string
+  file_type: string
+  characters_extracted: number
+  chunks_trained: number
+  track: KnowledgeTrack
+  message: string
+}
+
+export interface KnowledgeDocument {
+  id: string
+  owner_id: string
+  owner_email: string
+  filename: string
+  file_type: string
+  track: KnowledgeTrack
+  status: KnowledgeStatus
+  characters: number
+  chunks: number
+  review_note: string
+  created_at: string | null
+  reviewed_at: string | null
+}
+
+export interface KnowledgeDocumentDetail extends KnowledgeDocument {
+  preview: string
+}
