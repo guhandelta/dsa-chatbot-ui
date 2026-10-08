@@ -14,8 +14,9 @@ import type { ContentMeta, Mode, Provider, Track } from '../../types'
 
 const LABEL: Record<string, string> = {
   language: 'Language Fundamentals',
-  dsa: 'DSA Problems',
-  algorithm: 'Algorithms',
+  dsa: 'Data Structures & Algorithms',
+  algorithm: 'Data Structures & Algorithms',
+  'design-patterns': 'Design Patterns',
 }
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard']
@@ -24,8 +25,17 @@ export const Route = createFileRoute('/track/$track')({
   beforeLoad: () => {
     if (!hasToken()) throw redirect({ to: '/login' })
   },
+  // Defaults to `browse`. Opening straight into a chat window forces the
+  // learner to invent a question before they have seen what is available;
+  // the topic list shows the scope first, and chat becomes something they
+  // opt into about a specific topic.
   validateSearch: (search: Record<string, unknown>): { mode: Mode } => ({
-    mode: search.mode === 'practice' ? 'practice' : 'learn',
+    mode:
+      search.mode === 'practice'
+        ? 'practice'
+        : search.mode === 'learn'
+          ? 'learn'
+          : 'browse',
   }),
   component: TrackPage,
 })
@@ -71,10 +81,17 @@ function TrackPage() {
         <div>
           <p className="island-kicker mb-1">{LABEL[track] ?? track}</p>
           <h1 className="display-title m-0 text-3xl font-bold text-[var(--sea-ink)]">
-            {mode === 'learn' ? 'Learn' : 'Practice'}
+            {mode === 'browse' ? 'Browse' : mode === 'learn' ? 'Learn' : 'Practice'}
           </h1>
         </div>
         <div className="mode-toggle">
+          <button
+            type="button"
+            onClick={() => switchMode('browse')}
+            className={`lang-tab ${mode === 'browse' ? 'is-active' : ''}`}
+          >
+            Browse
+          </button>
           <button
             type="button"
             onClick={() => switchMode('learn')}
@@ -153,7 +170,56 @@ function TrackPage() {
         </aside>
 
         <section>
-          {mode === 'learn' ? (
+          {mode === 'browse' ? (
+            <div className="island-shell rounded-2xl p-5">
+              {focus ? (
+                <>
+                  <p className="island-kicker mb-1">{focus.difficulty}</p>
+                  <h2 className="mb-2 text-lg font-bold text-[var(--sea-ink)]">
+                    {focus.title}
+                  </h2>
+                  {focus.algorithms.length > 0 && (
+                    <ul className="tag-list mb-4">
+                      {focus.algorithms.map((a) => (
+                        <li key={a} className="tag-strong">
+                          {a}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">
+                    How would you like to work on this?
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      onClick={() => switchMode('learn')}
+                    >
+                      Explain it to me
+                    </button>
+                    <Link
+                      to="/practice"
+                      search={{ problem: focus.id }}
+                      className="track-btn track-btn-alt no-underline"
+                    >
+                      Let me solve it
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="mb-2 text-lg font-bold text-[var(--sea-ink)]">
+                    {LABEL[track] ?? track}
+                  </h2>
+                  <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
+                    Pick a topic on the left. You can then have it explained, or
+                    jump straight into solving it.
+                  </p>
+                </>
+              )}
+            </div>
+          ) : mode === 'learn' ? (
             <ChatWindow
               key={`${track}-${focus?.id ?? 'all'}`}
               provider={provider}

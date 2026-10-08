@@ -3,8 +3,8 @@ export type Provider = 'openai' | 'claude' | 'gemini'
 
 export type Role = 'student' | 'teacher' | 'admin'
 
-export type Track = 'language' | 'dsa' | 'algorithm'
-export type Mode = 'learn' | 'practice'
+export type Track = 'language' | 'dsa' | 'algorithm' | 'design-patterns'
+export type Mode = 'browse' | 'learn' | 'practice'
 
 export interface User {
   id: string
