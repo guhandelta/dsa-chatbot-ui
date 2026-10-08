@@ -1,7 +1,7 @@
 // Shared TypeScript types used across components and hooks
 export type Provider = 'openai' | 'claude' | 'gemini'
 
-export type Role = 'student' | 'teacher' | 'admin'
+export type Role = 'student' | 'instructor' | 'admin'
 
 export type Track = 'language' | 'dsa' | 'algorithm' | 'design-patterns'
 export type Mode = 'browse' | 'learn' | 'practice'

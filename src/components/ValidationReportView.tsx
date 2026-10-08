@@ -1,4 +1,4 @@
-// Renders the training pipeline's verification report so a teacher can see
+// Renders the training pipeline's verification report so an instructor can see
 // exactly what was executed, what was corrected, and why something didn't publish.
 import type { TrainResult } from '../types'
 

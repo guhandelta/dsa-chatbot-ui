@@ -1,4 +1,4 @@
-// Admin — assign the teacher role so trusted people can train the chatbot.
+// Admin — assign the instructor role so trusted people can train the chatbot.
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { fetchUsers, getApiErrorMessage, setUserRole } from '../lib/api'
@@ -59,7 +59,7 @@ function AdminPage() {
         People &amp; roles
       </h1>
       <p className="mb-5 max-w-2xl text-sm text-[var(--sea-ink-soft)]">
-        Teachers can add problems to the knowledge base. Promote only people you
+        Instructors can add problems to the knowledge base. Promote only people you
         trust to author training content.
       </p>
 
@@ -78,14 +78,14 @@ function AdminPage() {
                   <span className="text-xs text-[var(--sea-ink-soft)]">that's you</span>
                 ) : (
                   <>
-                    {u.role !== 'teacher' && (
+                    {u.role !== 'instructor' && (
                       <button
                         type="button"
                         disabled={busy === u.id}
-                        onClick={() => changeRole(u.id, 'teacher')}
+                        onClick={() => changeRole(u.id, 'instructor')}
                         className="mini-btn"
                       >
-                        Make teacher
+                        Make instructor
                       </button>
                     )}
                     {u.role !== 'student' && (

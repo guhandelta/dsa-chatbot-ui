@@ -44,11 +44,11 @@ npm test               # vitest: API error helper + useChat optimistic rollback
 
 ## Training & admin pages
 
-- `/train` — teachers and admins submit problems. Any subset of the six
+- `/train` — instructors and admins submit problems. Any subset of the six
   languages can be filled in; the rest are written, all are executed, and the
   verification report shows exactly what passed, what was corrected, and what
   couldn't be verified.
-- `/admin` — admins promote people to the teacher role.
+- `/admin` — admins promote people to the instructor role.
 
 Nav links for both appear automatically based on the signed-in user's role.
 

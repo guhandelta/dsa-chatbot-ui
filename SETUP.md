@@ -118,9 +118,9 @@ npm run dev                         # http://localhost:3000
 1. Open http://localhost:3000 and register with the email you put in
    `ADMIN_EMAILS` — you'll be an admin with 50 peppercorns.
 2. **Learn & Practice** → pick your language, then a track.
-3. **Train** (admins/teachers) → submit a problem; it's reviewed, completed in
+3. **Train** (admins/instructors) → submit a problem; it's reviewed, completed in
    all six languages, executed, and published only if everything passes.
-4. **Admin** → promote other accounts to `teacher`.
+4. **Admin** → promote other accounts to `instructor`.
 
 ---
 

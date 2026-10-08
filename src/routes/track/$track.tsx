@@ -163,7 +163,7 @@ function TrackPage() {
             ))}
             {items.length === 0 && (
               <li className="text-sm text-[var(--sea-ink-soft)]">
-                Nothing here yet — a teacher can add content in the Train section.
+                Nothing here yet — an instructor can add content in the Train section.
               </li>
             )}
           </ul>

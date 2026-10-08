@@ -676,7 +676,7 @@ a {
 }
 
 .role-chip.role-admin { color: #7a4fb5; border-color: rgba(122, 79, 181, 0.4); }
-.role-chip.role-teacher { color: #2f7a6a; border-color: rgba(47, 122, 106, 0.4); }
+.role-chip.role-instructor { color: #2f7a6a; border-color: rgba(47, 122, 106, 0.4); }
 .role-chip.role-student { color: var(--sea-ink-soft); }
 
 .mini-btn {

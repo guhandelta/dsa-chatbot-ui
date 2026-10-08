@@ -1,4 +1,4 @@
-// Training section — teachers and admins only. Submit a problem with any
+// Training section — instructors and admins only. Submit a problem with any
 // subset of solutions; the pipeline reviews, corrects, completes all six
 // languages, executes them, and publishes only if everything verifies.
 import { createFileRoute, redirect } from '@tanstack/react-router'
@@ -55,10 +55,10 @@ function TrainPage() {
         <section className="island-shell auth-card rounded-2xl p-6 text-center">
           <p className="island-kicker mb-2">Restricted</p>
           <h1 className="display-title mb-3 text-2xl font-bold text-[var(--sea-ink)]">
-            Training is for teachers
+            Training is for instructors
           </h1>
           <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
-            Ask an admin to grant you the teacher role if you should be adding
+            Ask an admin to grant you the instructor role if you should be adding
             problems to the knowledge base.
           </p>
         </section>
@@ -80,7 +80,7 @@ function TrainPage() {
     setError(null)
     setResult(null)
     try {
-      // Only send languages the teacher actually filled in
+      // Only send languages the instructor actually filled in
       const filled = Object.fromEntries(
         Object.entries(solutions).filter(([, v]) => v && v.trim().length > 0),
       )

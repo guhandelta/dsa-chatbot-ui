@@ -133,7 +133,7 @@ function ProfilePage() {
             {subs.map((s) => (
               <li key={s.id}>
                 <span className="user-email">{s.language}</span>
-                <span className={`role-chip role-${s.status === 'active' ? 'teacher' : 'student'}`}>
+                <span className={`role-chip role-${s.status === 'active' ? 'instructor' : 'student'}`}>
                   {s.status}
                 </span>
                 <span className="text-xs text-[var(--sea-ink-soft)]">
