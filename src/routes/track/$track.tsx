@@ -1,41 +1,16 @@
-// One track, two modes. Learn = RAG chat scoped to this track.
-// Practice = pick an item and solve it, or drill an algorithm by difficulty.
 import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { ChatWindow } from '../../components/ChatWindow'
 import { ProviderSelector } from '../../components/ProviderSelector'
-import {
-  fetchAlgorithmTags,
-  fetchTrackItems,
-  getApiErrorMessage,
-} from '../../lib/api'
+import { fetchTrackItems, fetchContentItem, fetchCurriculumProgress, getApiErrorMessage } from '../../lib/api'
 import { hasToken, useAuth } from '../../lib/auth'
 import type { ContentMeta, Mode, Provider, Track } from '../../types'
 
-const LABEL: Record<string, string> = {
-  language: 'Language Fundamentals',
-  dsa: 'Data Structures & Algorithms',
-  algorithm: 'Data Structures & Algorithms',
-  'design-patterns': 'Design Patterns',
-}
-
-const DIFFICULTIES = ['Easy', 'Medium', 'Hard']
-
 export const Route = createFileRoute('/track/$track')({
-  beforeLoad: () => {
-    if (!hasToken()) throw redirect({ to: '/login' })
-  },
-  // Defaults to `browse`. Opening straight into a chat window forces the
-  // learner to invent a question before they have seen what is available;
-  // the topic list shows the scope first, and chat becomes something they
-  // opt into about a specific topic.
+  beforeLoad: () => { if (!hasToken()) throw redirect({ to: '/login' }) },
   validateSearch: (search: Record<string, unknown>): { mode: Mode } => ({
-    mode:
-      search.mode === 'practice'
-        ? 'practice'
-        : search.mode === 'learn'
-          ? 'learn'
-          : 'browse',
+    mode: search.mode === 'practice' ? 'practice' : search.mode === 'learn' ? 'learn' : 'browse',
   }),
   component: TrackPage,
 })
@@ -45,216 +20,78 @@ function TrackPage() {
   const { mode } = Route.useSearch()
   const navigate = useNavigate()
   const { user } = useAuth()
-
+  const language = user?.preferred_language === 'java' ? 'java' : 'javascript'
   const [items, setItems] = useState<ContentMeta[]>([])
-  const [tags, setTags] = useState<string[]>([])
-  const [algorithm, setAlgorithm] = useState<string>('')
-  const [difficulty, setDifficulty] = useState<string>('')
   const [focus, setFocus] = useState<ContentMeta | null>(null)
-  const [provider, setProvider] = useState<Provider>('openai')
+  const [provider, setProvider] = useState<Provider>('gemini')
   const [error, setError] = useState<string | null>(null)
-
-  const language = user?.preferred_language ?? 'python'
+  const [supplemental, setSupplemental] = useState(false)
+  const [difficulty, setDifficulty] = useState('')
+  const [completed, setCompleted] = useState<string[]>([])
+  const [totalExercises, setTotalExercises] = useState(0)
+  useEffect(() => {
+    let active = true
+    setCompleted([])
+    if (track === 'language') fetchCurriculumProgress(language).then((p) => { if (active) { setCompleted(p.completed_ids); setTotalExercises(p.total) } }).catch(() => {})
+    return () => { active = false }
+  }, [track, language])
 
   useEffect(() => {
-    setFocus(null)
-    fetchTrackItems(track, {
-      difficulty: difficulty || undefined,
-      algorithm: algorithm || undefined,
-    })
-      .then(setItems)
-      .catch((e) => setError(getApiErrorMessage(e)))
-    if (track === 'algorithm') {
-      fetchAlgorithmTags().then(setTags).catch(() => setTags([]))
-    }
-  }, [track, difficulty, algorithm])
+    let active = true
+    setFocus(null); setItems([]); setError(null)
+    fetchTrackItems(track, { language, difficulty: difficulty || undefined })
+      .then((rows) => { if (active) setItems(rows) })
+      .catch((e) => { if (active) setError(getApiErrorMessage(e)) })
+    return () => { active = false }
+  }, [track, language, difficulty])
 
-  const switchMode = (next: Mode) =>
-    navigate({ to: '/track/$track', params: { track }, search: { mode: next } })
+  const visible = items.filter((item) => track !== 'language' || supplemental || (item.order > 0 && item.order < 100))
+  const switchMode = (next: Mode) => navigate({ to: '/track/$track', params: { track }, search: { mode: next } })
+  if (!['language', 'dsa', 'algorithm'].includes(track)) return <main className="page-wrap py-8"><p>This subject is planned for a later release.</p><Link to="/learn">Back to learning</Link></main>
 
-  return (
-    <main className="page-wrap px-4 py-8">
-      <Link to="/learn" className="text-xs font-semibold text-[var(--lagoon-deep)]">
-        ← All tracks
-      </Link>
-      <div className="mt-2 mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="island-kicker mb-1">{LABEL[track] ?? track}</p>
-          <h1 className="display-title m-0 text-3xl font-bold text-[var(--sea-ink)]">
-            {mode === 'browse' ? 'Browse' : mode === 'learn' ? 'Learn' : 'Practice'}
-          </h1>
-        </div>
-        <div className="mode-toggle">
-          <button
-            type="button"
-            onClick={() => switchMode('browse')}
-            className={`lang-tab ${mode === 'browse' ? 'is-active' : ''}`}
-          >
-            Browse
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('learn')}
-            className={`lang-tab ${mode === 'learn' ? 'is-active' : ''}`}
-          >
-            Learn
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('practice')}
-            className={`lang-tab ${mode === 'practice' ? 'is-active' : ''}`}
-          >
-            Practice
-          </button>
-        </div>
-      </div>
+  return <main className="page-wrap px-4 py-8">
+    <Link to="/learn">← Learning home</Link>
+    <h1 className="display-title mt-3 text-3xl font-bold">{track === 'language' ? 'Your language path' : 'DSA workouts'}</h1>
+    <p className="my-3 text-[var(--sea-ink-soft)]">{track === 'language'
+      ? 'The same foundations for everyone. Follow the sequence, or use each exercise as a mastery check and move ahead.'
+      : 'Choose a technique to study or a problem to solve. Solutions become available after evaluation when you choose to reveal them.'}</p>
+    <div className="controls mb-4">
+      {(['browse', 'learn', 'practice'] as Mode[]).map((m) => <button key={m} type="button" onClick={() => switchMode(m)} className={`lang-tab ${mode === m ? 'is-active' : ''}`}>{m === 'browse' ? 'Lessons' : m === 'learn' ? 'Ask mentor' : 'Practice'}</button>)}
+      {track === 'language' ? <label><input type="checkbox" checked={supplemental} onChange={(e) => setSupplemental(e.target.checked)} /> Include reference library</label>
+        : <label className="selector">Difficulty<select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}><option value="">Any</option>{['Easy', 'Medium', 'Hard'].map((d) => <option key={d}>{d}</option>)}</select></label>}
+      {mode === 'learn' && <ProviderSelector value={provider} onChange={setProvider} />}
+    </div>
+    {error && <div className="error-banner" role="alert">{error}</div>}
+    <div className="track-layout">
+      <aside className="island-shell rounded-2xl p-4">
+        <p className="mb-3 text-sm">{language === 'java' ? 'Java' : 'JavaScript'} · {visible.length} topics{track === 'language' ? ` · ${completed.length}/${totalExercises} exercises passed` : ''}</p>
+        <ul className="item-list">{visible.map((item) => <li key={item.id}><button type="button" onClick={() => setFocus(item)} className={`item-btn ${focus?.id === item.id ? 'is-active' : ''}`}>
+          <span>{completed.includes(item.id) ? '✓ ' : ''}{item.order > 0 && item.order < 100 ? `${item.order}. ` : ''}{item.title}</span>
+          <span className="text-xs">{item.level ?? item.difficulty}{item.has_tests ? ' · exercise' : ' · lesson'}</span>
+        </button></li>)}</ul>
+      </aside>
+      <section>{focus ? mode === 'learn'
+        ? <ChatWindow key={`${language}-${focus.id}`} provider={provider} language={language} track={focus.track as Track} focusId={focus.id} chatCost={1} />
+        : <Lesson key={focus.id} item={focus} practice={mode === 'practice'} />
+        : <div className="island-shell rounded-2xl p-5">Choose a topic to read its lesson, ask questions, or practice. Interview candidates can start with any DSA problem.</div>}
+      </section>
+    </div>
+  </main>
+}
 
-      {error && <div className="error-banner mb-4">{error}</div>}
-
-      {/* Filters — algorithm track drills a technique across difficulties */}
-      <div className="controls mb-4">
-        {track === 'algorithm' && (
-          <label className="selector">
-            <span className="selector-label">Algorithm</span>
-            <select value={algorithm} onChange={(e) => setAlgorithm(e.target.value)}>
-              <option value="">All</option>
-              {tags.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </label>
-        )}
-        {track !== 'language' && (
-          <label className="selector">
-            <span className="selector-label">Difficulty</span>
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-              <option value="">Any</option>
-              {DIFFICULTIES.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </label>
-        )}
-        {mode === 'learn' && <ProviderSelector value={provider} onChange={setProvider} />}
-        <span className="cost-note m-0 self-center">
-          Coding in {language} — change it on the tracks page.
-        </span>
-      </div>
-
-      <div className="track-layout">
-        <aside className="island-shell rounded-2xl p-4">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-[var(--kicker)]">
-            {items.length} {items.length === 1 ? 'topic' : 'topics'}
-          </h2>
-          <ul className="item-list">
-            {items.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => setFocus(item)}
-                  className={`item-btn ${focus?.id === item.id ? 'is-active' : ''}`}
-                >
-                  <span className="item-title">{item.title}</span>
-                  <span className={`diff-chip diff-${item.difficulty.toLowerCase()}`}>
-                    {item.difficulty}
-                  </span>
-                </button>
-              </li>
-            ))}
-            {items.length === 0 && (
-              <li className="text-sm text-[var(--sea-ink-soft)]">
-                Nothing here yet — an instructor can add content in the Train section.
-              </li>
-            )}
-          </ul>
-        </aside>
-
-        <section>
-          {mode === 'browse' ? (
-            <div className="island-shell rounded-2xl p-5">
-              {focus ? (
-                <>
-                  <p className="island-kicker mb-1">{focus.difficulty}</p>
-                  <h2 className="mb-2 text-lg font-bold text-[var(--sea-ink)]">
-                    {focus.title}
-                  </h2>
-                  {focus.algorithms.length > 0 && (
-                    <ul className="tag-list mb-4">
-                      {focus.algorithms.map((a) => (
-                        <li key={a} className="tag-strong">
-                          {a}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">
-                    How would you like to work on this?
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="primary-btn"
-                      onClick={() => switchMode('learn')}
-                    >
-                      Explain it to me
-                    </button>
-                    <Link
-                      to="/practice"
-                      search={{ problem: focus.id }}
-                      className="track-btn track-btn-alt no-underline"
-                    >
-                      Let me solve it
-                    </Link>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h2 className="mb-2 text-lg font-bold text-[var(--sea-ink)]">
-                    {LABEL[track] ?? track}
-                  </h2>
-                  <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
-                    Pick a topic on the left. You can then have it explained, or
-                    jump straight into solving it.
-                  </p>
-                </>
-              )}
-            </div>
-          ) : mode === 'learn' ? (
-            <ChatWindow
-              key={`${track}-${focus?.id ?? 'all'}`}
-              provider={provider}
-              language={language}
-              track={track as Track}
-              focusId={focus?.id}
-              chatCost={1}
-            />
-          ) : (
-            <div className="island-shell rounded-2xl p-5">
-              {focus ? (
-                <>
-                  <h2 className="mb-1 text-lg font-bold text-[var(--sea-ink)]">
-                    {focus.title}
-                  </h2>
-                  <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">
-                    Solve it in {language}, then submit for review.
-                  </p>
-                  <Link
-                    to="/practice"
-                    search={{ problem: focus.id }}
-                    className="primary-btn inline-block no-underline"
-                  >
-                    Open in editor
-                  </Link>
-                </>
-              ) : (
-                <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
-                  Pick a topic on the left to practise it.
-                </p>
-              )}
-            </div>
-          )}
-        </section>
-      </div>
-    </main>
-  )
+function Lesson({ item, practice }: { item: ContentMeta; practice: boolean }) {
+  const [markdown, setMarkdown] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    let active = true
+    fetchContentItem(item.id).then((data) => { if (active) setMarkdown(data.markdown) }).catch((e) => { if (active) setError(getApiErrorMessage(e)) })
+    return () => { active = false }
+  }, [item.id])
+  return <article className="island-shell rounded-2xl p-5">
+    {error && <div className="error-banner" role="alert">{error}</div>}
+    {!markdown && !error && <p>Loading lesson…</p>}
+    <div className="prose prose-sm max-w-none dark:prose-invert"><ReactMarkdown>{markdown}</ReactMarkdown></div>
+    {item.has_tests ? <Link to="/practice" search={{ problem: item.id }} className="primary-btn mt-5 inline-block">{practice ? 'Open exercise' : 'Check your understanding'}</Link>
+      : <p className="mt-4 text-sm">This is a reference lesson. Choose an exercise in the curriculum or a DSA workout to practice with evaluated code.</p>}
+  </article>
 }

@@ -15,6 +15,13 @@ const config = defineConfig({
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     viteReact(),
   ],
+  server: {
+    port: 3000,
+    host: true,
+  },
+  optimizeDeps: {
+    include: ['lucide-react'],
+  },
 })
 
 export default config

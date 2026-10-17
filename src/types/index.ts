@@ -20,17 +20,40 @@ export interface AuthResponse {
   user: User
 }
 
+export interface SourceCitation {
+  document_id: string
+  filename: string
+  revision: string
+  excerpt: string
+}
+
+export interface RetrievalReport {
+  strategy: 'agentic' | 'standard_local'
+  searches: number
+  model_calls: number
+  elapsed_ms: number
+  input_tokens: number
+  output_tokens: number
+  usage_complete: boolean
+  fallback: string | null
+  clarification: boolean
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+  sources?: SourceCitation[]
+  retrieval?: RetrievalReport | null
 }
 
 export interface ChatResponse {
   answer: string
   thread_id: string
   peppercorns_remaining: number
+  sources?: SourceCitation[]
+  retrieval?: RetrievalReport | null
 }
 
 export interface AnalysisResult {
@@ -42,6 +65,8 @@ export interface AnalysisResult {
 }
 
 export interface AnalyzeResponse {
+  solution_available: boolean
+  evidence?: Evidence | null
   analysis: AnalysisResult
   peppercorns_remaining: number
 }
@@ -105,6 +130,11 @@ export interface ContentMeta {
   algorithms: string[]
   source: string
   io_mode: string
+  order: number
+  prerequisites: string[]
+  starter_code: string
+  has_tests: boolean
+  level: string | null
 }
 
 export interface TrackSummary {

@@ -8,8 +8,8 @@ export const Route = createFileRoute('/login')({ component: LoginPage })
 function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('guhan.delta@gmail.com')
+  const [password, setPassword] = useState('pass12345')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 

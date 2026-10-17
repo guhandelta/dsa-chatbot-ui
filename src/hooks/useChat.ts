@@ -9,6 +9,8 @@ export function useChat(
   language: string,
   track: string = 'dsa',
   focusId?: string,
+  subject?: string,
+  retrievalMode: 'standard' | 'agentic' = 'standard',
 ) {
   const [messages, setMessages] = useState<Message[]>([])
   const [threadId, setThreadId] = useState<string | undefined>()
@@ -30,13 +32,15 @@ export function useChat(
       setError(null)
 
       try {
-        const { answer, thread_id, peppercorns_remaining } = await sendChatMessage({
+        const { answer, thread_id, peppercorns_remaining, sources, retrieval } = await sendChatMessage({
           message: text,
           threadId,
           provider,
           language,
           track,
           focusId,
+          subject,
+          retrievalMode,
         })
         setThreadId(thread_id) // persist for conversation continuity
         setBalance(peppercorns_remaining) // keep the header badge in sync
@@ -44,6 +48,8 @@ export function useChat(
           id: crypto.randomUUID(),
           role: 'assistant',
           content: answer,
+          sources,
+          retrieval,
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, botMsg])
@@ -56,7 +62,7 @@ export function useChat(
         setLoading(false)
       }
     },
-    [threadId, provider, language, track, focusId, setBalance],
+    [threadId, provider, language, track, focusId, subject, retrievalMode, setBalance],
   )
 
   return { messages, loading, error, sendMessage }

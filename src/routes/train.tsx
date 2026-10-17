@@ -1,7 +1,7 @@
 // Training section — instructors and admins only. Submit a problem with any
 // subset of solutions; the pipeline reviews, corrects, completes all six
 // languages, executes them, and publishes only if everything verifies.
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { ValidationReportView } from '../components/ValidationReportView'
@@ -37,7 +37,7 @@ function TrainPage() {
   const [problem, setProblem] = useState('')
   const [activeLang, setActiveLang] = useState('python')
   const [solutions, setSolutions] = useState<Record<string, string>>({})
-  const [provider, setProvider] = useState<Provider>('openai')
+  const [provider, setProvider] = useState<Provider>('gemini')
   const [result, setResult] = useState<TrainResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -94,7 +94,15 @@ function TrainPage() {
 
   return (
     <main className="page-wrap px-4 py-8">
-      <p className="island-kicker mb-1">Training</p>
+      <div className="mb-1 flex items-center justify-between">
+        <p className="island-kicker mb-0">Training</p>
+        <Link
+          to="/registry"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1 text-xs font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:bg-[var(--surface)]"
+        >
+          View Tech Board &amp; Registry &rarr;
+        </Link>
+      </div>
       <h1 className="display-title mb-2 text-3xl font-bold text-[var(--sea-ink)]">
         Teach the chatbot a new problem
       </h1>

@@ -4,6 +4,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   deleteLearningProfile,
+  exportLearningProfile,
   fetchLearningProfile,
   fetchSubscriptions,
   getApiErrorMessage,
@@ -18,17 +19,42 @@ export const Route = createFileRoute('/profile')({
   component: ProfilePage,
 })
 
-function ProfilePage() {
+export function ProfilePage() {
   const [profile, setProfile] = useState<LearningProfileData | null>(null)
   const [subs, setSubs] = useState<Subscription[]>([])
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const load = () => {
     fetchLearningProfile().then(setProfile).catch((e) => setError(getApiErrorMessage(e)))
     fetchSubscriptions().then(setSubs).catch(() => setSubs([]))
   }
   useEffect(load, [])
+
+  const exportProfile = async () => {
+    setExporting(true)
+    setError(null)
+    let url: string | undefined
+    try {
+      const data = await exportLearningProfile()
+      url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'learning-profile.json'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (e) {
+      setError(getApiErrorMessage(e))
+    } finally {
+      if (url) {
+        const downloadUrl = url
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+      }
+      setExporting(false)
+    }
+  }
 
   const erase = async () => {
     try {
@@ -128,6 +154,11 @@ function ProfilePage() {
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--kicker)]">
           Mentor subscriptions
         </h2>
+        <p className="mb-3 text-sm text-[var(--sea-ink-soft)]">
+          Your peppercorns remain available when a subscription ends. Use them
+          for chat and reviews; mentor guidance requires an active subscription.
+          Hint tiers reset every six weeks for each problem and language.
+        </p>
         {subs.length ? (
           <ul className="sub-list">
             {subs.map((s) => (
@@ -158,13 +189,13 @@ function ProfilePage() {
           about your own thinking. You can export or erase it at any time.
         </p>
         <div className="flex flex-wrap gap-2">
-          <a href="/mentor/profile/export" className="mini-btn no-underline">
-            Export
-          </a>
+          <button type="button" className="mini-btn" disabled={exporting} onClick={exportProfile}>
+            {exporting ? 'Exporting…' : 'Export'}
+          </button>
           {confirming ? (
             <>
               <button type="button" className="mini-btn" onClick={erase}>
-                Yes, erase everything
+                Yes, erase profile events
               </button>
               <button type="button" className="mini-btn" onClick={() => setConfirming(false)}>
                 Cancel
@@ -172,14 +203,14 @@ function ProfilePage() {
             </>
           ) : (
             <button type="button" className="mini-btn" onClick={() => setConfirming(true)}>
-              Erase my history
+              Erase my learning profile
             </button>
           )}
         </div>
         {confirming && (
           <p className="mt-2 text-xs text-[var(--sea-ink-soft)]">
             Erasing removes the patterns above and the mentor&apos;s ability to
-            recall how you reasoned before.
+            recall how you reasoned before. Saved practice sessions and chat conversations remain.
           </p>
         )}
       </section>

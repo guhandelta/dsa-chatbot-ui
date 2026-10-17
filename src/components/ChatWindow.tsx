@@ -9,11 +9,13 @@ interface Props {
   language: string
   track?: string
   focusId?: string
+  subject?: string
   chatCost?: number
+  retrievalMode?: 'standard' | 'agentic'
 }
 
-export function ChatWindow({ provider, language, track = 'dsa', focusId, chatCost = 1 }: Props) {
-  const { messages, loading, error, sendMessage } = useChat(provider, language, track, focusId)
+export function ChatWindow({ provider, language, track = 'dsa', focusId, subject, chatCost = 1, retrievalMode = 'standard' }: Props) {
+  const { messages, loading, error, sendMessage } = useChat(provider, language, track, focusId, subject, retrievalMode)
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 

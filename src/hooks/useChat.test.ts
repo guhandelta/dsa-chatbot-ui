@@ -5,6 +5,8 @@ import { createElement } from 'react'
 
 // Mock the API module so no real network call happens
 vi.mock('../lib/api', () => ({
+  TOKEN_KEY: 'dsa_token',
+  fetchMe: vi.fn(),
   sendChatMessage: vi.fn(),
   getApiErrorMessage: () => 'mocked error',
 }))
@@ -24,6 +26,7 @@ describe('useChat', () => {
       answer: 'hello back',
       thread_id: 't1',
       peppercorns_remaining: 49,
+      sources: [{ document_id: 'doc', filename: 'Java arrays.pdf', revision: 'abc', excerpt: 'Fixed length.' }],
     })
     const { result } = renderHook(() => useChat('openai', 'python'), { wrapper })
 
@@ -34,6 +37,7 @@ describe('useChat', () => {
     await waitFor(() => expect(result.current.messages).toHaveLength(2))
     expect(result.current.messages[0].role).toBe('user')
     expect(result.current.messages[1].content).toBe('hello back')
+    expect(result.current.messages[1].sources?.[0].filename).toBe('Java arrays.pdf')
     expect(result.current.error).toBeNull()
   })
 
