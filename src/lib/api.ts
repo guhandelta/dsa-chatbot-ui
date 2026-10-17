@@ -13,7 +13,7 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 export const TOKEN_KEY = 'dsa_token'
 
-const api = axios.create({ baseURL: BASE_URL })
+export const api = axios.create({ baseURL: BASE_URL })
 
 // Attach the JWT to every request when present
 api.interceptors.request.use((config) => {
@@ -69,6 +69,24 @@ export function getApiErrorMessage(err: unknown): string {
   return 'Something went wrong. Please try again.'
 }
 
+// Keep a key across transport failures; successful/terminal requests retire it.
+// The digest includes the signed-in identity without storing its token again.
+async function reliablePost<T>(path: string, body: unknown): Promise<{ data: T }> {
+  const bytes = new TextEncoder().encode((localStorage.getItem(TOKEN_KEY) ?? '') + path + JSON.stringify(body))
+  const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map((n) => n.toString(16).padStart(2, '0')).join('')
+  const slot = 'dsa_request:' + digest
+  const key = sessionStorage.getItem(slot) ?? crypto.randomUUID()
+  sessionStorage.setItem(slot, key)
+  try {
+    const result = await api.post<T>(path, body, { headers: { 'Idempotency-Key': key } })
+    sessionStorage.removeItem(slot)
+    return result
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response && error.response.status !== 409) sessionStorage.removeItem(slot)
+    throw error
+  }
+}
+
 // ---------- Auth ----------
 
 export async function registerUser(email: string, password: string): Promise<AuthResponse> {
@@ -99,8 +117,10 @@ export async function sendChatMessage(params: {
   language: string
   track?: string
   focusId?: string
+  subject?: string
+  retrievalMode?: 'standard' | 'agentic'
 }): Promise<ChatResponse> {
-  const { data } = await api.post<ChatResponse>('/chat/', {
+  const { data } = await reliablePost<ChatResponse>('/chat/', {
     message: params.message,
     thread_id: params.threadId,
     provider: params.provider,
@@ -108,8 +128,14 @@ export async function sendChatMessage(params: {
     mode: 'learn',
     track: params.track ?? 'dsa',
     focus_id: params.focusId,
+    subject: params.subject,
+    retrieval_mode: params.retrievalMode ?? 'standard',
   })
   return data
+}
+
+export async function fetchChatCapabilities(): Promise<{ agentic_retrieval: boolean }> {
+  return (await api.get('/chat/capabilities')).data
 }
 
 // ---------- Analyze ----------
@@ -120,7 +146,7 @@ export async function submitSolution(params: {
   language: string
   provider: Provider
 }): Promise<AnalyzeResponse> {
-  const { data } = await api.post<AnalyzeResponse>('/analyze/', {
+  const { data } = await reliablePost<AnalyzeResponse>('/analyze/', {
     problem_id: params.problemId,
     user_code: params.userCode,
     language: params.language,
@@ -220,7 +246,7 @@ export async function askMentor(params: {
   currentCode?: string
   provider: Provider
 }): Promise<import('../types').MentorResponse> {
-  const { data } = await api.post('/mentor/ask', {
+  const { data } = await reliablePost<import('../types').MentorResponse>('/mentor/ask', {
     problem_id: params.problemId,
     language: params.language,
     reasoning: params.reasoning,
@@ -271,5 +297,164 @@ export async function fetchContentItem(
   contentId: string,
 ): Promise<{ id: string; markdown: string }> {
   const { data } = await api.get(`/tracks/items/${contentId}`)
+  return data
+}
+
+// ---------- Learn & Knowledge Base Training ----------
+
+export interface LearnTrainResult {
+  status: string
+  review_status?: 'pending' | 'published' | 'rejected'
+  retrieval_status?: string
+  reference_language?: string | null
+  reference_chunks?: number
+  filename: string
+  file_type: string
+  characters_extracted: number
+  chunks_trained: number
+  track: string
+  message: string
+}
+
+export async function trainKnowledgeBaseDocument(params: {
+  file?: File
+  text?: string
+  track?: string
+  language?: string
+}): Promise<LearnTrainResult> {
+  const formData = new FormData()
+  if (params.file) {
+    formData.append('file', params.file)
+  }
+  if (params.text) {
+    formData.append('text', params.text)
+  }
+  if (params.track) {
+    formData.append('track', params.track)
+  }
+
+  if (params.language) formData.append('language', params.language)
+
+  const { data } = await api.post<LearnTrainResult>('/learn/train', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return data
+}
+
+// Solutions are fetched only after an explicit learner action.
+export async function fetchSolutionAccess(problemId: string, language: string): Promise<boolean> {
+  const { data } = await api.get(`/problems/${encodeURIComponent(problemId)}/solution-access`, { params: { language } })
+  return data.available
+}
+
+export async function revealSolution(problemId: string, language: string): Promise<string> {
+  const { data } = await api.get(`/problems/${encodeURIComponent(problemId)}/solution`, { params: { language } })
+  return data.markdown
+}
+
+export async function fetchCurriculumProgress(language: string): Promise<{ completed_ids: string[]; total: number; next_id: string | null }> {
+  const { data } = await api.get('/tracks/language/progress', { params: { language } })
+  return data
+}
+
+export interface PracticeReply {
+  session_id: string
+  awaiting: 'learner' | 'reflection' | null
+  outcome: string
+  reply: string
+  analysis: import('../types').AnalysisResult | null
+  evidence: import('../types').Evidence | null
+  solution_available?: boolean
+  hint_tier: number
+  tier_label: string
+  recalled_moment?: string | null
+  step_back: import('../types').MentorResponse['step_back_offer']
+  peppercorns_remaining: number | null
+  current_code?: string
+}
+export async function startPractice(problemId: string, language: string, provider: Provider): Promise<PracticeReply> {
+  const { data } = await reliablePost<PracticeReply>('/practice/sessions', { problem_id: problemId, language, provider })
+  return data
+}
+export async function fetchPractice(sid: string): Promise<PracticeReply> {
+  return (await api.get<PracticeReply>(`/practice/sessions/${encodeURIComponent(sid)}`)).data
+}
+export async function practiceAction(sid: string, action: 'submit' | 'hint' | 'reflect' | 'quit', code = '', reasoning = ''): Promise<PracticeReply> {
+  const { data } = await reliablePost<PracticeReply>(`/practice/sessions/${encodeURIComponent(sid)}/actions`, { action, code, reasoning })
+  return data
+}
+
+
+export interface ReferenceSubject {
+  id: string
+  language: string
+  records: number
+  retrievable_records: number
+  status: string
+  executable: boolean
+}
+
+export async function fetchReferenceSubjects(): Promise<ReferenceSubject[]> {
+  return (await api.get('/tracks/reference-subjects')).data.subjects
+}
+
+
+// ---------- Training Registry & Tech Board ----------
+
+export interface TrainingRegistryTechnology {
+  id: string
+  display_name: string
+  category: string
+  total_records: number
+  retrievable_records: number
+  reference_library_records: number
+  curriculum_records: number
+  authored_catalog_records: number
+  status: string
+}
+
+export interface TrainingEvent {
+  id: string
+  timestamp: string
+  action: string
+  technology: string
+  category: string
+  source: string
+  record_count: number
+  vectors_count: number
+  status: string
+  details: Record<string, unknown>
+}
+
+export interface TrainingRegistryResponse {
+  status: string
+  summary: {
+    total_technologies_trained: number
+    total_knowledge_records: number
+    total_retrievable_chunks: number
+    vector_store: {
+      backend: string
+      vector_count: number
+      status: string
+      collection_name?: string
+      error?: string
+    }
+    last_trained_at: string | null
+    embedding_provider: string
+  }
+  categories: Record<string, number>
+  technologies: TrainingRegistryTechnology[]
+  recent_training_events: TrainingEvent[]
+}
+
+export async function fetchTrainingRegistry(): Promise<TrainingRegistryResponse> {
+  const { data } = await api.get<TrainingRegistryResponse>('/training/registry')
+  return data
+}
+
+export async function fetchTrainingHistory(limit = 50): Promise<TrainingEvent[]> {
+  const { data } = await api.get<TrainingEvent[]>('/training/registry/history', { params: { limit } })
   return data
 }

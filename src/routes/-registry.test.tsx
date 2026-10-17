@@ -1,0 +1,126 @@
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TrainingRegistryPage } from './registry'
+
+vi.mock('../lib/api', () => ({
+  fetchTrainingRegistry: vi.fn(),
+}))
+
+import { fetchTrainingRegistry } from '../lib/api'
+
+const mockRegistryData = {
+  status: 'ok',
+  summary: {
+    total_technologies_trained: 14,
+    total_knowledge_records: 6240,
+    total_retrievable_chunks: 6240,
+    vector_store: {
+      backend: 'chromadb',
+      vector_count: 532,
+      status: 'active',
+      collection_name: 'dsa_problems',
+    },
+    last_trained_at: '2026-10-16T20:30:00Z',
+    embedding_provider: 'google',
+  },
+  categories: {
+    web_frontend: 1,
+    core_languages: 6,
+    backend_frameworks: 3,
+    embedded_systems: 2,
+    algorithms_and_dsa: 2,
+  },
+  technologies: [
+    {
+      id: 'html-css-tailwind',
+      display_name: 'HTML5, CSS & Tailwind',
+      category: 'web_frontend',
+      total_records: 658,
+      retrievable_records: 658,
+      reference_library_records: 658,
+      curriculum_records: 0,
+      authored_catalog_records: 0,
+      status: 'trained_and_available',
+    },
+    {
+      id: 'python',
+      display_name: 'Python',
+      category: 'core_languages',
+      total_records: 520,
+      retrievable_records: 520,
+      reference_library_records: 520,
+      curriculum_records: 0,
+      authored_catalog_records: 0,
+      status: 'trained_and_available',
+    },
+  ],
+  recent_training_events: [
+    {
+      id: 'tr-evt-1',
+      timestamp: '2026-10-16T20:30:00Z',
+      action: 'curriculum_training_and_ingest',
+      technology: 'html-css-tailwind',
+      category: 'web_frontend',
+      source: 'Training Data/language/HTML',
+      record_count: 658,
+      vectors_count: 658,
+      status: 'completed',
+      details: {},
+    },
+  ],
+}
+
+describe('TrainingRegistryPage (Tech Board)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(fetchTrainingRegistry).mockResolvedValue(mockRegistryData)
+  })
+
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('renders loading state initially and then shows registry metrics', async () => {
+    render(<TrainingRegistryPage />)
+    expect(screen.getByText(/Loading knowledge registry board.../i)).toBeTruthy()
+
+    await waitFor(() => {
+      expect(screen.getByText('Trained Technologies & Knowledge Board')).toBeTruthy()
+      expect(screen.getByText('14')).toBeTruthy()
+      expect(screen.getAllByText('6,240').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('HTML5, CSS & Tailwind')).toBeTruthy()
+      expect(screen.getByText('Python')).toBeTruthy()
+    })
+  })
+
+  it('filters technologies by category and search query', async () => {
+    render(<TrainingRegistryPage />)
+    await waitFor(() => {
+      expect(screen.getByText('HTML5, CSS & Tailwind')).toBeTruthy()
+    })
+
+    // Search for Python
+    const searchInput = screen.getByPlaceholderText(/Search technologies/i)
+    fireEvent.change(searchInput, { target: { value: 'python' } })
+
+    expect(screen.getByText('Python')).toBeTruthy()
+    expect(screen.queryByText('HTML5, CSS & Tailwind')).toBeNull()
+
+    // Clear search and click Web & Frontend category pill
+    fireEvent.change(searchInput, { target: { value: '' } })
+    const webButton = screen.getByRole('button', { name: /Web & Frontend/i })
+    fireEvent.click(webButton)
+
+    expect(screen.getByText('HTML5, CSS & Tailwind')).toBeTruthy()
+    expect(screen.queryByText('Python')).toBeNull()
+  })
+
+  it('renders the recent training audit log table', async () => {
+    render(<TrainingRegistryPage />)
+    await waitFor(() => {
+      expect(screen.getByText('Recent Training & Ingestion Audit Log')).toBeTruthy()
+      expect(screen.getByText('HTML-CSS-TAILWIND')).toBeTruthy()
+      expect(screen.getByText('curriculum_training_and_ingest')).toBeTruthy()
+    })
+  })
+})

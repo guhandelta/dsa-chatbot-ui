@@ -53,6 +53,9 @@ export default function Header() {
           <Link to="/learn" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
             Learn &amp; Practice
           </Link>
+          <Link to="/registry" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
+            Tech Board
+          </Link>
           {(user?.role === 'instructor' || user?.role === 'admin') && (
             <Link to="/train" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
               Train
