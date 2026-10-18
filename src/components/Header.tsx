@@ -2,6 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import ThemeToggle from './ThemeToggle'
 import { PeppercornBadge } from './PeppercornBadge'
 import { useAuth } from '../lib/auth'
+import { canAccessTeaching } from '../lib/routeAccess'
 
 export default function Header() {
   const { user, logout } = useAuth()
@@ -53,10 +54,13 @@ export default function Header() {
           <Link to="/learn" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
             Learn &amp; Practice
           </Link>
-          <Link to="/registry" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
-            Tech Board
+          <Link to="/chat" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
+            Chat
           </Link>
-          {(user?.role === 'instructor' || user?.role === 'admin') && (
+          {canAccessTeaching(user) && <Link to="/registry" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
+            Tech Board
+          </Link>}
+          {canAccessTeaching(user) && (
             <Link to="/train" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
               Train
             </Link>

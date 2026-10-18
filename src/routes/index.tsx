@@ -1,9 +1,10 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '../lib/auth'
+import { canAccessTeaching } from '../lib/routeAccess'
 
 export const Route = createFileRoute('/')({ component: App })
 
-function App() {
+export function App() {
   const { user } = useAuth()
 
   return (
@@ -34,11 +35,17 @@ function App() {
             Browse Topics
           </Link>
           <Link
+            to="/chat"
+            className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
+          >
+            Chat with your tutor
+          </Link>
+          {canAccessTeaching(user) && <Link
             to="/registry"
             className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
           >
             Tech Board
-          </Link>
+          </Link>}
           {!user && (
             <Link
               to="/register"

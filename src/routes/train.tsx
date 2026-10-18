@@ -1,7 +1,7 @@
 // Training section — instructors and admins only. Submit a problem with any
 // subset of solutions; the pipeline reviews, corrects, completes all six
 // languages, executes them, and publishes only if everything verifies.
-import { Link, createFileRoute, redirect } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { ValidationReportView } from '../components/ValidationReportView'
@@ -11,7 +11,8 @@ import {
   getApiErrorMessage,
   submitTraining,
 } from '../lib/api'
-import { hasToken, useAuth } from '../lib/auth'
+import { useAuth } from '../lib/auth'
+import { canAccessTeaching, requireTeachingAccess } from '../lib/routeAccess'
 import type { Provider, TrainResult, TrainingStatus } from '../types'
 
 const LANGS = [
@@ -24,14 +25,13 @@ const LANGS = [
 ]
 
 export const Route = createFileRoute('/train')({
-  beforeLoad: () => {
-    if (!hasToken()) throw redirect({ to: '/login' })
-  },
+  beforeLoad: requireTeachingAccess,
   component: TrainPage,
 })
 
 function TrainPage() {
-  const { user } = useAuth()
+  const { user, initializing } = useAuth()
+  const canTrain = canAccessTeaching(user)
   const [status, setStatus] = useState<TrainingStatus | null>(null)
   const [problemId, setProblemId] = useState('')
   const [problem, setProblem] = useState('')
@@ -43,19 +43,23 @@ function TrainPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    if (!canTrain) return
     fetchTrainingStatus()
       .then(setStatus)
       .catch(() => setStatus(null))
-  }, [])
+  }, [canTrain])
 
   // Role gate — the API enforces this too; this is just a friendlier message.
-  if (user && user.role === 'student') {
+  if (initializing) {
+    return <main className="page-wrap px-4 py-14"><p role="status">Checking training access…</p></main>
+  }
+  if (!canTrain) {
     return (
       <main className="page-wrap px-4 py-14">
         <section className="island-shell auth-card rounded-2xl p-6 text-center">
           <p className="island-kicker mb-2">Restricted</p>
           <h1 className="display-title mb-3 text-2xl font-bold text-[var(--sea-ink)]">
-            Training is for instructors
+            Training is for admins and instructors
           </h1>
           <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
             Ask an admin to grant you the instructor role if you should be adding

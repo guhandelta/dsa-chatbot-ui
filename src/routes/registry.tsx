@@ -1,17 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useEffect, useState, useMemo } from "react"
 import {
-  Database,
   Layers,
   Cpu,
   RefreshCw,
   Search,
   CheckCircle2,
-  Calendar,
   Sparkles,
-  ExternalLink,
   Code2,
-  Terminal,
   Globe,
   Server,
   BookOpen
@@ -23,7 +19,11 @@ import {
   type TrainingEvent
 } from "../lib/api"
 
+import { useAuth } from "../lib/auth"
+import { canAccessTeaching, requireTeachingAccess } from "../lib/routeAccess"
+
 export const Route = createFileRoute("/registry")({
+  beforeLoad: requireTeachingAccess,
   component: TrainingRegistryPage,
 })
 
@@ -37,6 +37,8 @@ const CATEGORY_LABELS: Record<string, { label: string; icon: any; color: string 
 }
 
 export function TrainingRegistryPage() {
+  const { user, initializing } = useAuth()
+  const canReadRegistry = canAccessTeaching(user)
   const [data, setData] = useState<TrainingRegistryResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -45,6 +47,7 @@ export function TrainingRegistryPage() {
   const [searchQuery, setSearchQuery] = useState<string>("")
 
   const loadData = async (isManual = false) => {
+    if (!canReadRegistry) return
     if (isManual) setRefreshing(true)
     else setLoading(true)
     setError(null)
@@ -60,8 +63,8 @@ export function TrainingRegistryPage() {
   }
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (!initializing && canReadRegistry) void loadData()
+  }, [user?.id, canReadRegistry, initializing])
 
   const filteredTechnologies = useMemo(() => {
     if (!data?.technologies) return []
@@ -77,6 +80,9 @@ export function TrainingRegistryPage() {
       return matchesCategory && matchesSearch
     })
   }, [data, selectedCategory, searchQuery])
+
+  if (initializing) return <main className="page-wrap py-8"><p role="status">Checking registry access…</p></main>
+  if (!canReadRegistry) return <main className="page-wrap py-8"><h1>Staff access required</h1><p>The knowledge registry is available to admins and instructors.</p></main>
 
   return (
     <main className="page-wrap px-4 py-8 sm:py-12">

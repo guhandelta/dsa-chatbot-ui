@@ -1,3 +1,5 @@
+const auth = vi.hoisted(() => ({ role: 'admin' as string | null, initializing: false }))
+vi.mock('../lib/auth', () => ({ hasToken: () => true, useAuth: () => ({ user: auth.role ? { role: auth.role } : null, initializing: auth.initializing }) }))
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TrainingRegistryPage } from './registry'
@@ -73,6 +75,8 @@ const mockRegistryData = {
 describe('TrainingRegistryPage (Tech Board)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    auth.role = 'admin'
+    auth.initializing = false
     vi.mocked(fetchTrainingRegistry).mockResolvedValue(mockRegistryData)
   })
 
@@ -91,6 +95,28 @@ describe('TrainingRegistryPage (Tech Board)', () => {
       expect(screen.getByText('HTML5, CSS & Tailwind')).toBeTruthy()
       expect(screen.getByText('Python')).toBeTruthy()
     })
+  })
+
+  it('allows instructors to read the registry', async () => {
+    auth.role = 'instructor'
+    render(<TrainingRegistryPage />)
+    await waitFor(() => expect(screen.getByText('HTML5, CSS & Tailwind')).toBeTruthy())
+    expect(fetchTrainingRegistry).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['student', null])('does not fetch or render registry data for %s', (role) => {
+    auth.role = role
+    render(<TrainingRegistryPage />)
+    expect(screen.getByText('Staff access required')).toBeTruthy()
+    expect(fetchTrainingRegistry).not.toHaveBeenCalled()
+    expect(screen.queryByText('Trained Technologies & Knowledge Board')).toBeNull()
+  })
+
+  it('waits for session restoration before checking the role', () => {
+    auth.initializing = true
+    render(<TrainingRegistryPage />)
+    expect(screen.getByText('Checking registry access…')).toBeTruthy()
+    expect(fetchTrainingRegistry).not.toHaveBeenCalled()
   })
 
   it('filters technologies by category and search query', async () => {
