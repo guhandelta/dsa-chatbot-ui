@@ -5,6 +5,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { ValidationReportView } from '../components/ValidationReportView'
+import { KnowledgeUploadPanel } from '../components/KnowledgeUploadPanel'
 import { ProviderSelector } from '../components/ProviderSelector'
 import {
   fetchTrainingStatus,
@@ -200,6 +201,8 @@ function TrainPage() {
       </section>
 
       {result && <ValidationReportView result={result} />}
+
+      {user && <KnowledgeUploadPanel isAdmin={user.role === 'admin'} />}
     </main>
   )
 }

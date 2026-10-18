@@ -7,6 +7,8 @@ import { createElement } from 'react'
 vi.mock('../lib/api', () => ({
   TOKEN_KEY: 'dsa_token',
   fetchMe: vi.fn(),
+  loginUser: vi.fn(),
+  registerUser: vi.fn(),
   sendChatMessage: vi.fn(),
   getApiErrorMessage: () => 'mocked error',
 }))
