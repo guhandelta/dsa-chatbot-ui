@@ -6,7 +6,7 @@ vi.mock('./auth', () => ({ hasToken: () => auth.token }))
 vi.mock('./api', () => ({ fetchMe: vi.fn() }))
 vi.mock('@tanstack/react-router', () => ({ redirect: (options: { to: string }) => ({ redirect: options.to }) }))
 import { fetchMe } from './api'
-import { requireTeachingAccess } from './routeAccess'
+import { requireTeachingAccess, requireAdminAccess } from './routeAccess'
 
 beforeEach(() => { vi.resetAllMocks(); auth.token = true })
 
@@ -34,4 +34,14 @@ it('redirects expired sessions to login', async () => {
 it('does not grant access when the role request fails', async () => {
   vi.mocked(fetchMe).mockRejectedValue(new Error('Unavailable'))
   await expect(requireTeachingAccess()).rejects.toThrow('Unavailable')
+})
+
+it.each(['student', 'instructor'] as const)('blocks %s from admin routes', async (role) => {
+  vi.mocked(fetchMe).mockResolvedValue({ role } as User)
+  await expect(requireAdminAccess()).rejects.toEqual({ redirect: '/learn' })
+})
+
+it('allows only the current server admin role into the dashboard', async () => {
+  vi.mocked(fetchMe).mockResolvedValue({ role: 'admin' } as User)
+  await expect(requireAdminAccess()).resolves.toBeUndefined()
 })

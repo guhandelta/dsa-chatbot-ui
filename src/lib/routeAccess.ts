@@ -10,6 +10,14 @@ export function canAccessTeaching(user: Pick<User, 'role'> | null | undefined): 
 
 /** Check the current server role before mounting staff pages, including direct URLs. */
 export async function requireTeachingAccess() {
+  return requireRoleAccess(canAccessTeaching)
+}
+
+export async function requireAdminAccess() {
+  return requireRoleAccess(user => user.role === 'admin')
+}
+
+async function requireRoleAccess(allowed: (user: User) => boolean) {
   if (!hasToken()) throw redirect({ to: '/login' })
   let user: User
   try {
@@ -20,5 +28,5 @@ export async function requireTeachingAccess() {
     }
     throw error
   }
-  if (!canAccessTeaching(user)) throw redirect({ to: '/learn' })
+  if (!allowed(user)) throw redirect({ to: '/learn' })
 }

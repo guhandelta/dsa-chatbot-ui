@@ -73,7 +73,7 @@ export function getApiErrorMessage(err: unknown): string {
 
 // Keep a key across transport failures; successful/terminal requests retire it.
 // The digest includes the signed-in identity without storing its token again.
-async function reliablePost<T>(path: string, body: unknown): Promise<{ data: T }> {
+export async function reliablePost<T>(path: string, body: unknown): Promise<{ data: T }> {
   const bytes = new TextEncoder().encode((localStorage.getItem(TOKEN_KEY) ?? '') + path + JSON.stringify(body))
   const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map((n) => n.toString(16).padStart(2, '0')).join('')
   const slot = 'dsa_request:' + digest

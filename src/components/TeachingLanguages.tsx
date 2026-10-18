@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchAdminLanguages, fetchTeachingAccess, saveTeachingLanguages, getApiErrorMessage } from '../lib/api'
 import { LANGUAGE_LABELS } from '../lib/languageAccess'
 
-export function TeachingLanguages({ userId }: { userId: string }) {
+export function TeachingLanguages({ userId, onSaved }: { userId: string; onSaved?: () => void }) {
   const [choices, setChoices] = useState<string[]>([])
   const [assigned, setAssigned] = useState<string[]>([])
   const [effective, setEffective] = useState<string[]>([])
@@ -18,7 +18,7 @@ export function TeachingLanguages({ userId }: { userId: string }) {
   }, [userId])
   async function save() {
     setBusy(true); setError(''); setSaved(false)
-    try { const access = await saveTeachingLanguages(userId, assigned); setEffective(access.languages); setSaved(true) }
+    try { const access = await saveTeachingLanguages(userId, assigned); setEffective(access.languages); setSaved(true); onSaved?.() }
     catch(e) { setError(getApiErrorMessage(e)) }
     finally { setBusy(false) }
   }

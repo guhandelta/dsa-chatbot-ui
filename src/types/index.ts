@@ -13,6 +13,9 @@ export interface User {
   peppercorns: number
   role: Role
   preferred_language: string
+  status?: 'active' | 'suspended'
+  strikes?: number
+  created_at?: string
 }
 
 export interface AuthResponse {

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { AxiosError, AxiosHeaders } from "axios";
 import { api, sendChatMessage } from "./api";
+import { giftPeppercorns } from './adminApi';
 
 const previousAdapter = api.defaults.adapter;
 beforeEach(() => {
@@ -56,3 +57,17 @@ it("uses a different receipt when the input changes", async () => {
     ).rejects.toThrow();
   expect(keys[0]).not.toBe(keys[1]);
 });
+
+it('retries an interrupted student gift with the same key and retires it after receipt confirmation', async () => {
+  const keys: string[] = []
+  api.defaults.adapter = async config => {
+    keys.push(String(config.headers.get('Idempotency-Key')))
+    if (keys.length === 1) throw new AxiosError('Offline', 'ERR_NETWORK', config)
+    return { data: { id: 'student', peppercorns: 100 }, status: 200, statusText: 'OK', headers: new AxiosHeaders(), config }
+  }
+  await expect(giftPeppercorns('student', 50, 'Welcome gift')).rejects.toThrow('Offline')
+  await giftPeppercorns('student', 50, 'Welcome gift')
+  await giftPeppercorns('student', 50, 'Welcome gift')
+  expect(keys[0]).toBe(keys[1])
+  expect(keys[2]).not.toBe(keys[1])
+})
