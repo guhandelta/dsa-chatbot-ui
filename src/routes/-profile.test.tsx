@@ -23,7 +23,7 @@ it('exports through the authenticated API and downloads JSON', async () => {
   vi.mocked(exportLearningProfile).mockResolvedValue({ events:[] })
   const click = vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(() => {})
   render(<ProfilePage />)
-  await waitFor(() => expect(screen.getByText('No mentor subscription yet. Review, chat, and practice work without one.')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('No language subscription yet. Student learning requires an active language subscription; staff access follows their role.')).toBeTruthy())
   vi.useFakeTimers()
   await act(async () => { fireEvent.click(screen.getByRole('button',{ name:'Export' })) })
   expect(exportLearningProfile).toHaveBeenCalledOnce()

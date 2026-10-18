@@ -4,7 +4,9 @@ import type {
   AnalyzeResponse,
   AuthResponse,
   ChatResponse,
+  ChatProvider,
   Provider,
+  Role,
   User,
 } from '../types'
 
@@ -113,7 +115,7 @@ export async function fetchMe(): Promise<User> {
 export async function sendChatMessage(params: {
   message: string
   threadId?: string
-  provider: Provider
+  provider: ChatProvider
   language: string
   track?: string
   focusId?: string
@@ -457,4 +459,26 @@ export async function fetchTrainingRegistry(): Promise<TrainingRegistryResponse>
 export async function fetchTrainingHistory(limit = 50): Promise<TrainingEvent[]> {
   const { data } = await api.get<TrainingEvent[]>('/training/registry/history', { params: { limit } })
   return data
+}
+
+// Role and language guardrails (the server is authoritative).
+export interface LanguageAccess {
+  role: Role
+  languages: string[]
+  preferred_language: string | null
+  can_train: boolean
+  available_languages: string[]
+}
+export async function fetchLanguageAccess(): Promise<LanguageAccess> {
+  return (await api.get('/auth/me/access')).data
+}
+export async function fetchAdminLanguages(): Promise<string[]> {
+  return (await api.get('/admin/languages')).data.languages
+}
+export interface TeachingAccess extends LanguageAccess { assigned_languages: string[] }
+export async function fetchTeachingAccess(userId: string): Promise<TeachingAccess> {
+  return (await api.get(`/admin/users/${encodeURIComponent(userId)}/languages`)).data
+}
+export async function saveTeachingLanguages(userId: string, languages: string[]): Promise<TeachingAccess> {
+  return (await api.put(`/admin/users/${encodeURIComponent(userId)}/languages`, { languages })).data
 }

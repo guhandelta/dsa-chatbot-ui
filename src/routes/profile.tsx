@@ -152,11 +152,11 @@ export function ProfilePage() {
 
       <section className="island-shell mb-4 rounded-2xl p-5">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--kicker)]">
-          Mentor subscriptions
+          Language subscriptions
         </h2>
         <p className="mb-3 text-sm text-[var(--sea-ink-soft)]">
-          Your peppercorns remain available when a subscription ends. Use them
-          for chat and reviews; mentor guidance requires an active subscription.
+          Your peppercorns are retained when a subscription ends. Students need
+          active language access for learning, chat, reviews, practice and mentor help.
           Hint tiers reset every six weeks for each problem and language.
         </p>
         {subs.length ? (
@@ -175,7 +175,7 @@ export function ProfilePage() {
           </ul>
         ) : (
           <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
-            No mentor subscription yet. Review, chat, and practice work without one.
+            No language subscription yet. Student learning requires an active language subscription; staff access follows their role.
           </p>
         )}
       </section>

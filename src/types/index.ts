@@ -1,5 +1,6 @@
 // Shared TypeScript types used across components and hooks
 export type Provider = 'openai' | 'claude' | 'gemini'
+export type ChatProvider = Provider | 'auto'
 
 export type Role = 'student' | 'instructor' | 'admin'
 
@@ -54,6 +55,13 @@ export interface ChatResponse {
   peppercorns_remaining: number
   sources?: SourceCitation[]
   retrieval?: RetrievalReport | null
+  model_routing?: {
+    strategy: 'automatic' | 'manual'
+    task: 'explain' | 'code' | 'reasoning' | null
+    provider: Provider
+    model: string
+    fallback_used: boolean
+  } | null
 }
 
 export interface AnalysisResult {
@@ -147,7 +155,8 @@ export interface TrackSummary {
 export interface TracksResponse {
   tracks: TrackSummary[]
   languages: string[]
-  preferred_language: string
+  preferred_language: string | null
+  training_languages?: string[]
   modes: Mode[]
 }
 

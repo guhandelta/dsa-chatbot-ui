@@ -3,6 +3,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { fetchUsers, getApiErrorMessage, setUserRole } from '../lib/api'
 import { hasToken, useAuth } from '../lib/auth'
+import { TeachingLanguages } from '../components/TeachingLanguages'
 import type { Role, User } from '../types'
 
 export const Route = createFileRoute('/admin')({
@@ -101,6 +102,7 @@ function AdminPage() {
                   </>
                 )}
               </div>
+              {u.role === 'instructor' && <TeachingLanguages userId={u.id} />}
             </li>
           ))}
         </ul>
