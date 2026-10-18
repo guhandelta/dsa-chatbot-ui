@@ -1,20 +1,24 @@
 import { fireEvent, render, screen, cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const pilot = vi.hoisted(() => ({ enabled: false, failed: false }))
+const pilot = vi.hoisted(() => ({ enabled: false, failed: false, role: 'admin', languages: ['java', 'python'] as string[] }))
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@tanstack/react-router')>(),
+  Link: ({ children }: { children: import('react').ReactNode }) => <a>{children}</a>,
+}))
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: ({ queryKey }: { queryKey: string[] }) => queryKey[0] === 'chat-capabilities' ? { data: { agentic_retrieval: pilot.enabled }, isError: pilot.failed } : ({ data: [
+  useQuery: ({ queryKey }: { queryKey: string[] }) => queryKey[0] === 'language-access' ? { data: { languages: pilot.languages, preferred_language: pilot.languages[0] }, isError: false } : queryKey[0] === 'chat-capabilities' ? { data: { agentic_retrieval: pilot.enabled }, isError: pilot.failed } : ({ data: [
     { id: 'spring-mvc', language: 'java', retrievable_records: 3 },
     { id: 'python-flask', language: 'python', retrievable_records: 20 },
   ], isError: false }),
 }))
-vi.mock('../../lib/auth', () => ({ hasToken: () => true, useAuth: () => ({ user: { preferred_language: 'java' } }) }))
+vi.mock('../../lib/auth', () => ({ hasToken: () => true, useAuth: () => ({ user: { role: pilot.role, preferred_language: 'java' } }) }))
 vi.mock('../../components/ChatWindow', () => ({ ChatWindow: (props: unknown) => <div data-testid="chat-props">{JSON.stringify(props)}</div> }))
-vi.mock('../../components/ProviderSelector', () => ({ ProviderSelector: () => null }))
-vi.mock('../../components/LanguageSelector', () => ({ LanguageSelector: () => <span>Primary language selector</span> }))
+vi.mock('../../components/ProviderSelector', () => ({ ProviderSelector: () => <span>Model selector</span> }))
+vi.mock('../../components/LanguageSelector', () => ({ LanguageSelector: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => <label>Language<select value={value} onChange={(event) => onChange(event.target.value)}>{pilot.languages.map(language => <option key={language}>{language}</option>)}</select></label> }))
 import { ChatPage } from './index'
 
-beforeEach(() => { pilot.enabled = false; pilot.failed = false })
+beforeEach(() => { pilot.enabled = false; pilot.failed = false; pilot.role = 'admin'; pilot.languages = ['java', 'python'] })
 afterEach(cleanup)
 describe('Reference library learning', () => {
   it('keeps ordinary retrieval as the default and hides an unavailable experiment', () => {
@@ -41,19 +45,52 @@ describe('Reference library learning', () => {
   })
   it('sends the selected framework and its language to a new chat scope', () => {
     render(<ChatPage />)
-    fireEvent.change(screen.getByLabelText('Reference library'), { target: { value: 'python-flask' } })
+    expect(screen.queryByRole('option', { name: /python flask/ })).toBeNull()
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'python' } })
+    fireEvent.change(screen.getByLabelText('Learning material (optional)'), { target: { value: 'python-flask' } })
     const props = JSON.parse(screen.getByTestId('chat-props').textContent!)
     expect(props).toMatchObject({ language: 'python', subject: 'python-flask', track: 'language' })
-    expect(screen.queryByText('Primary language selector')).toBeNull()
+    expect(screen.getByLabelText('Language')).toBeTruthy()
     expect(screen.getByText(/not a verified workout/)).toBeTruthy()
   })
   it('returns to the primary DSA scope without a reference subject', () => {
     render(<ChatPage />)
-    fireEvent.change(screen.getByLabelText('Reference library'), { target: { value: 'spring-mvc' } })
-    fireEvent.change(screen.getByLabelText('Reference library'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Learning material (optional)'), { target: { value: 'spring-mvc' } })
+    fireEvent.change(screen.getByLabelText('Learning material (optional)'), { target: { value: '' } })
     const props = JSON.parse(screen.getByTestId('chat-props').textContent!)
     expect(props).toMatchObject({ language: 'java', track: 'dsa' })
     expect(props.subject).toBeUndefined()
-    expect(screen.getByText('Primary language selector')).toBeTruthy()
+    expect(screen.getByLabelText('Language')).toBeTruthy()
   })
+  it('resets the reference scope when the language changes', () => {
+    render(<ChatPage />)
+    fireEvent.change(screen.getByLabelText('Learning material (optional)'), { target: { value: 'spring-mvc' } })
+    fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'python' } })
+    expect(JSON.parse(screen.getByTestId('chat-props').textContent!)).toMatchObject({ language: 'python', track: 'language' })
+    expect(JSON.parse(screen.getByTestId('chat-props').textContent!).subject).toBeUndefined()
+  })
+  it('uses automatic models for students and keeps staff selection available', () => {
+    pilot.role = 'student'
+    const { unmount } = render(<ChatPage />)
+    expect(screen.queryByText('Model selector')).toBeNull()
+    expect(JSON.parse(screen.getByTestId('chat-props').textContent!).provider).toBe('auto')
+    unmount()
+    pilot.role = 'instructor'
+    render(<ChatPage />)
+    expect(screen.getByText('Model selector')).toBeTruthy()
+    expect(JSON.parse(screen.getByTestId('chat-props').textContent!).provider).toBe('gemini')
+  })
+  it('hides the material selector when no collection exists for the current language', () => {
+    pilot.languages = ['javascript']
+    render(<ChatPage />)
+    expect(screen.queryByLabelText('Learning material (optional)')).toBeNull()
+    expect(JSON.parse(screen.getByTestId('chat-props').textContent!).language).toBe('javascript')
+  })
+})
+
+it('does not mount the tutor when no languages are available', () => {
+  pilot.languages = []
+  render(<ChatPage />)
+  expect(screen.queryByTestId('chat-props')).toBeNull()
+  expect(screen.getByText(/No learning language is active/)).toBeTruthy()
 })

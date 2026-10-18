@@ -4,7 +4,8 @@ import ReactMarkdown from 'react-markdown'
 import { ChatWindow } from '../../components/ChatWindow'
 import { ProviderSelector } from '../../components/ProviderSelector'
 import { fetchTrackItems, fetchContentItem, fetchCurriculumProgress, getApiErrorMessage } from '../../lib/api'
-import { hasToken, useAuth } from '../../lib/auth'
+import { hasToken } from '../../lib/auth'
+import { LANGUAGE_LABELS, useLanguageAccess } from '../../lib/languageAccess'
 import type { ContentMeta, Mode, Provider, Track } from '../../types'
 
 export const Route = createFileRoute('/track/$track')({
@@ -19,8 +20,9 @@ function TrackPage() {
   const { track } = Route.useParams()
   const { mode } = Route.useSearch()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const language = user?.preferred_language === 'java' ? 'java' : 'javascript'
+  const access = useLanguageAccess()
+  const student = access.data?.role === 'student'
+  const language = access.data?.preferred_language ?? ''
   const [items, setItems] = useState<ContentMeta[]>([])
   const [focus, setFocus] = useState<ContentMeta | null>(null)
   const [provider, setProvider] = useState<Provider>('gemini')
@@ -32,13 +34,14 @@ function TrackPage() {
   useEffect(() => {
     let active = true
     setCompleted([])
-    if (track === 'language') fetchCurriculumProgress(language).then((p) => { if (active) { setCompleted(p.completed_ids); setTotalExercises(p.total) } }).catch(() => {})
+    if (language && track === 'language') fetchCurriculumProgress(language).then((p) => { if (active) { setCompleted(p.completed_ids); setTotalExercises(p.total) } }).catch(() => {})
     return () => { active = false }
   }, [track, language])
 
   useEffect(() => {
     let active = true
     setFocus(null); setItems([]); setError(null)
+    if (!language) return () => { active = false }
     fetchTrackItems(track, { language, difficulty: difficulty || undefined })
       .then((rows) => { if (active) setItems(rows) })
       .catch((e) => { if (active) setError(getApiErrorMessage(e)) })
@@ -59,19 +62,21 @@ function TrackPage() {
       {(['browse', 'learn', 'practice'] as Mode[]).map((m) => <button key={m} type="button" onClick={() => switchMode(m)} className={`lang-tab ${mode === m ? 'is-active' : ''}`}>{m === 'browse' ? 'Lessons' : m === 'learn' ? 'Ask mentor' : 'Practice'}</button>)}
       {track === 'language' ? <label><input type="checkbox" checked={supplemental} onChange={(e) => setSupplemental(e.target.checked)} /> Include reference library</label>
         : <label className="selector">Difficulty<select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}><option value="">Any</option>{['Easy', 'Medium', 'Hard'].map((d) => <option key={d}>{d}</option>)}</select></label>}
-      {mode === 'learn' && <ProviderSelector value={provider} onChange={setProvider} />}
+      {mode === 'learn' && !student && <ProviderSelector value={provider} onChange={setProvider} />}
     </div>
+    {access.data && !language && <p>No languages are available for your account.</p>}
+    {access.isError && <p role="alert">Language access could not be loaded.</p>}
     {error && <div className="error-banner" role="alert">{error}</div>}
     <div className="track-layout">
       <aside className="island-shell rounded-2xl p-4">
-        <p className="mb-3 text-sm">{language === 'java' ? 'Java' : 'JavaScript'} · {visible.length} topics{track === 'language' ? ` · ${completed.length}/${totalExercises} exercises passed` : ''}</p>
+        <p className="mb-3 text-sm">{LANGUAGE_LABELS[language] ?? language} · {visible.length} topics{track === 'language' ? ` · ${completed.length}/${totalExercises} exercises passed` : ''}</p>
         <ul className="item-list">{visible.map((item) => <li key={item.id}><button type="button" onClick={() => setFocus(item)} className={`item-btn ${focus?.id === item.id ? 'is-active' : ''}`}>
           <span>{completed.includes(item.id) ? '✓ ' : ''}{item.order > 0 && item.order < 100 ? `${item.order}. ` : ''}{item.title}</span>
           <span className="text-xs">{item.level ?? item.difficulty}{item.has_tests ? ' · exercise' : ' · lesson'}</span>
         </button></li>)}</ul>
       </aside>
       <section>{focus ? mode === 'learn'
-        ? <ChatWindow key={`${language}-${focus.id}`} provider={provider} language={language} track={focus.track as Track} focusId={focus.id} chatCost={1} />
+        ? <ChatWindow key={`${language}-${focus.id}`} provider={student ? 'auto' : provider} language={language} track={focus.track as Track} focusId={focus.id} chatCost={1} />
         : <Lesson key={focus.id} item={focus} practice={mode === 'practice'} />
         : <div className="island-shell rounded-2xl p-5">Choose a topic to read its lesson, ask questions, or practice. Interview candidates can start with any DSA problem.</div>}
       </section>

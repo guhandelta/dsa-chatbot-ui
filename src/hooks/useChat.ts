@@ -2,10 +2,10 @@
 import { useCallback, useState } from 'react'
 import { getApiErrorMessage, sendChatMessage } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import type { Message, Provider } from '../types'
+import type { Message, ChatProvider } from '../types'
 
 export function useChat(
-  provider: Provider,
+  provider: ChatProvider,
   language: string,
   track: string = 'dsa',
   focusId?: string,

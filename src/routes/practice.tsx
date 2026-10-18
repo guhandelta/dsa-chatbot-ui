@@ -19,6 +19,7 @@ import {
   practiceAction,
 } from "../lib/api";
 import { hasToken, useAuth } from "../lib/auth";
+import { useLanguageAccess } from "../lib/languageAccess";
 import type { PracticeReply } from "../lib/api";
 import type { AnalysisResult, Evidence, Provider } from "../types";
 
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/practice")({
 
 function PracticePage() {
   const { user } = useAuth();
+  const access = useLanguageAccess();
   const { problem: preselected } = Route.useSearch();
   const [language, setLanguage] = useState(
     user?.preferred_language === "java" ? "java" : "javascript",
@@ -50,7 +52,8 @@ function PracticePage() {
     setProblemId(preselected ?? "");
   }, [preselected]);
   const exerciseLanguage = /^(java|javascript)-path-/.exec(problemId)?.[1];
-  const activeLanguage = exerciseLanguage ?? language;
+  const practiceLanguages = (access.data?.languages ?? []).filter(l => ["javascript", "java", "python", "cpp", "c", "rust"].includes(l));
+  const activeLanguage = exerciseLanguage ?? (practiceLanguages.includes(language) ? language : practiceLanguages[0] ?? "");
   return (
     <main className="page-wrap px-4 py-8">
       <Link to="/learn">← Learning home</Link>
@@ -66,7 +69,7 @@ function PracticePage() {
         ) : (
           <>
             <ProblemPicker value={problemId} onChange={setProblemId} />
-            <LanguageSelector value={language} onChange={setLanguage} />
+            <LanguageSelector value={language} onChange={setLanguage} supported={["javascript", "java", "python", "cpp", "c", "rust"]} />
           </>
         )}
         {exerciseLanguage && (
@@ -79,7 +82,11 @@ function PracticePage() {
           </Link>
         )}
       </div>
-      {problemId && (
+      {access.isError && <p role="alert">Language access could not be loaded.</p>}
+      {access.data && !access.data.languages.length && <p>No practice languages are available for your account.</p>}
+      {access.data && access.data.languages.length > 0 && !activeLanguage && <p>These languages currently provide reference learning. Open Chat to study the available material.</p>}
+      {exerciseLanguage && access.data && !access.data.languages.includes(exerciseLanguage) && <p>This exercise is outside your current language access.</p>}
+      {problemId && !access.isError && access.data?.languages.includes(activeLanguage) && (
         <PracticeWorkspace
           key={`${problemId}:${activeLanguage}`}
           problemId={problemId}

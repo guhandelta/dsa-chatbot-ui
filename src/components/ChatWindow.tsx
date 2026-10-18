@@ -2,10 +2,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useChat } from '../hooks/useChat'
 import { MessageBubble } from './MessageBubble'
-import type { Provider } from '../types'
+import type { ChatProvider } from '../types'
 
 interface Props {
-  provider: Provider
+  provider: ChatProvider
   language: string
   track?: string
   focusId?: string
@@ -18,6 +18,12 @@ export function ChatWindow({ provider, language, track = 'dsa', focusId, subject
   const { messages, loading, error, sendMessage } = useChat(provider, language, track, focusId, subject, retrievalMode)
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const starterPrompts = [
+    'Give me a small hint for Two Sum without showing the solution.',
+    'Teach me how to recognize when binary search applies.',
+    'Walk through this approach and point out its time and space complexity.',
+    'Quiz me on arrays one question at a time.',
+  ]
 
   // Keep the newest message in view. Without this the transcript silently
   // grows below the fold and the user has to scroll after every exchange.
@@ -37,10 +43,23 @@ export function ChatWindow({ provider, language, track = 'dsa', focusId, subject
       {/* Message history — scrollable */}
       <div className="messages">
         {messages.length === 0 && (
-          <p className="m-0 py-10 text-center text-sm text-[var(--sea-ink-soft)]">
-            Ask about a problem to get started — e.g. “Give me a hint for Two Sum”
-            or “Explain when to use binary search”.
-          </p>
+          <div className="py-8">
+            <p className="mb-4 text-center text-sm text-[var(--sea-ink-soft)]">
+              Your tutor can give hints, explain concepts, trace code, and help you compare approaches. Pick a starter or ask your own question.
+            </p>
+            <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2">
+              {starterPrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="rounded-full border border-[var(--line)] px-3 py-2 text-left text-sm hover:bg-white/10"
+                  onClick={() => setInput(prompt)}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />

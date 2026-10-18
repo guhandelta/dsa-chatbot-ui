@@ -11,12 +11,9 @@ import {
   type LearnTrainResult,
 } from '../lib/api'
 import { hasToken, useAuth } from '../lib/auth'
+import { LANGUAGE_LABELS } from '../lib/languageAccess'
 import type { TracksResponse } from '../types'
 
-const LANG_LABEL: Record<string, string> = {
-  javascript: 'JavaScript',
-  java: 'Java',
-}
 
 export const Route = createFileRoute('/learn')({
   beforeLoad: () => {
@@ -107,8 +104,7 @@ function LearnHub() {
     }
   }
 
-  const savedLanguage = user?.preferred_language ?? data?.preferred_language
-  const current = savedLanguage === 'java' ? 'java' : 'javascript'
+  const current = data?.preferred_language ?? ''
 
   return (
     <main className="page-wrap px-4 py-8">
@@ -117,7 +113,7 @@ function LearnHub() {
         What do you want to work on?
       </h1>
       <p className="mb-5 max-w-2xl text-sm text-[var(--sea-ink-soft)]">
-        One shared curriculum in JavaScript or Java. Start with language foundations,
+        Choose an available language. Start with language foundations,
         or go directly to DSA workouts. Learn at your own pace.
       </p>
 
@@ -128,8 +124,9 @@ function LearnHub() {
         <span className="selector-label mb-2 block font-semibold text-[var(--sea-ink)]">
           Your language
         </span>
+        {data && data.languages.length === 0 && <p>No languages are available yet. Students need an active language subscription; instructors need a teaching assignment or uploaded language content.</p>}
         <div className="lang-tabs">
-          {(data?.languages ?? Object.keys(LANG_LABEL)).map((l) => (
+          {(data?.languages ?? []).map((l) => (
             <button
               key={l}
               type="button"
@@ -137,11 +134,13 @@ function LearnHub() {
               onClick={() => chooseLanguage(l)}
               className={`lang-tab ${current === l ? 'is-active' : ''}`}
             >
-              {LANG_LABEL[l] ?? l}
+              {LANGUAGE_LABELS[l] ?? l}
             </button>
           ))}
         </div>
       </section>
+
+      {current && <Link to="/chat" className="primary-btn mb-5 inline-block">Open language tutor and reference library</Link>}
 
       {/* Tracks Grid */}
       <div className="track-grid mb-8">
@@ -227,8 +226,7 @@ function LearnHub() {
             <div>
               <label htmlFor="reference-language" className="block text-xs font-semibold uppercase text-[var(--kicker)] mb-1">Reference language</label>
               <select id="reference-language" value={referenceLanguage} onChange={(e) => setReferenceLanguage(e.target.value)}>
-                <option value="javascript">JavaScript</option>
-                <option value="java">Java</option>
+                {(data?.training_languages ?? []).map(language => <option key={language} value={language}>{LANGUAGE_LABELS[language] ?? language}</option>)}
               </select>
             </div>
             <div>
