@@ -46,6 +46,7 @@ export function App() {
           >
             Tech Board
           </Link>}
+          {canAccessTeaching(user) && <Link to="/teach" className="primary-btn">Teach</Link>}
           {!user && (
             <Link
               to="/register"

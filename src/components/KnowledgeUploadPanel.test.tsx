@@ -4,6 +4,7 @@ import type { KnowledgeDocument } from '../types'
 
 vi.mock('../lib/api', () => ({
   fetchLearnStatus: vi.fn(),
+  fetchTracks: vi.fn(),
   fetchKnowledgeDocuments: vi.fn(),
   fetchKnowledgeDocument: vi.fn(),
   uploadKnowledge: vi.fn(),
@@ -53,6 +54,7 @@ function chooseFile(file: File) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  m.fetchTracks.mockResolvedValue({ training_languages: ["java", "python"] } as Awaited<ReturnType<typeof api.fetchTracks>>)
   m.fetchLearnStatus.mockResolvedValue({ ...status, allowed_tracks: [...status.allowed_tracks] })
   m.fetchKnowledgeDocuments.mockResolvedValue([])
 })
@@ -67,7 +69,7 @@ describe('KnowledgeUploadPanel — teacher', () => {
     expect(m.fetchKnowledgeDocuments).toHaveBeenCalledWith(undefined)
     expect(screen.getByRole('button', { name: 'Upload for review' })).toBeTruthy()
     // tracks come from /learn/status once it answers
-    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2))
+    await waitFor(() => expect(within(screen.getByRole('combobox', { name: 'Use in' })).getAllByRole('option')).toHaveLength(2))
   })
 
   it('requires a file before uploading', async () => {
@@ -111,8 +113,8 @@ describe('KnowledgeUploadPanel — teacher', () => {
       message: 'Uploaded n.md. Awaiting approval.',
     })
     render(<KnowledgeUploadPanel isAdmin={false} />)
-    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2))
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'dsa' } })
+    await waitFor(() => expect(within(screen.getByRole('combobox', { name: 'Use in' })).getAllByRole('option')).toHaveLength(2))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Use in' }), { target: { value: 'dsa' } })
     const file = new File(['# n'], 'n.md')
     chooseFile(file)
     fireEvent.click(screen.getByRole('button', { name: 'Upload for review' }))
@@ -158,7 +160,7 @@ describe('KnowledgeUploadPanel — teacher', () => {
     render(<KnowledgeUploadPanel isAdmin={false} />)
     await waitFor(() => expect(m.fetchLearnStatus).toHaveBeenCalled())
     expect(screen.getByText(/\.docx.*max 10 MB/)).toBeTruthy()
-    expect(screen.getAllByRole('option')).toHaveLength(4)
+    expect(within(screen.getByRole('combobox', { name: 'Use in' })).getAllByRole('option')).toHaveLength(4)
   })
 
   it('reports a failure to load the list', async () => {
@@ -273,4 +275,27 @@ describe('KnowledgeUploadPanel — admin', () => {
     expect(screen.getByText(/loading documents/i)).toBeTruthy()
     await screen.findByText(/max 1 MB/) // let the status request settle
   })
+})
+
+it.each(['file', 'text'] as const)('sends the source language with %s uploads', async mode => {
+  m.uploadKnowledge.mockResolvedValue({ message: 'Saved' } as Awaited<ReturnType<typeof api.uploadKnowledge>>)
+  render(<KnowledgeUploadPanel isAdmin={false} />)
+  await screen.findByRole('option', { name: 'Python' })
+  fireEvent.change(screen.getByRole('combobox', { name: 'Reference language' }), { target: { value: 'python' } })
+  if (mode === 'file') chooseFile(new File(['notes'], 'notes.md'))
+  else {
+    fireEvent.click(screen.getByRole('tab', { name: 'Paste text' }))
+    fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'Python notes' } })
+  }
+  fireEvent.click(screen.getByRole('button', { name: 'Upload for review' }))
+  await screen.findByText('Saved')
+  expect(m.uploadKnowledge).toHaveBeenCalledWith(expect.objectContaining({ language: 'python', track: 'custom' }))
+})
+
+it('prefers the complete training language list from Teach status', async () => {
+  m.fetchLearnStatus.mockResolvedValue({ ...status, allowed_tracks: [...status.allowed_tracks], training_languages: ['rust', 'typescript'] } as Awaited<ReturnType<typeof api.fetchLearnStatus>>)
+  render(<KnowledgeUploadPanel isAdmin />)
+  await screen.findByRole('option', { name: 'TypeScript' })
+  expect(screen.getByRole('option', { name: 'Rust' })).toBeTruthy()
+  expect(screen.queryByRole('option', { name: 'Python' })).toBeNull()
 })

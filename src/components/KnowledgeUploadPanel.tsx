@@ -1,4 +1,4 @@
-// Reference-document uploads for the RAG knowledge base (POST /learn/train).
+// Reference-document uploads for the RAG knowledge base (POST /teach/train).
 // Teachers upload and track their documents; their uploads stay "pending"
 // until an admin approves them, because anything published here is fed to
 // every learner's chat. Admins publish directly and work the review queue.
@@ -9,10 +9,12 @@ import {
   fetchKnowledgeDocument,
   fetchKnowledgeDocuments,
   fetchLearnStatus,
+  fetchTracks,
   getApiErrorMessage,
   rejectKnowledgeDocument,
   uploadKnowledge,
 } from '../lib/api'
+import { LANGUAGE_LABELS } from '../lib/languageAccess'
 import type {
   KnowledgeDocument,
   KnowledgeDocumentDetail,
@@ -21,7 +23,7 @@ import type {
   LearnStatus,
 } from '../types'
 
-// Used until /learn/status answers, and if it never does.
+// Used until /teach/status answers, and if it never does.
 const DEFAULT_FORMATS = ['.doc', '.docx', '.md', '.pdf', '.txt']
 const DEFAULT_MAX_MB = 10
 
@@ -40,12 +42,14 @@ const FILTERS: { key: KnowledgeStatus | 'all'; label: string }[] = [
 ]
 
 export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
-  const [learnStatus, setLearnStatus] = useState<LearnStatus | null>(null)
+  const [learnStatus, setLearnStatus] = useState<(LearnStatus & { training_languages?: string[] }) | null>(null)
   const [mode, setMode] = useState<'file' | 'text'>('file')
   const [file, setFile] = useState<File | null>(null)
   const [fileInputKey, setFileInputKey] = useState(0)
   const [text, setText] = useState('')
   const [filename, setFilename] = useState('')
+  const [language, setLanguage] = useState('')
+  const [languages, setLanguages] = useState<string[]>([])
   const [track, setTrack] = useState<KnowledgeTrack>('custom')
   const [uploading, setUploading] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
@@ -66,6 +70,10 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
     fetchLearnStatus()
       .then(setLearnStatus)
       .catch(() => setLearnStatus(null))
+  }, [])
+
+  useEffect(() => {
+    fetchTracks().then(data => setLanguages(data.training_languages ?? [])).catch(() => setLanguages([]))
   }, [])
 
   const loadDocs = useCallback(async () => {
@@ -110,8 +118,8 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
     try {
       const result =
         mode === 'file' && file
-          ? await uploadKnowledge({ file, track })
-          : await uploadKnowledge({ text, filename: filename.trim(), track })
+          ? await uploadKnowledge({ file, track, ...(language ? { language } : {}) })
+          : await uploadKnowledge({ text, filename: filename.trim(), track, ...(language ? { language } : {}) })
       setNotice(result.message)
       setFile(null)
       setFileInputKey((k) => k + 1)
@@ -226,6 +234,13 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
                 {TRACK_LABELS[t] ?? t}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="selector">
+          <span className="selector-label">Reference language</span>
+          <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+            <option value="">Detect from filename</option>
+            {(learnStatus?.training_languages ?? languages).map(l => <option key={l} value={l}>{LANGUAGE_LABELS[l] ?? l}</option>)}
           </select>
         </label>
       </div>

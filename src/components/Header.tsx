@@ -61,8 +61,8 @@ export default function Header() {
             Tech Board
           </Link>}
           {canAccessTeaching(user) && (
-            <Link to="/train" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
-              Train
+            <Link to="/teach" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
+              Teach
             </Link>
           )}
           {user?.role === 'admin' && (

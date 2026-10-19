@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrainRouteImport } from './routes/train'
+import { Route as TeachRouteImport } from './routes/teach'
 import { Route as RegistryRouteImport } from './routes/registry'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -25,6 +26,11 @@ import { Route as TrackTrackRouteImport } from './routes/track/$track'
 const TrainRoute = TrainRouteImport.update({
   id: '/train',
   path: '/train',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeachRoute = TeachRouteImport.update({
+  id: '/teach',
+  path: '/teach',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistryRoute = RegistryRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/registry': typeof RegistryRoute
+  '/teach': typeof TeachRoute
   '/train': typeof TrainRoute
   '/track/$track': typeof TrackTrackRoute
   '/chat/': typeof ChatIndexRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/registry': typeof RegistryRoute
+  '/teach': typeof TeachRoute
   '/train': typeof TrainRoute
   '/track/$track': typeof TrackTrackRoute
   '/chat': typeof ChatIndexRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/registry': typeof RegistryRoute
+  '/teach': typeof TeachRoute
   '/train': typeof TrainRoute
   '/track/$track': typeof TrackTrackRoute
   '/chat/': typeof ChatIndexRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/registry'
+    | '/teach'
     | '/train'
     | '/track/$track'
     | '/chat/'
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/registry'
+    | '/teach'
     | '/train'
     | '/track/$track'
     | '/chat'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/registry'
+    | '/teach'
     | '/train'
     | '/track/$track'
     | '/chat/'
@@ -181,6 +193,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   RegistryRoute: typeof RegistryRoute
+  TeachRoute: typeof TeachRoute
   TrainRoute: typeof TrainRoute
   TrackTrackRoute: typeof TrackTrackRoute
   ChatIndexRoute: typeof ChatIndexRoute
@@ -193,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/train'
       fullPath: '/train'
       preLoaderRoute: typeof TrainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/teach': {
+      id: '/teach'
+      path: '/teach'
+      fullPath: '/teach'
+      preLoaderRoute: typeof TeachRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registry': {
@@ -285,6 +305,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   RegistryRoute: RegistryRoute,
+  TeachRoute: TeachRoute,
   TrainRoute: TrainRoute,
   TrackTrackRoute: TrackTrackRoute,
   ChatIndexRoute: ChatIndexRoute,

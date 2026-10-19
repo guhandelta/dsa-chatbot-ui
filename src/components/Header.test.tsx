@@ -21,8 +21,10 @@ it.each([null, 'student', 'instructor', 'admin'] as const)('shows the Study Room
   render(<Header />)
   expect(screen.getByRole('link', { name: 'Study Room' }).getAttribute('href')).toBe('/chat')
   const staff = role === 'admin' || role === 'instructor'
-  expect(Boolean(screen.queryByRole('link', { name: 'Train' }))).toBe(staff)
+  expect(Boolean(screen.queryByRole('link', { name: 'Teach' }))).toBe(staff)
   expect(Boolean(screen.queryByRole('link', { name: 'Tech Board' }))).toBe(staff)
+  if (staff) expect(screen.getByRole('link', { name: 'Teach' }).getAttribute('href')).toBe('/teach')
+  expect(screen.queryByRole('link', { name: 'Train' })).toBeNull()
   expect(Boolean(screen.queryByRole('link', { name: 'Admin' }))).toBe(role === 'admin')
 })
 
@@ -30,5 +32,7 @@ it.each([null, 'student', 'instructor', 'admin'] as const)('keeps home page link
   auth.role = role
   render(<HomePage />)
   expect(screen.getByRole('link', { name: 'Open the Study Room' }).getAttribute('href')).toBe('/chat')
+  const teach = screen.queryByRole('link', { name: 'Teach' })
+  expect(teach?.getAttribute('href') ?? null).toBe(role === 'admin' || role === 'instructor' ? '/teach' : null)
   expect(Boolean(screen.queryByRole('link', { name: 'Tech Board' }))).toBe(role === 'admin' || role === 'instructor')
 })

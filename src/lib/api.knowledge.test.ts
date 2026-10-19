@@ -23,6 +23,7 @@ import {
   fetchLearnStatus,
   rejectKnowledgeDocument,
   uploadKnowledge,
+  trainKnowledgeBaseDocument,
 } from './api'
 
 describe('knowledge base api', () => {
@@ -35,14 +36,14 @@ describe('knowledge base api', () => {
 
   it('fetches the pipeline status', async () => {
     expect(await fetchLearnStatus()).toBe('got')
-    expect(http.get).toHaveBeenCalledWith('/learn/status')
+    expect(http.get).toHaveBeenCalledWith('/teach/status')
   })
 
   it('uploads a file as multipart form data', async () => {
     const file = new File(['# notes'], 'notes.md', { type: 'text/markdown' })
     expect(await uploadKnowledge({ file, track: 'algorithm' })).toBe('posted')
     const [path, body] = http.post.mock.calls[0]
-    expect(path).toBe('/learn/train')
+    expect(path).toBe('/teach/train')
     expect(body).toBeInstanceOf(FormData)
     expect((body as FormData).get('file')).toBeInstanceOf(File)
     expect((body as FormData).get('track')).toBe('algorithm')
@@ -50,7 +51,7 @@ describe('knowledge base api', () => {
 
   it('uploads pasted text as JSON and drops an empty filename', async () => {
     await uploadKnowledge({ text: 'heaps', filename: '', track: 'custom' })
-    expect(http.post).toHaveBeenCalledWith('/learn/train', {
+    expect(http.post).toHaveBeenCalledWith('/teach/train', {
       text: 'heaps',
       filename: undefined,
       track: 'custom',
@@ -59,7 +60,7 @@ describe('knowledge base api', () => {
 
   it('sends empty text when none is given', async () => {
     await uploadKnowledge({ track: 'dsa', filename: 'x.md' })
-    expect(http.post).toHaveBeenCalledWith('/learn/train', {
+    expect(http.post).toHaveBeenCalledWith('/teach/train', {
       text: '',
       filename: 'x.md',
       track: 'dsa',
@@ -69,8 +70,8 @@ describe('knowledge base api', () => {
   it('lists documents with and without a status filter', async () => {
     await fetchKnowledgeDocuments()
     await fetchKnowledgeDocuments('pending')
-    expect(http.get).toHaveBeenNthCalledWith(1, '/learn/documents', { params: {} })
-    expect(http.get).toHaveBeenNthCalledWith(2, '/learn/documents', {
+    expect(http.get).toHaveBeenNthCalledWith(1, '/teach/documents', { params: {} })
+    expect(http.get).toHaveBeenNthCalledWith(2, '/teach/documents', {
       params: { status: 'pending' },
     })
   })
@@ -81,10 +82,30 @@ describe('knowledge base api', () => {
     await approveKnowledgeDocument('a/b')
     await rejectKnowledgeDocument('a/b')
     await rejectKnowledgeDocument('c', 'off-topic')
-    expect(http.get).toHaveBeenCalledWith('/learn/documents/a%2Fb')
-    expect(http.delete).toHaveBeenCalledWith('/learn/documents/a%2Fb')
-    expect(http.post).toHaveBeenCalledWith('/learn/documents/a%2Fb/approve')
-    expect(http.post).toHaveBeenCalledWith('/learn/documents/a%2Fb/reject', { note: '' })
-    expect(http.post).toHaveBeenCalledWith('/learn/documents/c/reject', { note: 'off-topic' })
+    expect(http.get).toHaveBeenCalledWith('/teach/documents/a%2Fb')
+    expect(http.delete).toHaveBeenCalledWith('/teach/documents/a%2Fb')
+    expect(http.post).toHaveBeenCalledWith('/teach/documents/a%2Fb/approve')
+    expect(http.post).toHaveBeenCalledWith('/teach/documents/a%2Fb/reject', { note: '' })
+    expect(http.post).toHaveBeenCalledWith('/teach/documents/c/reject', { note: 'off-topic' })
   })
+})
+
+it('preserves reference language in file and raw text uploads', async () => {
+  http.post.mockResolvedValue({ data: {} })
+  await uploadKnowledge({ file: new File(['notes'], 'notes.md'), track: 'language', language: 'python' })
+  expect(http.post.mock.lastCall?.[0]).toBe('/teach/train')
+  expect(http.post.mock.lastCall?.[1].get('language')).toBe('python')
+  await uploadKnowledge({ text: 'notes', filename: 'notes.md', track: 'language', language: 'java' })
+  expect(http.post).toHaveBeenLastCalledWith('/teach/train', { text: 'notes', filename: 'notes.md', track: 'language', language: 'java' })
+})
+
+
+it('keeps the legacy document helper on the canonical Teach API with source metadata', async () => {
+  http.post.mockResolvedValue({ data: {} })
+  await trainKnowledgeBaseDocument({ text: 'Java notes', track: 'language', language: 'java' })
+  const [path, body] = http.post.mock.lastCall!
+  expect(path).toBe('/teach/train')
+  expect(body.get('text')).toBe('Java notes')
+  expect(body.get('track')).toBe('language')
+  expect(body.get('language')).toBe('java')
 })

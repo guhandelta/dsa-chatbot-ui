@@ -309,7 +309,7 @@ export async function fetchContentItem(
 // admin uploads publish immediately. The API enforces both.
 
 export async function fetchLearnStatus(): Promise<import('../types').LearnStatus> {
-  const { data } = await api.get('/learn/status')
+  const { data } = await api.get('/teach/status')
   return data
 }
 
@@ -318,23 +318,26 @@ export async function uploadKnowledge(params: {
   file?: File
   text?: string
   filename?: string
+  language?: string
 }): Promise<import('../types').LearnTrainResult> {
   if (params.file) {
     const form = new FormData()
     form.append('file', params.file)
     form.append('track', params.track)
-    const { data } = await api.post('/learn/train', form)
+    if (params.language) form.append('language', params.language)
+    const { data } = await api.post('/teach/train', form)
     return data
   }
-  const { data } = await api.post('/learn/train', {
+  const { data } = await api.post('/teach/train', {
     text: params.text ?? '',
     filename: params.filename || undefined,
     track: params.track,
+    ...(params.language ? { language: params.language } : {}),
   })
   return data
 }
 
-// ---------- Learn & Knowledge Base Training ----------
+// ---------- Teach & Knowledge Base Training ----------
 
 export interface LearnTrainResult {
   status: string
@@ -369,7 +372,7 @@ export async function trainKnowledgeBaseDocument(params: {
 
   if (params.language) formData.append('language', params.language)
 
-  const { data } = await api.post<LearnTrainResult>('/learn/train', formData, {
+  const { data } = await api.post<LearnTrainResult>('/teach/train', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -523,7 +526,7 @@ export async function saveTeachingLanguages(userId: string, languages: string[])
 export async function fetchKnowledgeDocuments(
   status?: import('../types').KnowledgeStatus,
 ): Promise<import('../types').KnowledgeDocument[]> {
-  const { data } = await api.get('/learn/documents', {
+  const { data } = await api.get('/teach/documents', {
     params: status ? { status } : {},
   })
   return data
@@ -532,18 +535,18 @@ export async function fetchKnowledgeDocuments(
 export async function fetchKnowledgeDocument(
   id: string,
 ): Promise<import('../types').KnowledgeDocumentDetail> {
-  const { data } = await api.get(`/learn/documents/${encodeURIComponent(id)}`)
+  const { data } = await api.get(`/teach/documents/${encodeURIComponent(id)}`)
   return data
 }
 
 export async function deleteKnowledgeDocument(id: string): Promise<void> {
-  await api.delete(`/learn/documents/${encodeURIComponent(id)}`)
+  await api.delete(`/teach/documents/${encodeURIComponent(id)}`)
 }
 
 export async function approveKnowledgeDocument(
   id: string,
 ): Promise<import('../types').KnowledgeDocument> {
-  const { data } = await api.post(`/learn/documents/${encodeURIComponent(id)}/approve`)
+  const { data } = await api.post(`/teach/documents/${encodeURIComponent(id)}/approve`)
   return data
 }
 
@@ -551,6 +554,6 @@ export async function rejectKnowledgeDocument(
   id: string,
   note = '',
 ): Promise<import('../types').KnowledgeDocument> {
-  const { data } = await api.post(`/learn/documents/${encodeURIComponent(id)}/reject`, { note })
+  const { data } = await api.post(`/teach/documents/${encodeURIComponent(id)}/reject`, { note })
   return data
 }
