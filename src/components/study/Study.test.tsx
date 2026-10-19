@@ -445,6 +445,19 @@ describe('StudyWorkspace', () => {
     expect(await screen.findByText(/Free messages used for today/)).toBeTruthy()
   })
 
+  it('explains missing server routes, pauses coaching, and retries successfully', async () => {
+    study.fetchStudyPath.mockRejectedValueOnce({ isAxiosError: true, response: { status: 404 } })
+      .mockResolvedValueOnce(path())
+    render(<StudyWorkspace {...props} mode="explain" />)
+    expect(await screen.findByText(/connected server does not support Study Room/)).toBeTruthy()
+    expect(screen.queryByLabelText('Your question')).toBeNull()
+    fireEvent.click(screen.getByText('Retry loading path'))
+    expect(await screen.findByRole('heading', { name: 'Values and arithmetic' })).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByLabelText('Your question')).toBeTruthy()
+    expect(study.fetchStudyPath).toHaveBeenCalledTimes(2)
+  })
+
   it('hides the allowance when it cannot be loaded and ignores late path results', async () => {
     let resolve: (v: StudyPath) => void = () => {}
     let reject: (e: Error) => void = () => {}
