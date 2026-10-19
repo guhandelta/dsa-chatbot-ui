@@ -38,7 +38,7 @@ export function App() {
             to="/chat"
             className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
           >
-            Chat with your tutor
+            Open the Study Room
           </Link>
           {canAccessTeaching(user) && <Link
             to="/registry"
@@ -59,10 +59,10 @@ export function App() {
 
       <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          ['Learn Mode', 'Chat with a DSA tutor grounded in a curated problem knowledge base.'],
+          ['Study Room', 'Explain, quiz, debug, compare languages and get your next step, tied to where you are in your path.'],
           ['Practice Mode', 'Write code in a Monaco editor and submit it for structured review.'],
           ['Multi-Model', 'Switch between OpenAI, Claude, and Gemini per request.'],
-          ['Peppercorns', 'Simple usage-based currency: 1 per chat message, 5 per code analysis.'],
+          ['Peppercorns', '5 free Study Room messages a day, free mentor hints at tiers 1-2, 5 per code analysis, and peppercorns back for solving on your own.'],
         ].map(([title, desc], index) => (
           <article
             key={title}

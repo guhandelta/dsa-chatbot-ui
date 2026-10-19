@@ -16,10 +16,10 @@ import { App as HomePage } from '../routes/index'
 
 afterEach(cleanup)
 
-it.each([null, 'student', 'instructor', 'admin'] as const)('shows Chat to %s and staff navigation only to staff', (role) => {
+it.each([null, 'student', 'instructor', 'admin'] as const)('shows the Study Room to %s and staff navigation only to staff', (role) => {
   auth.role = role
   render(<Header />)
-  expect(screen.getByRole('link', { name: 'Chat' }).getAttribute('href')).toBe('/chat')
+  expect(screen.getByRole('link', { name: 'Study Room' }).getAttribute('href')).toBe('/chat')
   const staff = role === 'admin' || role === 'instructor'
   expect(Boolean(screen.queryByRole('link', { name: 'Train' }))).toBe(staff)
   expect(Boolean(screen.queryByRole('link', { name: 'Tech Board' }))).toBe(staff)
@@ -29,6 +29,6 @@ it.each([null, 'student', 'instructor', 'admin'] as const)('shows Chat to %s and
 it.each([null, 'student', 'instructor', 'admin'] as const)('keeps home page links consistent for %s', (role) => {
   auth.role = role
   render(<HomePage />)
-  expect(screen.getByRole('link', { name: 'Chat with your tutor' }).getAttribute('href')).toBe('/chat')
+  expect(screen.getByRole('link', { name: 'Open the Study Room' }).getAttribute('href')).toBe('/chat')
   expect(Boolean(screen.queryByRole('link', { name: 'Tech Board' }))).toBe(role === 'admin' || role === 'instructor')
 })

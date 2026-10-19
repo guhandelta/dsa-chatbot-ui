@@ -22,20 +22,20 @@ beforeEach(() => { pilot.enabled = false; pilot.failed = false; pilot.role = 'ad
 afterEach(cleanup)
 describe('Reference library learning', () => {
   it('keeps ordinary retrieval as the default and hides an unavailable experiment', () => {
-    render(<ChatPage />)
+    render(<ChatPage initialMode="chat" />)
     expect(screen.queryByLabelText(/Try experimental retrieval/)).toBeNull()
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!).retrievalMode).toBe('standard')
   })
   it('does not use cached capability data after a capability lookup failure', () => {
     pilot.enabled = true
     pilot.failed = true
-    render(<ChatPage />)
+    render(<ChatPage initialMode="chat" />)
     expect(screen.queryByLabelText(/Try experimental retrieval/)).toBeNull()
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!).retrievalMode).toBe('standard')
   })
   it('lets an authorized pilot user opt in and switch back', () => {
     pilot.enabled = true
-    render(<ChatPage />)
+    render(<ChatPage initialMode="chat" />)
     const toggle = screen.getByLabelText(/Try experimental retrieval/)
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!).retrievalMode).toBe('standard')
     fireEvent.click(toggle)
@@ -44,7 +44,7 @@ describe('Reference library learning', () => {
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!).retrievalMode).toBe('standard')
   })
   it('sends the selected framework and its language to a new chat scope', () => {
-    render(<ChatPage />)
+    render(<ChatPage initialMode="chat" />)
     expect(screen.queryByRole('option', { name: /python flask/ })).toBeNull()
     fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'python' } })
     fireEvent.change(screen.getByLabelText('Learning material (optional)'), { target: { value: 'python-flask' } })
@@ -54,7 +54,7 @@ describe('Reference library learning', () => {
     expect(screen.getByText(/not a verified workout/)).toBeTruthy()
   })
   it('returns to the primary DSA scope without a reference subject', () => {
-    render(<ChatPage />)
+    render(<ChatPage initialMode="chat" />)
     fireEvent.change(screen.getByLabelText('Learning material (optional)'), { target: { value: 'spring-mvc' } })
     fireEvent.change(screen.getByLabelText('Learning material (optional)'), { target: { value: '' } })
     const props = JSON.parse(screen.getByTestId('chat-props').textContent!)
@@ -63,7 +63,7 @@ describe('Reference library learning', () => {
     expect(screen.getByLabelText('Language')).toBeTruthy()
   })
   it('resets the reference scope when the language changes', () => {
-    render(<ChatPage />)
+    render(<ChatPage initialMode="chat" />)
     fireEvent.change(screen.getByLabelText('Learning material (optional)'), { target: { value: 'spring-mvc' } })
     fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'python' } })
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!)).toMatchObject({ language: 'python', track: 'language' })
@@ -71,18 +71,18 @@ describe('Reference library learning', () => {
   })
   it('uses automatic models for students and keeps staff selection available', () => {
     pilot.role = 'student'
-    const { unmount } = render(<ChatPage />)
+    const { unmount } = render(<ChatPage initialMode="chat" />)
     expect(screen.queryByText('Model selector')).toBeNull()
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!).provider).toBe('auto')
     unmount()
     pilot.role = 'instructor'
-    render(<ChatPage />)
+    render(<ChatPage initialMode="chat" />)
     expect(screen.getByText('Model selector')).toBeTruthy()
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!).provider).toBe('gemini')
   })
   it('hides the material selector when no collection exists for the current language', () => {
     pilot.languages = ['javascript']
-    render(<ChatPage />)
+    render(<ChatPage initialMode="chat" />)
     expect(screen.queryByLabelText('Learning material (optional)')).toBeNull()
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!).language).toBe('javascript')
   })
@@ -90,7 +90,7 @@ describe('Reference library learning', () => {
 
 it('does not mount the tutor when no languages are available', () => {
   pilot.languages = []
-  render(<ChatPage />)
+  render(<ChatPage initialMode="chat" />)
   expect(screen.queryByTestId('chat-props')).toBeNull()
   expect(screen.getByText(/No learning language is active/)).toBeTruthy()
 })

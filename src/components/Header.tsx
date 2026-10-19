@@ -55,7 +55,7 @@ export default function Header() {
             Learn &amp; Practice
           </Link>
           <Link to="/chat" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
-            Chat
+            Study Room
           </Link>
           {canAccessTeaching(user) && <Link to="/registry" className="nav-link" activeProps={{ className: 'nav-link is-active' }}>
             Tech Board

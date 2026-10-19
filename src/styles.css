@@ -1016,3 +1016,33 @@ a {
   padding: 0.6rem 0.8rem;
   color: var(--sea-ink);
 }
+
+/* ---------- Study Room ---------- */
+
+.quiz-code {
+  overflow-x: auto;
+  border-radius: 0.6rem;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  background: rgba(10, 25, 30, 0.92);
+  color: #d9f3ee;
+  font-size: 0.82rem;
+  white-space: pre;
+}
+.quiz-choices { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.quiz-choice {
+  display: flex; gap: 0.6rem; align-items: center;
+  border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.5rem 0.75rem;
+  background: var(--surface); cursor: pointer; font-size: 0.88rem;
+}
+.quiz-input {
+  width: 100%; border: 1px solid var(--line); background: var(--surface-strong); color: var(--sea-ink);
+  border-radius: 0.6rem; padding: 0.55rem 0.8rem; font-size: 0.9rem;
+}
+.quiz-feedback { border-radius: 0.75rem; padding: 0.75rem 0.9rem; border: 1px solid var(--line); }
+.quiz-feedback.is-correct { border-color: rgba(61, 138, 95, 0.5); background: rgba(61, 138, 95, 0.1); }
+.quiz-feedback.is-wrong { border-color: rgba(176, 125, 58, 0.5); background: rgba(176, 125, 58, 0.1); }
+.study-table-wrap { overflow-x: auto; }
+.study-table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+.study-table th, .study-table td { border: 1px solid var(--line); padding: 0.35rem 0.55rem; text-align: left; vertical-align: top; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

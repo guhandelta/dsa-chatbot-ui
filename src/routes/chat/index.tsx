@@ -1,15 +1,33 @@
-// Learn mode: conversational RAG tutoring. Auth-gated.
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+// The Study Room: a coach tied to where the learner is in their path, with
+// five modes plus the open tutor. Auth-gated. The URL stays /chat.
+import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { fetchChatCapabilities, fetchReferenceSubjects, getApiErrorMessage } from '../../lib/api'
-import { ChatWindow } from '../../components/ChatWindow'
+import { getApiErrorMessage } from '../../lib/api'
 import { LanguageSelector } from '../../components/LanguageSelector'
 import { ProviderSelector } from '../../components/ProviderSelector'
+import { OpenChat } from '../../components/study/OpenChat'
+import { StudyWorkspace } from '../../components/study/StudyWorkspace'
 import { hasToken, useAuth } from '../../lib/auth'
 import { useLanguageAccess } from '../../lib/languageAccess'
+import type { StudyMode } from '../../lib/studyApi'
 import type { Provider } from '../../types'
+
+export const STUDY_MODES: { id: StudyMode; label: string; blurb: string }[] = [
+  { id: 'explain', label: 'Explain', blurb: 'Ask about the concept you are learning now.' },
+  { id: 'quiz', label: 'Quiz me', blurb: 'A short mixed-format quiz, graded on the server.' },
+  { id: 'debug', label: 'Debug with me', blurb: 'Find the cause of an error yourself, one question at a time.' },
+  { id: 'compare', label: 'Compare languages', blurb: 'See the same idea side by side in two languages.' },
+  { id: 'next', label: 'What next?', blurb: 'One recommended step, from your progress and weak spots.' },
+  { id: 'chat', label: 'Open chat', blurb: 'The free-form tutor and reference collections.' },
+]
+
+export function parseSearch(search: Record<string, unknown>): { mode?: StudyMode; focus?: string } {
+  return {
+    ...(STUDY_MODES.some((m) => m.id === search.mode) ? { mode: search.mode as StudyMode } : {}),
+    ...(typeof search.focus === 'string' && search.focus ? { focus: search.focus } : {}),
+  }
+}
 
 export const Route = createFileRoute('/chat/')({
   beforeLoad: () => {
@@ -17,67 +35,65 @@ export const Route = createFileRoute('/chat/')({
       throw redirect({ to: '/login' })
     }
   },
-  component: ChatPage,
+  validateSearch: parseSearch,
+  component: StudyRoomRoute,
 })
 
-export function ChatPage() {
+function StudyRoomRoute() {
+  const search = Route.useSearch()
+  const navigate = useNavigate()
+  return <ChatPage initialMode={search.mode ?? 'explain'} initialFocus={search.focus}
+    onNavigate={(mode, focus) => void navigate({ to: '/chat', search: { mode, ...(focus ? { focus } : {}) } })} />
+}
+
+interface PageProps {
+  initialMode?: StudyMode
+  initialFocus?: string
+  onNavigate?: (mode: StudyMode, focus?: string) => void
+}
+
+export function ChatPage({ initialMode = 'explain', initialFocus, onNavigate }: PageProps) {
   const [provider, setProvider] = useState<Provider>('gemini')
   const { user } = useAuth()
   const student = user?.role === 'student'
   const [language, setLanguage] = useState(user?.preferred_language ?? '')
+  const [mode, setMode] = useState<StudyMode>(initialMode)
+  const [focus, setFocus] = useState<string | undefined>(initialFocus)
 
   const access = useLanguageAccess()
   const accessEndpointMissing = isAxiosError(access.error) && access.error.response?.status === 404
   const effectiveLanguage = access.data?.languages.includes(language) ? language : access.data?.preferred_language ?? ''
-  const defaultTrack = ['javascript', 'java'].includes(effectiveLanguage) ? 'dsa' : 'language'
-  const [subjectId, setSubjectId] = useState('')
-  const [agentic, setAgentic] = useState(false)
-  const capabilities = useQuery({ queryKey: ['chat-capabilities', user?.id], queryFn: fetchChatCapabilities })
-  const pilotAvailable = capabilities.data?.agentic_retrieval && !capabilities.isError
-  const retrievalMode = pilotAvailable && agentic ? 'agentic' : 'standard'
-  const library = useQuery({ queryKey: ['reference-subjects', user?.id], queryFn: fetchReferenceSubjects })
-  const references = library.isError || access.isError ? [] : (library.data ?? []).filter(
-    (item) => item.language === effectiveLanguage && item.retrievable_records > 0 && access.data?.languages.includes(item.language))
-  const subject = references.find((item) => item.id === subjectId)
   useEffect(() => { if (access.data && effectiveLanguage !== language) setLanguage(effectiveLanguage) }, [access.data, effectiveLanguage, language])
+  const go = (next: StudyMode, nextFocus?: string) => {
+    setMode(next)
+    setFocus(nextFocus)
+    onNavigate?.(next, nextFocus)
+  }
+  const current = STUDY_MODES.find((m) => m.id === mode)!
 
   return (
     <main className="page-wrap px-4 py-8">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="island-kicker mb-1">Learn mode</p>
+          <p className="island-kicker mb-1">Study Room</p>
           <h1 className="display-title m-0 text-3xl font-bold text-[var(--sea-ink)]">
-            Learn with your AI tutor
+            Study Room
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[var(--sea-ink-soft)]">
-            Get unstuck with a hint, learn a concept, trace an approach, or practice with a short quiz. You stay in control of how much help you get. Each sent message costs 1 peppercorn.
+            A coach that knows where you are in your path and ends every session with something concrete. You get 5 free messages a day; after that each message costs 1 peppercorn. Quizzes and What next are always free.
           </p>
         </div>
         <div className="controls">
           {access.data && !student && <ProviderSelector value={provider} onChange={setProvider} />}
-          {access.data && <LanguageSelector value={effectiveLanguage} onChange={(value) => { setLanguage(value); setSubjectId('') }} />}
+          {access.data && <LanguageSelector value={effectiveLanguage} onChange={(value) => { setLanguage(value); setFocus(undefined) }} />}
         </div>
       </div>
-      {student && <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">AI selection is automatic for each question. Choose your learning language and ask for the help you need.</p>}
-      {references.length > 0 && <section className="mb-4 rounded-xl border border-[var(--line)] p-4">
-        <label className="block text-sm font-semibold" htmlFor="reference-subject">Learning material (optional)</label>
-        <select id="reference-subject" value={subject?.id ?? ''} onChange={(event) => setSubjectId(event.target.value)} className="mt-2 rounded-lg border p-2">
-          <option value="">General tutor</option>
-          {references.map((item) => (
-            <option key={item.id} value={item.id}>{item.id.replaceAll('-', ' ')} ({item.retrievable_records} references)</option>
-          ))}
-        </select>
-        {subject && <p className="mt-2 text-sm">Reference learning in {subject.language}. This material is not a verified workout; framework and hardware examples need their own execution checks.</p>}
-        <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">Focus answers on a specific reference collection in your selected language, or use the general tutor. Changing the language or collection starts a new conversation.</p>
-      </section>}
-      {access.data && library.isError && <p className="mb-4 text-sm" role="status">Optional learning material couldn’t be loaded. The general tutor is still available.</p>}
-      {pilotAvailable && (
-        <label className="mb-4 block text-sm">
-          <input type="checkbox" checked={agentic} onChange={(e) => setAgentic(e.target.checked)} />{' '}
-          Try experimental retrieval
-          <span className="ml-2">May take longer; references and answers still need review.</span>
-        </label>
-      )}
+      {student && <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">AI selection is automatic for each question. Choose your learning language and a mode.</p>}
+      <nav className="lang-tabs mb-2" aria-label="Study Room modes">
+        {STUDY_MODES.map((m) => <button key={m.id} type="button" aria-pressed={mode === m.id}
+          className={`lang-tab ${mode === m.id ? 'is-active' : ''}`} onClick={() => go(m.id, focus)}>{m.label}</button>)}
+      </nav>
+      <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">{current.blurb}</p>
       {access.isLoading && <section className="rounded-xl border border-[var(--line)] p-5" role="status">Checking your learning access…</section>}
       {access.isError && <section className="rounded-xl border border-amber-300/40 bg-amber-950/20 p-5" role="alert">
         <h2 className="m-0 text-lg font-semibold">We couldn’t check your learning access</h2>
@@ -92,7 +108,12 @@ export function ChatPage() {
         <p className="my-2">For students, an active subscription must include a language. Instructors need a teaching assignment or uploaded learning material.</p>
         <Link className="font-semibold underline" to="/profile">Review your account and subscription</Link>
       </section>}
-      {!access.isError && effectiveLanguage && <ChatWindow retrievalMode={retrievalMode} key={`${subject?.id ?? `dsa:${effectiveLanguage}`}:${retrievalMode}`} provider={student ? 'auto' : provider} language={effectiveLanguage} track={subject ? 'language' : defaultTrack} subject={subject?.id} chatCost={1} />}
+      {!access.isError && effectiveLanguage && (mode === 'chat'
+        ? <OpenChat key={effectiveLanguage} language={effectiveLanguage} languages={access.data?.languages ?? []}
+            provider={student ? 'auto' : provider} userId={user?.id} />
+        : <StudyWorkspace key={effectiveLanguage} language={effectiveLanguage} languages={access.data?.languages ?? []}
+            mode={mode} focus={focus} provider={student ? 'auto' : provider}
+            onFocus={(nodeId) => { setFocus(nodeId); onNavigate?.(mode, nodeId) }} onOpen={go} />)}
     </main>
   )
 }
