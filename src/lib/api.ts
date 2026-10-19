@@ -405,6 +405,11 @@ export interface PracticeReply {
   step_back: import('../types').MentorResponse['step_back_offer']
   peppercorns_remaining: number | null
   current_code?: string
+  // Hint pricing: tiers 1-2 are free, tiers 3-4 are charged.
+  peppercorns_charged?: number
+  next_hint_cost?: number
+  // Earn-back peppercorns from a passing evaluation.
+  rewards?: { key: string; amount: number; reason: string; balance: number }[]
 }
 export async function startPractice(problemId: string, language: string, provider: Provider): Promise<PracticeReply> {
   const { data } = await reliablePost<PracticeReply>('/practice/sessions', { problem_id: problemId, language, provider })

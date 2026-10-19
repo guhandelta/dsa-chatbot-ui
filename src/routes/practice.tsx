@@ -215,6 +215,8 @@ export function PracticeWorkspace({
         recalled_moment: value.recalled_moment ?? null,
         step_back_offer: value.step_back,
         peppercorns_remaining: value.peppercorns_remaining ?? 0,
+        peppercorns_charged: value.peppercorns_charged ?? 0,
+        next_hint_cost: value.next_hint_cost,
       };
     } finally {
       setLoading(false);
@@ -288,8 +290,19 @@ export function PracticeWorkspace({
         </button>
         <p className="cost-note mt-2">
           Evaluation costs 5 peppercorns. A completed test evaluation unlocks
-          the optional solution.
+          the optional solution. Solving it for the first time without hints
+          3–4 earns 3 peppercorns back.
         </p>
+        {practice?.rewards?.map((reward) => (
+          <p key={reward.key} className="mt-2 text-sm" role="status">
+            +{reward.amount} peppercorns{" "}
+            {reward.reason === "earn:independent_solve"
+              ? "for solving it on your own"
+              : reward.reason === "earn:stage"
+                ? "for completing a stage"
+                : "for your learning streak"}
+          </p>
+        ))}
       </section>
       <div className="mt-4">
         <MentorPanel

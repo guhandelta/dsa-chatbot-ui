@@ -250,3 +250,33 @@ it("restores a graph awaiting reflection and saves it through the graph", async 
     "I represented repeated costs with multiplication.",
   );
 });
+
+it("announces earn-back rewards from a passing evaluation", async () => {
+  vi.mocked(practiceAction).mockResolvedValue({
+    ...baseReply,
+    awaiting: "reflection",
+    solution_available: true,
+    rewards: [
+      { key: "solve:javascript:x", amount: 3, reason: "earn:independent_solve", balance: 48 },
+      { key: "stage:javascript:1", amount: 10, reason: "earn:stage", balance: 58 },
+      { key: "streak:2026-10-18", amount: 5, reason: "earn:streak", balance: 63 },
+    ],
+  });
+  show();
+  expect(screen.getByText(/earns 3 peppercorns back/)).toBeTruthy();
+  await submit();
+  expect(await screen.findByText("+3 peppercorns for solving it on your own")).toBeTruthy();
+  expect(screen.getByText("+10 peppercorns for completing a stage")).toBeTruthy();
+  expect(screen.getByText("+5 peppercorns for your learning streak")).toBeTruthy();
+});
+
+it("passes hint pricing from the practice graph to the mentor", async () => {
+  vi.mocked(practiceAction).mockResolvedValue({
+    ...baseReply, hint_tier: 3, tier_label: "Recall", peppercorns_charged: 2, next_hint_cost: 2,
+  });
+  show();
+  const ask = await screen.findByRole("button", { name: "Ask practice hint" });
+  await waitFor(() => expect((ask as HTMLButtonElement).disabled).toBe(false));
+  await act(async () => { fireEvent.click(ask); });
+  await waitFor(() => expect(practiceAction).toHaveBeenCalledWith("practice-one", "hint", expect.any(String), "My reasoning"));
+});

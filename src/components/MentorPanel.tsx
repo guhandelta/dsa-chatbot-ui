@@ -3,6 +3,7 @@
 // that the mentor responds to THEIR thinking, not to the problem in general.
 import { useEffect, useState } from "react";
 import { askMentor, fetchEntitlement, getApiErrorMessage } from "../lib/api";
+import { fetchNextHint } from "../lib/studyApi";
 import { useAuth } from "../lib/auth";
 import type { Entitlement, MentorResponse, Provider } from "../types";
 
@@ -36,6 +37,15 @@ export function MentorPanel({
   const [turns, setTurns] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nextCost, setNextCost] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchNextHint(problemId, language)
+      .then((price) => { if (active) setNextCost(price.cost); })
+      .catch(() => { if (active) setNextCost(null); });
+    return () => { active = false; };
+  }, [problemId, language]);
 
   useEffect(() => {
     fetchEntitlement(language)
@@ -67,6 +77,7 @@ export function MentorPanel({
           });
       setTurns((prev) => [...prev, { reasoning: text, response }]);
       setBalance(response.peppercorns_remaining);
+      if (response.next_hint_cost !== undefined) setNextCost(response.next_hint_cost);
       setReasoning("");
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -207,7 +218,13 @@ export function MentorPanel({
               ? "I need another nudge"
               : "Ask"}
         </button>
-        <span className="cost-note m-0">2 peppercorns per nudge.</span>
+        <span className="cost-note m-0">
+          {nextCost === null
+            ? "Hints 1–2 are free on every problem; hints 3–4 cost 2 peppercorns."
+            : nextCost === 0
+              ? "This nudge is free (hints 1–2 on every problem are free)."
+              : `This nudge costs ${nextCost} peppercorns (hints 3–4 are charged).`}
+        </span>
       </div>
     </section>
   );

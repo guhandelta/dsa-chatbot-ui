@@ -176,6 +176,9 @@ export interface MentorResponse {
     message: string
   } | null
   peppercorns_remaining: number
+  // Tiers 1-2 are free on every problem; tiers 3-4 are charged.
+  peppercorns_charged?: number
+  next_hint_cost?: number
 }
 
 export interface Entitlement {
