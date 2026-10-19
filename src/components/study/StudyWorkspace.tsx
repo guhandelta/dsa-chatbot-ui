@@ -47,7 +47,7 @@ export function StudyWorkspace({ language, languages, mode, focus, provider, onF
       {mode === 'explain' && <ExplainMode {...shared} />}
       {mode === 'debug' && <DebugMode {...shared} />}
       {mode === 'compare' && <CompareMode {...shared} languages={languages} />}
-      {mode === 'quiz' && <QuizMode language={language} focusId={focus ?? node?.id} onComplete={load} />}
+      {mode === 'quiz' && <QuizMode language={language} focusId={focus} onComplete={load} />}
       {mode === 'next' && <NextMode language={language} onOpen={onOpen} />}
     </section>
   </div>

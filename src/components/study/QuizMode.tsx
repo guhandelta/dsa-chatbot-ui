@@ -1,6 +1,6 @@
 // Quiz me: 3-5 server-graded questions for the focused node, one at a time,
 // in six formats. Answers never reach the browser until after answering.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getApiErrorMessage } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { answerQuiz, startQuiz, type QuizItem, type QuizResult, type QuizStarted } from '../../lib/studyApi'
@@ -76,30 +76,41 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
   const [results, setResults] = useState<QuizResult[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  useEffect(() => { setQuiz(null); setResults([]); setResult(null) }, [language, focusId])
+  useEffect(() => { setQuiz(null); setResults([]); setResult(null); setError(null) }, [language, focusId])
+  const session = useRef(0)
+  useEffect(() => {
+    session.current += 1
+    setBusy(false)
+    return () => { session.current += 1 }
+  }, [language, focusId])
   const begin = async () => {
+    const requestSession = session.current
     setBusy(true); setError(null)
     try {
-      setQuiz(await startQuiz(language, focusId, count)); setIndex(0); setResult(null); setResults([])
+      const started = await startQuiz(language, focusId, count)
+      if (requestSession !== session.current) return
+      setQuiz(started); setIndex(0); setResult(null); setResults([])
     } catch (err) {
-      setError(getApiErrorMessage(err))
+      if (requestSession === session.current) setError(getApiErrorMessage(err))
     } finally {
-      setBusy(false)
+      if (requestSession === session.current) setBusy(false)
     }
   }
   const submit = async (response: string | number) => {
+    const requestSession = session.current
     const current = quiz!  // answers are only possible while a quiz is shown
     setBusy(true); setError(null)
     try {
       const graded = await answerQuiz(current.quiz_id, current.items[index].id, response)
+      if (requestSession !== session.current) return
       setResult(graded); setResults((prev) => [...prev, graded])
       // Stage and streak rewards credit peppercorns; keep the header in sync.
       if (graded.rewards.length) setBalance(graded.rewards[graded.rewards.length - 1].balance)
       if (graded.complete) onComplete?.()
     } catch (err) {
-      setError(getApiErrorMessage(err))
+      if (requestSession === session.current) setError(getApiErrorMessage(err))
     } finally {
-      setBusy(false)
+      if (requestSession === session.current) setBusy(false)
     }
   }
   if (!quiz) return <section className="island-shell rounded-2xl p-4">
@@ -124,7 +135,7 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
     {result && !finished && <button type="button" className="primary-btn mt-3" onClick={() => { setIndex(index + 1); setResult(null) }}>Next question</button>}
     {finished && <div className="mt-4" aria-label="Quiz summary">
       <h3 className="m-0 text-base font-bold">Score: {Math.round((score / quiz.total) * 100)}% ({results.filter((r) => r.correct).length} of {quiz.total} correct)</h3>
-      <p className="my-1 text-sm">{score / quiz.total >= 2 / 3 ? 'Checks mastered for this node.' : 'Score at least 2 of 3 to master this node.'}</p>
+      <p className="my-1 text-sm">{score / quiz.total >= 2 / 3 ? 'Checks mastered for this node.' : 'Score at least two thirds to pass these checks.'}</p>
       {weak.length > 0 && <p className="my-1 text-sm">Concepts to review: {weak.join(', ')}</p>}
       {earned.map((r) => <p key={r.key} className="my-1 text-sm" role="status">+{r.amount} peppercorns: {r.reason === 'earn:stage' ? 'stage completed' : 'streak'}</p>)}
       <button type="button" className="mini-btn mt-2" onClick={() => void begin()}>Another quiz</button>

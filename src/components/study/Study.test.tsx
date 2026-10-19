@@ -304,7 +304,7 @@ describe('Quiz mode', () => {
     fireEvent.click(screen.getByText('Check answer'))
     expect(await screen.findByLabelText('Quiz summary')).toBeTruthy()
     expect(screen.getByText(/Score: 58% \(3 of 6 correct\)/)).toBeTruthy()
-    expect(screen.getByText('Score at least 2 of 3 to master this node.')).toBeTruthy()
+    expect(screen.getByText('Score at least two thirds to pass these checks.')).toBeTruthy()
     expect(screen.getByText('Concepts to review: c2, c4, c5')).toBeTruthy()
     expect(screen.getByText('+10 peppercorns: stage completed')).toBeTruthy()
     expect(screen.getByText('+5 peppercorns: streak')).toBeTruthy()
@@ -456,3 +456,97 @@ describe('StudyWorkspace', () => {
     expect(screen.queryByText(/free Study Room messages/)).toBeNull()
   })
 })
+
+
+describe('Study session regressions', () => {
+  it.each(['success', 'failure'])('ignores a stale conversation %s and allows a new request', async (outcome) => {
+    let resolve!: (value: StudyReply) => void
+    let reject!: (error: Error) => void
+    study.sendStudyMessage.mockReturnValueOnce(new Promise((yes, no) => { resolve = yes; reject = no }))
+      .mockResolvedValueOnce(reply({ answer: 'New focus answer' }))
+    const props = { language: 'python', provider: 'auto' as const, onAllowance: vi.fn() }
+    const { rerender } = render(<ExplainMode {...props} focusId="old" />)
+    fireEvent.change(screen.getByLabelText('Your question'), { target: { value: 'old question' } })
+    fireEvent.click(screen.getByText('Ask'))
+    rerender(<ExplainMode {...props} focusId="new" />)
+    fireEvent.change(screen.getByLabelText('Your question'), { target: { value: 'new question' } })
+    fireEvent.click(screen.getByText('Ask'))
+    await screen.findByText('New focus answer')
+    await act(async () => { if (outcome === 'success') resolve(reply({ answer: 'Stale answer' })); else reject(new Error('Stale error')) })
+    expect(screen.queryByText('Stale answer')).toBeNull()
+    expect(screen.queryByText('Stale error')).toBeNull()
+    expect(props.onAllowance).toHaveBeenCalledTimes(1)
+    expect(auth.setBalance).toHaveBeenCalledTimes(1)
+  })
+
+  it('pins automatic conversation focus for follow-ups', async () => {
+    study.sendStudyMessage.mockResolvedValue(reply())
+    render(<ExplainMode language="python" provider="auto" onAllowance={vi.fn()} />)
+    for (const question of ['first', 'follow-up']) {
+      fireEvent.change(screen.getByLabelText('Your question'), { target: { value: question } })
+      fireEvent.click(screen.getByText('Ask'))
+      await waitFor(() => expect((screen.getByLabelText('Your question') as HTMLInputElement).value).toBe(''))
+    }
+    expect(study.sendStudyMessage).toHaveBeenLastCalledWith(expect.objectContaining({ threadId: 't1', focusId: 'python:stage-01' }))
+  })
+
+  it('resets comparison context and discards a pending reply when the second language changes', async () => {
+    let resolve!: (value: StudyReply) => void
+    study.sendStudyMessage.mockReturnValueOnce(new Promise((yes) => { resolve = yes }))
+      .mockResolvedValueOnce(reply({ answer: 'Rust comparison' }))
+    render(<CompareMode language="python" provider="auto" onAllowance={vi.fn()} languages={['python', 'java', 'rust']} />)
+    fireEvent.change(screen.getByLabelText('What to compare'), { target: { value: 'maps' } })
+    fireEvent.click(screen.getByText('Compare'))
+    fireEvent.change(screen.getByLabelText(/Compare Python with/), { target: { value: 'rust' } })
+    fireEvent.change(screen.getByLabelText('What to compare'), { target: { value: 'ownership' } })
+    fireEvent.click(screen.getByText('Compare'))
+    await screen.findByText('Rust comparison')
+    await act(async () => resolve(reply({ answer: 'Old comparison' })))
+    expect(screen.queryByText('Old comparison')).toBeNull()
+    expect(study.sendStudyMessage).toHaveBeenLastCalledWith(expect.objectContaining({ compareLanguage: 'rust', threadId: undefined }))
+  })
+
+  it('keeps a completed automatic quiz summary when the refreshed path advances', async () => {
+    study.fetchStudyPath.mockResolvedValueOnce(path()).mockResolvedValueOnce(path({ current_id: 'python:stage-02' }))
+    study.startQuiz.mockResolvedValue({ quiz_id: 'quiz1', node_id: 'python:stage-01', node_title: 'Values', total: 1, items: [quizItems[0]] })
+    study.answerQuiz.mockResolvedValue(graded({ complete: true, total: 1 }))
+    render(<StudyWorkspace language="python" languages={['python']} mode="quiz" provider="auto" onFocus={vi.fn()} onOpen={vi.fn()} />)
+    await screen.findByRole('heading', { name: 'Values and arithmetic' })
+    fireEvent.click(screen.getByText('Start quiz'))
+    await screen.findByText('Values · question 1 of 1')
+    fireEvent.click(screen.getByLabelText('A'))
+    fireEvent.click(screen.getByText('Check answer'))
+    await screen.findByRole('heading', { name: 'Conditions' })
+    expect(screen.getByLabelText('Quiz summary')).toBeTruthy()
+    fireEvent.click(screen.getByText('Another quiz'))
+    await waitFor(() => expect(study.startQuiz).toHaveBeenCalledTimes(2))
+    expect(study.startQuiz).toHaveBeenLastCalledWith('python', undefined, 4)
+  })
+})
+
+
+describe('Quiz session isolation', () => {
+  it.each(['start', 'answer'])('ignores a late quiz %s after explicit focus changes', async (phase) => {
+    let resolve!: (value: unknown) => void
+    const pending = new Promise((yes) => { resolve = yes })
+    const started = { quiz_id: 'old', node_id: 'old', node_title: 'Old quiz', total: 1, items: [quizItems[0]] }
+    study.startQuiz.mockReturnValueOnce(phase === 'start' ? pending : Promise.resolve(started))
+    study.answerQuiz.mockReturnValueOnce(pending)
+    const onComplete = vi.fn()
+    const { rerender } = render(<QuizMode language="python" focusId="old" onComplete={onComplete} />)
+    fireEvent.click(screen.getByText('Start quiz'))
+    if (phase === 'answer') {
+      await screen.findByText('Old quiz · question 1 of 1')
+      fireEvent.click(screen.getByLabelText('A'))
+      fireEvent.click(screen.getByText('Check answer'))
+    }
+    rerender(<QuizMode language="python" focusId="new" onComplete={onComplete} />)
+    await act(async () => resolve(phase === 'start' ? started : graded({ complete: true, rewards: [{ key: 'old', amount: 10, reason: 'earn:stage', balance: 100 }] })))
+    expect(screen.queryByText('Old quiz · question 1 of 1')).toBeNull()
+    expect(screen.queryByLabelText('Quiz summary')).toBeNull()
+    expect((screen.getByText('Start quiz') as HTMLButtonElement).disabled).toBe(false)
+    expect(onComplete).not.toHaveBeenCalled()
+    expect(auth.setBalance).not.toHaveBeenCalled()
+  })
+})
+

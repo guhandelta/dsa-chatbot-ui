@@ -1,6 +1,6 @@
 // Explain, Debug with me and Compare languages: Study Room modes that talk to
 // the coach. Each one keeps its own thread and reports the free allowance.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getApiErrorMessage } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { LANGUAGE_LABELS } from '../../lib/languageAccess'
@@ -17,26 +17,34 @@ interface Shared {
   onAllowance: (allowance: Allowance) => void
 }
 
-function useStudyThread(mode: MessageMode, { language, focusId, provider, onAllowance }: Shared) {
+function useStudyThread(mode: MessageMode, { language, focusId, provider, onAllowance }: Shared, context?: string) {
   const { setBalance } = useAuth()
   const [turns, setTurns] = useState<Turn[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const threadId = turns.at(-1)?.reply.thread_id
-  useEffect(() => { setTurns([]); setError(null) }, [language, focusId, mode])
+  const session = useRef(0)
+  useEffect(() => {
+    session.current += 1
+    setTurns([]); setError(null); setLoading(false)
+    return () => { session.current += 1 }
+  }, [language, focusId, mode, context])
   const send = async (message: string, extra: { code?: string; error?: string; compareLanguage?: string } = {}) => {
+    const requestSession = session.current
     setLoading(true); setError(null)
     let sent = false
     try {
-      const reply = await sendStudyMessage({ language, mode, message, threadId, focusId, provider, ...extra })
+      const reply = await sendStudyMessage({ language, mode, message, threadId, focusId: focusId ?? turns[0]?.reply.focus.id ?? undefined, provider, ...extra })
+      if (requestSession !== session.current) return false
       setTurns((prev) => [...prev, { id: crypto.randomUUID(), question: message, reply }])
       setBalance(reply.peppercorns_remaining)
       onAllowance(reply.allowance)
       sent = true
     } catch (err) {
+      if (requestSession !== session.current) return false
       setError(getApiErrorMessage(err))
     }
-    setLoading(false)
+    if (requestSession === session.current) setLoading(false)
     return sent
   }
   return { turns, loading, error, send, threadId }
@@ -95,6 +103,12 @@ export function DebugMode(props: Shared) {
   const [fix, setFix] = useState('')
   const [logged, setLogged] = useState<string | null>(null)
   const [resolveError, setResolveError] = useState<string | null>(null)
+  const resolutionSession = useRef(0)
+  useEffect(() => {
+    setLogged(null); setResolveError(null); setFix('')
+    resolutionSession.current += 1
+    return () => { resolutionSession.current += 1 }
+  }, [props.language, props.focusId])
   const latest = thread.turns.at(-1)?.reply
   const ready = code.trim() && failure.trim() && thinking.trim()
   // The button is disabled until code, error and reasoning are filled in.
@@ -103,12 +117,14 @@ export function DebugMode(props: Shared) {
   }
   const resolve = async () => {
     // Only shown after the first reply (so the thread exists) and enabled once a fix is typed.
+    const requestSession = resolutionSession.current
     setResolveError(null)
     try {
       await resolveDebug(thread.threadId!, fix.trim())
+      if (requestSession !== resolutionSession.current) return
       setLogged(fix.trim()); setFix('')
     } catch (err) {
-      setResolveError(getApiErrorMessage(err))
+      if (requestSession === resolutionSession.current) setResolveError(getApiErrorMessage(err))
     }
   }
   return <section className="island-shell rounded-2xl p-4">
@@ -140,14 +156,14 @@ export function DebugMode(props: Shared) {
 }
 
 export function CompareMode(props: Shared & { languages: string[] }) {
-  const thread = useStudyThread('compare', props)
   const others = props.languages.filter((l) => l !== props.language)
-  const [second, setSecond] = useState(others[0] ?? '')
+  const [selected, setSecond] = useState(others[0] ?? '')
+  const second = others.includes(selected) ? selected : others[0] ?? ''
+  const thread = useStudyThread('compare', props, second)
   const [question, setQuestion] = useState('')
-  useEffect(() => { if (!others.includes(second)) setSecond(others[0] ?? '') }, [others, second])
   const submit = async () => {
     // The input is disabled while a comparison is running.
-    if (!question.trim()) return
+    if (!question.trim() || thread.loading) return
     if (await thread.send(question.trim(), { compareLanguage: second })) setQuestion('')
   }
   if (!others.length) return <section className="island-shell rounded-2xl p-4">
