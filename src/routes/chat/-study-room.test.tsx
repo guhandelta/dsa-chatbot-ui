@@ -103,6 +103,8 @@ describe('Study Room page', () => {
   })
 
   it('parses search params defensively', () => {
+    expect(parseSearch({ mode: 'chat', language: 'python', subject: 'python-flask' })).toEqual({ mode: 'chat', language: 'python', subject: 'python-flask' })
+    expect(parseSearch({ language: '../python', subject: '<script>' })).toEqual({})
     expect(parseSearch({ mode: 'quiz', focus: 'python:stage-01' })).toEqual({ mode: 'quiz', focus: 'python:stage-01' })
     expect(parseSearch({ mode: 'hack', focus: '' })).toEqual({})
     expect(parseSearch({ focus: 3 })).toEqual({})

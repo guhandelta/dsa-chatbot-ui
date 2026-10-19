@@ -22,10 +22,12 @@ export const STUDY_MODES: { id: StudyMode; label: string; blurb: string }[] = [
   { id: 'chat', label: 'Open chat', blurb: 'The free-form tutor and reference collections.' },
 ]
 
-export function parseSearch(search: Record<string, unknown>): { mode?: StudyMode; focus?: string } {
+export function parseSearch(search: Record<string, unknown>): { mode?: StudyMode; focus?: string; language?: string; subject?: string } {
   return {
     ...(STUDY_MODES.some((m) => m.id === search.mode) ? { mode: search.mode as StudyMode } : {}),
     ...(typeof search.focus === 'string' && search.focus ? { focus: search.focus } : {}),
+    ...(typeof search.language === 'string' && /^[a-z][a-z0-9-]{0,31}$/.test(search.language) ? { language: search.language } : {}),
+    ...(typeof search.subject === 'string' && /^[a-z][a-z0-9-]{0,79}$/.test(search.subject) ? { subject: search.subject } : {}),
   }
 }
 
@@ -42,23 +44,25 @@ export const Route = createFileRoute('/chat/')({
 function StudyRoomRoute() {
   const search = Route.useSearch()
   const navigate = useNavigate()
-  return <ChatPage initialMode={search.mode ?? 'explain'} initialFocus={search.focus}
+  return <ChatPage initialMode={search.mode ?? 'explain'} initialFocus={search.focus} initialLanguage={search.language} initialSubject={search.subject}
     onNavigate={(mode, focus) => void navigate({ to: '/chat', search: { mode, ...(focus ? { focus } : {}) } })} />
 }
 
 interface PageProps {
   initialMode?: StudyMode
   initialFocus?: string
+  initialLanguage?: string
+  initialSubject?: string
   onNavigate?: (mode: StudyMode, focus?: string) => void
 }
 
-export function ChatPage({ initialMode = 'explain', initialFocus, onNavigate }: PageProps) {
+export function ChatPage({ initialMode = 'explain', initialFocus, initialLanguage, initialSubject, onNavigate }: PageProps) {
   const [provider, setProvider] = useState<Provider>('gemini')
   const { user } = useAuth()
   const student = user?.role === 'student'
   // A path node id ("python:stage-07") carries its language, so a deep link
   // opens in that language rather than the account's preferred one.
-  const [language, setLanguage] = useState(initialFocus?.split(':')[1] ? initialFocus.split(':')[0] : user?.preferred_language ?? '')
+  const [language, setLanguage] = useState(initialFocus?.split(':')[1] ? initialFocus.split(':')[0] : initialLanguage ?? user?.preferred_language ?? '')
   const [mode, setMode] = useState<StudyMode>(initialMode)
   const [focus, setFocus] = useState<string | undefined>(initialFocus)
   // Back/forward navigation updates route props without remounting the page.
@@ -66,7 +70,8 @@ export function ChatPage({ initialMode = 'explain', initialFocus, onNavigate }: 
     setMode(initialMode)
     setFocus(initialFocus)
     if (initialFocus?.split(':')[1]) setLanguage(initialFocus.split(':')[0])
-  }, [initialMode, initialFocus])
+    else if (initialLanguage) setLanguage(initialLanguage)
+  }, [initialMode, initialFocus, initialLanguage])
 
   const access = useLanguageAccess()
   const accessEndpointMissing = isAxiosError(access.error) && access.error.response?.status === 404
@@ -117,7 +122,7 @@ export function ChatPage({ initialMode = 'explain', initialFocus, onNavigate }: 
         <Link className="font-semibold underline" to="/profile">Review your account and subscription</Link>
       </section>}
       {!access.isError && effectiveLanguage && (mode === 'chat'
-        ? <OpenChat key={effectiveLanguage} language={effectiveLanguage} languages={access.data!.languages}
+        ? <OpenChat key={`${effectiveLanguage}:${initialSubject ?? ''}`} initialSubject={initialSubject} language={effectiveLanguage} languages={access.data!.languages}
             provider={student ? 'auto' : provider} userId={user?.id} />
         : <StudyWorkspace key={effectiveLanguage} language={effectiveLanguage} languages={access.data!.languages}
             mode={mode} focus={focus} provider={student ? 'auto' : provider}

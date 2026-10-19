@@ -21,6 +21,12 @@ import { ChatPage } from './index'
 beforeEach(() => { pilot.enabled = false; pilot.failed = false; pilot.libraryFailed = false; pilot.libraryLoading = false; pilot.role = 'admin'; pilot.languages = ['java', 'python'] })
 afterEach(cleanup)
 describe('Reference library learning', () => {
+  it('opens a collection link from Learn in its language and reference scope', () => {
+    render(<ChatPage initialMode="chat" initialLanguage="python" initialSubject="python-flask" />)
+    expect(JSON.parse(screen.getByTestId('chat-props').textContent!)).toMatchObject({
+      language: 'python', subject: 'python-flask', track: 'language',
+    })
+  })
   it('keeps ordinary retrieval as the default and hides an unavailable experiment', () => {
     render(<ChatPage initialMode="chat" />)
     expect(screen.queryByLabelText(/Try experimental retrieval/)).toBeNull()

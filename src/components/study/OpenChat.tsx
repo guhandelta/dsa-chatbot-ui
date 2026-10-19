@@ -11,11 +11,12 @@ interface Props {
   languages: string[]
   provider: ChatProvider
   userId?: string
+  initialSubject?: string
 }
 
-export function OpenChat({ language, languages, provider, userId }: Props) {
+export function OpenChat({ language, languages, provider, userId, initialSubject }: Props) {
   const defaultTrack = ['javascript', 'java'].includes(language) ? 'dsa' : 'language'
-  const [subjectId, setSubjectId] = useState('')
+  const [subjectId, setSubjectId] = useState(initialSubject ?? '')
   const [agentic, setAgentic] = useState(false)
   const capabilities = useQuery({ queryKey: ['chat-capabilities', userId], queryFn: fetchChatCapabilities })
   const pilotAvailable = capabilities.data?.agentic_retrieval && !capabilities.isError
