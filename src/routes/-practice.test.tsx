@@ -62,13 +62,13 @@ vi.mock("../components/MentorPanel", () => ({
     requestHint,
     disabled,
   }: {
-    requestHint: (r: string) => Promise<unknown>;
+    requestHint: (r: string, maxCost?: number) => Promise<unknown>;
     disabled: boolean;
   }) => (
     <button
       disabled={disabled}
       onClick={() => {
-        void requestHint("My reasoning").catch(() => {});
+        void requestHint("My reasoning", 2).catch(() => {});
       }}
     >
       Ask practice hint
@@ -216,6 +216,7 @@ it("routes hints through the active graph session", async () => {
     "hint",
     expect.any(String),
     "My reasoning",
+    2,
   );
 });
 
@@ -278,5 +279,5 @@ it("passes hint pricing from the practice graph to the mentor", async () => {
   const ask = await screen.findByRole("button", { name: "Ask practice hint" });
   await waitFor(() => expect((ask as HTMLButtonElement).disabled).toBe(false));
   await act(async () => { fireEvent.click(ask); });
-  await waitFor(() => expect(practiceAction).toHaveBeenCalledWith("practice-one", "hint", expect.any(String), "My reasoning"));
+  await waitFor(() => expect(practiceAction).toHaveBeenCalledWith("practice-one", "hint", expect.any(String), "My reasoning", 2));
 });

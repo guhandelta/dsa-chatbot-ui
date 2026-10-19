@@ -242,6 +242,7 @@ export async function setPreferredLanguage(language: string): Promise<User> {
 // ---------- Mentor ----------
 
 export async function askMentor(params: {
+  maxHintCost?: number
   problemId: string
   language: string
   reasoning: string
@@ -249,6 +250,7 @@ export async function askMentor(params: {
   provider: Provider
 }): Promise<import('../types').MentorResponse> {
   const { data } = await reliablePost<import('../types').MentorResponse>('/mentor/ask', {
+    max_hint_cost: params.maxHintCost,
     problem_id: params.problemId,
     language: params.language,
     reasoning: params.reasoning,
@@ -418,8 +420,8 @@ export async function startPractice(problemId: string, language: string, provide
 export async function fetchPractice(sid: string): Promise<PracticeReply> {
   return (await api.get<PracticeReply>(`/practice/sessions/${encodeURIComponent(sid)}`)).data
 }
-export async function practiceAction(sid: string, action: 'submit' | 'hint' | 'reflect' | 'quit', code = '', reasoning = ''): Promise<PracticeReply> {
-  const { data } = await reliablePost<PracticeReply>(`/practice/sessions/${encodeURIComponent(sid)}/actions`, { action, code, reasoning })
+export async function practiceAction(sid: string, action: 'submit' | 'hint' | 'reflect' | 'quit', code = '', reasoning = '', maxCost?: number): Promise<PracticeReply> {
+  const { data } = await reliablePost<PracticeReply>(`/practice/sessions/${encodeURIComponent(sid)}/actions`, { action, code, reasoning, max_hint_cost: maxCost })
   return data
 }
 

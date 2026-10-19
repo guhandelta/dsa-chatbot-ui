@@ -122,7 +122,13 @@ export function PracticeWorkspace({
   const [reflection, setReflection] = useState("");
   const sessionRef = useRef<PracticeReply | null>(null);
   const sessionSlot = `dsa_practice:${user?.id ?? "local"}:${problemId}:${language}:${provider}`;
+  const context = useRef(sessionSlot);
+  context.current = sessionSlot;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const isCurrent = () => mounted.current && context.current === sessionSlot;
   const applyPractice = (value: PracticeReply) => {
+    if (!isCurrent()) return;
     sessionRef.current = value;
     setPractice(value);
     sessionStorage.setItem(sessionSlot, value.session_id);
@@ -136,10 +142,12 @@ export function PracticeWorkspace({
     let current = sessionRef.current;
     if (current?.awaiting === "reflection") {
       await practiceAction(current.session_id, "quit");
+      if (!isCurrent()) throw new Error("Practice context changed");
       current = null;
     }
     if (!current?.awaiting)
       current = await startPractice(problemId, language, provider);
+    if (!isCurrent()) throw new Error("Practice context changed");
     applyPractice(current);
     return current.session_id;
   };
@@ -202,14 +210,14 @@ export function PracticeWorkspace({
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   };
-  const requestHint = async (reasoning: string) => {
+  const requestHint = async (reasoning: string, maxCost = 0) => {
     setLoading(true);
     try {
       const sid = await ensureSession();
-      const value = await practiceAction(sid, "hint", code, reasoning);
+      const value = await practiceAction(sid, "hint", code, reasoning, maxCost);
       applyPractice(value);
       return {
         reply: value.reply,
@@ -222,7 +230,7 @@ export function PracticeWorkspace({
         next_hint_cost: value.next_hint_cost,
       };
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   };
   const finishReflection = async (skip: boolean) => {
@@ -242,7 +250,7 @@ export function PracticeWorkspace({
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   };
   const handleReveal = async () => {

@@ -1,7 +1,7 @@
 // Socratic mentor. The learner must state their reasoning before a hint is
 // given — the input is deliberately gated on it, because the whole point is
 // that the mentor responds to THEIR thinking, not to the problem in general.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { askMentor, fetchEntitlement, getApiErrorMessage } from "../lib/api";
 import { fetchNextHint } from "../lib/studyApi";
 import { useAuth } from "../lib/auth";
@@ -13,7 +13,7 @@ interface Props {
   currentCode?: string;
   provider?: Provider;
   disabled?: boolean;
-  requestHint?: (reasoning: string) => Promise<MentorResponse>;
+  requestHint?: (reasoning: string, maxCost?: number) => Promise<MentorResponse>;
   onStepBack?: (target: { id: string; kind: "concept" | "problem" }) => void;
 }
 
@@ -22,7 +22,11 @@ interface Turn {
   response: MentorResponse;
 }
 
-export function MentorPanel({
+export function MentorPanel(props: Props) {
+  return <MentorContext key={JSON.stringify([props.problemId, props.language])} {...props} />;
+}
+
+function MentorContext({
   problemId,
   language,
   currentCode = "",
@@ -39,50 +43,68 @@ export function MentorPanel({
   const [error, setError] = useState<string | null>(null);
   const [nextCost, setNextCost] = useState<number | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    fetchNextHint(problemId, language)
-      .then((price) => { if (active) setNextCost(price.cost); })
-      .catch(() => { if (active) setNextCost(null); });
-    return () => { active = false; };
-  }, [problemId, language]);
+  const active = useRef(false);
+  const priceRevision = useRef(0);
+  const asking = useRef(false);
+
+  const refreshPrice = async () => {
+    const revision = ++priceRevision.current;
+    setNextCost(null);
+    try {
+      const price = await fetchNextHint(problemId, language);
+      if (active.current && revision === priceRevision.current) setNextCost(price.cost);
+    } catch {
+      if (active.current && revision === priceRevision.current) setNextCost(null);
+    }
+  };
 
   useEffect(() => {
+    active.current = true;
+    void refreshPrice();
+    let current = true;
     fetchEntitlement(language)
-      .then(setEntitlement)
-      .catch(() => setEntitlement(null));
-  }, [language]);
-
-  // Reset the conversation when the learner moves to a different problem
-  useEffect(() => {
-    setTurns([]);
-    setReasoning("");
-    setError(null);
-  }, [problemId]);
+      .then((value) => { if (current) setEntitlement(value); })
+      .catch(() => { if (current) setEntitlement(null); });
+    return () => {
+      current = false;
+      active.current = false;
+      ++priceRevision.current;
+    };
+  }, [problemId, language]);
 
   const ask = async () => {
     const text = reasoning.trim();
-    if (!text || loading || disabled) return;
+    if (!text || asking.current || disabled) return;
+    asking.current = true;
+    ++priceRevision.current;
+    const maxCost = nextCost ?? 0;
     setLoading(true);
     setError(null);
     try {
       const response = requestHint
-        ? await requestHint(text)
+        ? await requestHint(text, maxCost)
         : await askMentor({
             problemId,
             language,
             reasoning: text,
             currentCode,
             provider,
+            maxHintCost: maxCost,
           });
+      if (!active.current) return;
       setTurns((prev) => [...prev, { reasoning: text, response }]);
       setBalance(response.peppercorns_remaining);
-      if (response.next_hint_cost !== undefined) setNextCost(response.next_hint_cost);
+      setNextCost(response.next_hint_cost ?? null);
       setReasoning("");
     } catch (err) {
+      if (!active.current) return;
       setError(getApiErrorMessage(err));
+      if ((err as { response?: { status?: number } })?.response?.status === 409) {
+        await refreshPrice();
+      }
     } finally {
-      setLoading(false);
+      asking.current = false;
+      if (active.current) setLoading(false);
     }
   };
 
@@ -220,7 +242,7 @@ export function MentorPanel({
         </button>
         <span className="cost-note m-0">
           {nextCost === null
-            ? "Hints 1–2 are free on every problem; hints 3–4 cost 2 peppercorns."
+            ? "Price unavailable. Asking is capped at 0 peppercorns; a changed price will be refreshed."
             : nextCost === 0
               ? "This nudge is free (hints 1–2 on every problem are free)."
               : `This nudge costs ${nextCost} peppercorns (hints 3–4 are charged).`}

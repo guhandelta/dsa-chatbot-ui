@@ -197,3 +197,11 @@ describe('endpoint wrappers', () => {
     expect(http.get).toHaveBeenCalledWith('/subscriptions/')
   })
 })
+
+it('serializes mentor and practice hint spending caps including zero', async () => {
+  http.post.mockResolvedValue({ data: {} })
+  await api.askMentor({ problemId: 'a', language: 'python', reasoning: 'Pairs', provider: 'openai', maxHintCost: 0 })
+  expect(http.post).toHaveBeenLastCalledWith('/mentor/ask', expect.objectContaining({ max_hint_cost: 0 }), expect.anything())
+  await api.practiceAction('session', 'hint', '', 'Pairs', 2)
+  expect(http.post).toHaveBeenLastCalledWith('/practice/sessions/session/actions', expect.objectContaining({ max_hint_cost: 2 }), expect.anything())
+})

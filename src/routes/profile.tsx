@@ -187,6 +187,7 @@ export function ProfilePage() {
         <p className="mb-3 text-sm text-[var(--sea-ink-soft)]">
           This profile is built from your submissions and the notes you write
           about your own thinking. You can export or erase it at any time.
+          Minimal hint billing records remain so erasing your profile does not reset hint prices.
         </p>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="mini-btn" disabled={exporting} onClick={exportProfile}>
