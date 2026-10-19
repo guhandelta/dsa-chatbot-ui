@@ -61,6 +61,12 @@ export function ChatPage({ initialMode = 'explain', initialFocus, onNavigate }: 
   const [language, setLanguage] = useState(initialFocus?.split(':')[1] ? initialFocus.split(':')[0] : user?.preferred_language ?? '')
   const [mode, setMode] = useState<StudyMode>(initialMode)
   const [focus, setFocus] = useState<string | undefined>(initialFocus)
+  // Back/forward navigation updates route props without remounting the page.
+  useEffect(() => {
+    setMode(initialMode)
+    setFocus(initialFocus)
+    if (initialFocus?.split(':')[1]) setLanguage(initialFocus.split(':')[0])
+  }, [initialMode, initialFocus])
 
   const access = useLanguageAccess()
   const accessEndpointMissing = isAxiosError(access.error) && access.error.response?.status === 404

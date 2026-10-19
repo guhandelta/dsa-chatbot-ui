@@ -74,6 +74,21 @@ describe('Study Room page', () => {
     expect(workspace()).toMatchObject({ focus: 'two-sum', language: 'python' })
   })
 
+  it('follows browser-history changes without remounting the route', () => {
+    state.search = { mode: 'explain', focus: 'python:stage-01' }
+    const Component = (Route as unknown as { component: () => React.ReactElement }).component
+    const { rerender } = render(<Component />)
+    state.search = { mode: 'quiz', focus: 'java:stage-07' }
+    rerender(<Component />)
+    expect(workspace()).toMatchObject({ mode: 'quiz', focus: 'java:stage-07', language: 'java' })
+    state.search = { mode: 'explain', focus: 'python:stage-01' }
+    rerender(<Component />)
+    expect(workspace()).toMatchObject({ mode: 'explain', focus: 'python:stage-01', language: 'python' })
+    state.search = {}
+    rerender(<Component />)
+    expect(workspace()).toEqual({ mode: 'explain', language: 'python', provider: 'auto' })
+  })
+
   it('falls back to the account language list while the user is still loading', () => {
     state.signedIn = false
     render(<ChatPage />)
