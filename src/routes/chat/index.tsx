@@ -111,9 +111,9 @@ export function ChatPage({ initialMode = 'explain', initialFocus, onNavigate }: 
         <Link className="font-semibold underline" to="/profile">Review your account and subscription</Link>
       </section>}
       {!access.isError && effectiveLanguage && (mode === 'chat'
-        ? <OpenChat key={effectiveLanguage} language={effectiveLanguage} languages={access.data?.languages ?? []}
+        ? <OpenChat key={effectiveLanguage} language={effectiveLanguage} languages={access.data!.languages}
             provider={student ? 'auto' : provider} userId={user?.id} />
-        : <StudyWorkspace key={effectiveLanguage} language={effectiveLanguage} languages={access.data?.languages ?? []}
+        : <StudyWorkspace key={effectiveLanguage} language={effectiveLanguage} languages={access.data!.languages}
             mode={mode} focus={focus} provider={student ? 'auto' : provider}
             onFocus={(nodeId) => { setFocus(nodeId); onNavigate?.(mode, nodeId) }} onOpen={go} />)}
     </main>

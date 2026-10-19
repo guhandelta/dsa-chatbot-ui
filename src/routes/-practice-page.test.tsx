@@ -10,7 +10,7 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 vi.mock('../lib/auth', () => ({ hasToken: () => true, useAuth: () => ({ user: { id: 'u', preferred_language: state.preferred }, setBalance: vi.fn() }) }))
 vi.mock('../lib/languageAccess', () => ({
-  LANGUAGE_LABELS: { python: 'Python', java: 'Java', javascript: 'JavaScript' },
+  LANGUAGE_LABELS: { python: 'Python', javascript: 'JavaScript' },
   useLanguageAccess: () => ({ data: { languages: state.languages }, isError: false }),
 }))
 vi.mock('../components/ProblemPicker', () => ({ ProblemPicker: ({ value }: { value: string }) => <span>picker:{value}</span> }))
@@ -39,6 +39,12 @@ it('recognises Python stage exercises as language exercises', () => {
   render(<Page />)
   expect(screen.getByText(/Language exercise · Python/)).toBeTruthy()
   expect(screen.queryByText(/picker:/)).toBeNull()
+})
+
+it('shows the raw language id when a stage exercise has no label', () => {
+  state.search = { problem: 'java-path-01-values' }
+  render(<Page />)
+  expect(screen.getByText(/Language exercise · java$/)).toBeTruthy()
 })
 
 it('opens a problem in the language the Study Room asked for', () => {

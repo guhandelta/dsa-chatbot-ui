@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({
-  languages: ['python', 'java'] as string[], role: 'student', search: {} as Record<string, string>, navigate: vi.fn(),
+  languages: ['python', 'java'] as string[], role: 'student', signedIn: true, search: {} as Record<string, string>, navigate: vi.fn(),
 }))
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => (options: Record<string, unknown>) => ({ ...options, useSearch: () => state.search }),
@@ -14,7 +14,7 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('../../lib/languageAccess', () => ({
   useLanguageAccess: () => ({ data: { languages: state.languages, preferred_language: state.languages[0] }, isError: false }),
 }))
-vi.mock('../../lib/auth', () => ({ hasToken: () => state.role !== 'anonymous', useAuth: () => ({ user: { id: 'u1', role: state.role, preferred_language: 'python' } }) }))
+vi.mock('../../lib/auth', () => ({ hasToken: () => state.role !== 'anonymous', useAuth: () => ({ user: state.signedIn ? { id: 'u1', role: state.role, preferred_language: 'python' } : null }) }))
 vi.mock('../../components/study/StudyWorkspace', () => ({
   StudyWorkspace: (props: { mode: string; focus?: string; language: string; provider: string; onFocus: (id: string) => void; onOpen: (mode: string, focus: string) => void }) => <div data-testid="workspace">
     {JSON.stringify({ mode: props.mode, focus: props.focus, language: props.language, provider: props.provider })}
@@ -33,7 +33,7 @@ import { ChatPage, Route, STUDY_MODES, parseSearch } from './index'
 
 const workspace = () => JSON.parse(screen.getByTestId('workspace').textContent!.replace(/focus stage 3open review$/, ''))
 
-beforeEach(() => { state.languages = ['python', 'java']; state.role = 'student'; state.search = {}; state.navigate.mockClear() })
+beforeEach(() => { state.languages = ['python', 'java']; state.role = 'student'; state.signedIn = true; state.search = {}; state.navigate.mockClear() })
 afterEach(cleanup)
 
 describe('Study Room page', () => {
@@ -72,6 +72,12 @@ describe('Study Room page', () => {
     cleanup()
     render(<ChatPage initialMode="explain" initialFocus="two-sum" />)
     expect(workspace()).toMatchObject({ focus: 'two-sum', language: 'python' })
+  })
+
+  it('falls back to the account language list while the user is still loading', () => {
+    state.signedIn = false
+    render(<ChatPage />)
+    expect(workspace().language).toBe('python')
   })
 
   it('lets staff choose a model', () => {

@@ -11,8 +11,9 @@ const LABELS: Record<QuizItem['type'], string> = {
 }
 
 function initialResponse(item: QuizItem) {
-  if (item.type === 'fix_bug') return item.code ?? ''
-  if (item.type === 'write_snippet') return item.starter ?? ''
+  // The server always sends code for fix_bug and a starter for write_snippet.
+  if (item.type === 'fix_bug') return item.code!
+  if (item.type === 'write_snippet') return item.starter!
   return ''
 }
 
@@ -26,7 +27,7 @@ export function QuizItemView({ item, onAnswer, busy }: { item: QuizItem; busy: b
     <p className="mb-2 font-semibold">{item.prompt}</p>
     {item.code && !code && <pre className="quiz-code"><code>{item.code}</code></pre>}
     {choice && <fieldset className="quiz-choices"><legend className="sr-only">Choices</legend>
-      {(item.choices ?? []).map((text, index) => <label key={index} className="quiz-choice">
+      {item.choices!.map((text, index) => <label key={index} className="quiz-choice">
         <input type="radio" name={item.id} value={index} checked={response === String(index)} onChange={() => setResponse(String(index))} />
         <span className={item.type === 'mcq_code' ? 'font-mono' : ''}>{text}</span>
       </label>)}
@@ -87,10 +88,10 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
     }
   }
   const submit = async (response: string | number) => {
-    if (!quiz) return
+    const current = quiz!  // answers are only possible while a quiz is shown
     setBusy(true); setError(null)
     try {
-      const graded = await answerQuiz(quiz.quiz_id, quiz.items[index].id, response)
+      const graded = await answerQuiz(current.quiz_id, current.items[index].id, response)
       setResult(graded); setResults((prev) => [...prev, graded])
       // Stage and streak rewards credit peppercorns; keep the header in sync.
       if (graded.rewards.length) setBalance(graded.rewards[graded.rewards.length - 1].balance)
@@ -113,7 +114,7 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
   const item = quiz.items[index]
   const finished = result?.complete
   const score = results.reduce((sum, r) => sum + r.score, 0)
-  const weak = [...new Set(results.filter((r) => !r.correct).map((r) => quiz.items.find((i) => i.id === r.item_id)?.concept ?? ''))].filter(Boolean)
+  const weak = [...new Set(results.filter((r) => !r.correct).map((r) => quiz.items.find((i) => i.id === r.item_id)!.concept))]
   const earned = results.flatMap((r) => r.rewards)
   return <section className="island-shell rounded-2xl p-4">
     <p className="mb-3 text-sm">{quiz.node_title} · question {Math.min(index + 1, quiz.total)} of {quiz.total}</p>

@@ -182,8 +182,7 @@ describe('Debug mode', () => {
     expect(await screen.findByText('Coach · hint 2/4 · Probe the gap')).toBeTruthy()
     expect(screen.getByText('Cost 2 peppercorns.')).toBeTruthy()
     const fix = screen.getByLabelText('Fixed it? Say what was wrong in your own words')
-    fireEvent.click(screen.getByText('I fixed it'))
-    expect(study.resolveDebug).not.toHaveBeenCalled()
+    expect((screen.getByText('I fixed it') as HTMLButtonElement).disabled).toBe(true)
     fireEvent.change(fix, { target: { value: 'range stops before n' } })
     fireEvent.click(screen.getByText('I fixed it'))
     expect(await screen.findByText('Debug conversation not found')).toBeTruthy()
@@ -218,6 +217,8 @@ describe('Compare mode', () => {
     fireEvent.change(screen.getByLabelText(/Compare Python with/), { target: { value: 'rust' } })
     fireEvent.change(screen.getByLabelText(/Compare Python with/), { target: { value: 'java' } })
     const input = screen.getByLabelText('What to compare')
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(study.sendStudyMessage).not.toHaveBeenCalled()
     fireEvent.change(input, { target: { value: 'equality' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(await screen.findByRole('cell', { name: 'equals' })).toBeTruthy()
@@ -227,6 +228,12 @@ describe('Compare mode', () => {
     fireEvent.keyDown(input, { key: 'x' })
     fireEvent.click(screen.getByText('Compare'))
     expect(await screen.findByRole('alert')).toBeTruthy()
+  })
+
+  it('shows raw language ids that have no label', () => {
+    render(<CompareMode {...shared} language="kotlin" languages={['kotlin', 'zig']} />)
+    expect(screen.getByText('Compare kotlin with')).toBeTruthy()
+    expect(screen.getByRole('option', { name: 'zig' })).toBeTruthy()
   })
 
   it('falls back to a valid second language when the list changes', () => {
@@ -287,7 +294,9 @@ describe('Quiz mode', () => {
     expect(screen.getByText(/treat this score as approximate/)).toBeTruthy()
     next()
     expect((screen.getByLabelText('Your code') as HTMLTextAreaElement).value).toBe('def f(): return 1')
+    fireEvent.change(screen.getByLabelText('Your code'), { target: { value: 'def f(): return 2' } })
     fireEvent.click(screen.getByText('Check answer'))
+    expect(study.answerQuiz).toHaveBeenLastCalledWith('quiz1', 'q5', 'def f(): return 2')
     expect(await screen.findByText('Test 3: input [7,2] expected 3, got 3.5')).toBeTruthy()
     expect(screen.getByText('Reference solution')).toBeTruthy()
     next()
@@ -417,6 +426,12 @@ describe('StudyWorkspace', () => {
     study.fetchStudyNotes.mockResolvedValue([])
     rerender(<StudyWorkspace {...props} mode="next" />)
     expect(await screen.findByText('Path complete')).toBeTruthy()
+  })
+
+  it('shows the path without a focus card when the focus is not on it', async () => {
+    render(<StudyWorkspace {...props} mode="explain" focus="python:stage-99" />)
+    expect(await screen.findByText('1/16 nodes mastered')).toBeTruthy()
+    expect(screen.queryByLabelText('Current focus')).toBeNull()
   })
 
   it('reports a failed path load and an exhausted free pool', async () => {

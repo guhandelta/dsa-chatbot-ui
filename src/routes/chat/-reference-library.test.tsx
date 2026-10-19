@@ -1,16 +1,16 @@
 import { fireEvent, render, screen, cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const pilot = vi.hoisted(() => ({ enabled: false, failed: false, role: 'admin', languages: ['java', 'python'] as string[] }))
+const pilot = vi.hoisted(() => ({ enabled: false, failed: false, libraryFailed: false, libraryLoading: false, role: 'admin', languages: ['java', 'python'] as string[] }))
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...await importOriginal<typeof import('@tanstack/react-router')>(),
   Link: ({ children }: { children: import('react').ReactNode }) => <a>{children}</a>,
 }))
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: ({ queryKey }: { queryKey: string[] }) => queryKey[0] === 'language-access' ? { data: { languages: pilot.languages, preferred_language: pilot.languages[0] }, isError: false } : queryKey[0] === 'chat-capabilities' ? { data: { agentic_retrieval: pilot.enabled }, isError: pilot.failed } : ({ data: [
+  useQuery: ({ queryKey }: { queryKey: string[] }) => queryKey[0] === 'reference-subjects' && pilot.libraryLoading ? { data: undefined, isError: false } : queryKey[0] === 'language-access' ? { data: { languages: pilot.languages, preferred_language: pilot.languages[0] }, isError: false } : queryKey[0] === 'chat-capabilities' ? { data: { agentic_retrieval: pilot.enabled }, isError: pilot.failed } : ({ data: [
     { id: 'spring-mvc', language: 'java', retrievable_records: 3 },
     { id: 'python-flask', language: 'python', retrievable_records: 20 },
-  ], isError: false }),
+  ], isError: pilot.libraryFailed }),
 }))
 vi.mock('../../lib/auth', () => ({ hasToken: () => true, useAuth: () => ({ user: { role: pilot.role, preferred_language: 'java' } }) }))
 vi.mock('../../components/ChatWindow', () => ({ ChatWindow: (props: unknown) => <div data-testid="chat-props">{JSON.stringify(props)}</div> }))
@@ -18,7 +18,7 @@ vi.mock('../../components/ProviderSelector', () => ({ ProviderSelector: () => <s
 vi.mock('../../components/LanguageSelector', () => ({ LanguageSelector: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => <label>Language<select value={value} onChange={(event) => onChange(event.target.value)}>{pilot.languages.map(language => <option key={language}>{language}</option>)}</select></label> }))
 import { ChatPage } from './index'
 
-beforeEach(() => { pilot.enabled = false; pilot.failed = false; pilot.role = 'admin'; pilot.languages = ['java', 'python'] })
+beforeEach(() => { pilot.enabled = false; pilot.failed = false; pilot.libraryFailed = false; pilot.libraryLoading = false; pilot.role = 'admin'; pilot.languages = ['java', 'python'] })
 afterEach(cleanup)
 describe('Reference library learning', () => {
   it('keeps ordinary retrieval as the default and hides an unavailable experiment', () => {
@@ -80,6 +80,21 @@ describe('Reference library learning', () => {
     expect(screen.getByText('Model selector')).toBeTruthy()
     expect(JSON.parse(screen.getByTestId('chat-props').textContent!).provider).toBe('gemini')
   })
+  it('shows the general tutor while learning material is loading', () => {
+    pilot.libraryLoading = true
+    render(<ChatPage initialMode="chat" />)
+    expect(screen.queryByLabelText('Learning material (optional)')).toBeNull()
+    expect(screen.getByTestId('chat-props')).toBeTruthy()
+  })
+
+  it('keeps the general tutor when learning material cannot be loaded', () => {
+    pilot.libraryFailed = true
+    render(<ChatPage initialMode="chat" />)
+    expect(screen.queryByLabelText('Learning material (optional)')).toBeNull()
+    expect(screen.getByText(/The general tutor is still available/)).toBeTruthy()
+    expect(screen.getByTestId('chat-props')).toBeTruthy()
+  })
+
   it('hides the material selector when no collection exists for the current language', () => {
     pilot.languages = ['javascript']
     render(<ChatPage initialMode="chat" />)

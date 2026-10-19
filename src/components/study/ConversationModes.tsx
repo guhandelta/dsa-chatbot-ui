@@ -26,20 +26,20 @@ function useStudyThread(mode: MessageMode, { language, focusId, provider, onAllo
   useEffect(() => { setTurns([]); setError(null) }, [language, focusId, mode])
   const send = async (message: string, extra: { code?: string; error?: string; compareLanguage?: string } = {}) => {
     setLoading(true); setError(null)
+    let sent = false
     try {
       const reply = await sendStudyMessage({ language, mode, message, threadId, focusId, provider, ...extra })
       setTurns((prev) => [...prev, { id: crypto.randomUUID(), question: message, reply }])
       setBalance(reply.peppercorns_remaining)
       onAllowance(reply.allowance)
-      return true
+      sent = true
     } catch (err) {
       setError(getApiErrorMessage(err))
-      return false
-    } finally {
-      setLoading(false)
     }
+    setLoading(false)
+    return sent
   }
-  return { turns, loading, error, send, threadId, reset: () => setTurns([]) }
+  return { turns, loading, error, send, threadId }
 }
 
 const charge = (reply: StudyReply) => reply.peppercorns_charged
@@ -97,15 +97,15 @@ export function DebugMode(props: Shared) {
   const [resolveError, setResolveError] = useState<string | null>(null)
   const latest = thread.turns.at(-1)?.reply
   const ready = code.trim() && failure.trim() && thinking.trim()
+  // The button is disabled until code, error and reasoning are filled in.
   const submit = async () => {
-    if (!ready || thread.loading) return
     if (await thread.send(thinking.trim(), { code, error: failure })) setThinking('')
   }
   const resolve = async () => {
-    if (!thread.threadId || !fix.trim()) return
+    // Only shown after the first reply (so the thread exists) and enabled once a fix is typed.
     setResolveError(null)
     try {
-      await resolveDebug(thread.threadId, fix.trim())
+      await resolveDebug(thread.threadId!, fix.trim())
       setLogged(fix.trim()); setFix('')
     } catch (err) {
       setResolveError(getApiErrorMessage(err))
@@ -146,7 +146,8 @@ export function CompareMode(props: Shared & { languages: string[] }) {
   const [question, setQuestion] = useState('')
   useEffect(() => { if (!others.includes(second)) setSecond(others[0] ?? '') }, [others, second])
   const submit = async () => {
-    if (!question.trim() || !second || thread.loading) return
+    // The input is disabled while a comparison is running.
+    if (!question.trim()) return
     if (await thread.send(question.trim(), { compareLanguage: second })) setQuestion('')
   }
   if (!others.length) return <section className="island-shell rounded-2xl p-4">
