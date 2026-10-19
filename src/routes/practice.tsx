@@ -19,7 +19,7 @@ import {
   practiceAction,
 } from "../lib/api";
 import { hasToken, useAuth } from "../lib/auth";
-import { useLanguageAccess } from "../lib/languageAccess";
+import { LANGUAGE_LABELS, useLanguageAccess } from "../lib/languageAccess";
 import type { PracticeReply } from "../lib/api";
 import type { AnalysisResult, Evidence, Provider } from "../types";
 
@@ -27,8 +27,10 @@ export const Route = createFileRoute("/practice")({
   beforeLoad: () => {
     if (!hasToken()) throw redirect({ to: "/login" });
   },
-  validateSearch: (search: Record<string, unknown>): { problem?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { problem?: string; language?: string } => ({
     problem: typeof search.problem === "string" ? search.problem : undefined,
+    // The Study Room links problems in the language of the learner's path.
+    language: typeof search.language === "string" ? search.language : undefined,
   }),
   component: PracticePage,
 });
@@ -36,22 +38,23 @@ export const Route = createFileRoute("/practice")({
 function PracticePage() {
   const { user } = useAuth();
   const access = useLanguageAccess();
-  const { problem: preselected } = Route.useSearch();
+  const { problem: preselected, language: requested } = Route.useSearch();
   const [language, setLanguage] = useState(
-    user?.preferred_language === "java" ? "java" : "javascript",
+    requested ?? (user?.preferred_language === "java" ? "java" : "javascript"),
   );
   const [problemId, setProblemId] = useState(preselected ?? "");
   useEffect(() => {
-    if (
+    if (requested) setLanguage(requested);
+    else if (
       user?.preferred_language === "java" ||
       user?.preferred_language === "javascript"
     )
       setLanguage(user.preferred_language);
-  }, [user?.preferred_language]);
+  }, [user?.preferred_language, requested]);
   useEffect(() => {
     setProblemId(preselected ?? "");
   }, [preselected]);
-  const exerciseLanguage = /^(java|javascript)-path-/.exec(problemId)?.[1];
+  const exerciseLanguage = /^(java|javascript|python)-path-/.exec(problemId)?.[1];
   const practiceLanguages = (access.data?.languages ?? []).filter(l => ["javascript", "java", "python", "cpp", "c", "rust"].includes(l));
   const activeLanguage = exerciseLanguage ?? (practiceLanguages.includes(language) ? language : practiceLanguages[0] ?? "");
   return (
@@ -64,7 +67,7 @@ function PracticePage() {
         {exerciseLanguage ? (
           <span>
             Language exercise ·{" "}
-            {activeLanguage === "java" ? "Java" : "JavaScript"}
+            {LANGUAGE_LABELS[activeLanguage] ?? activeLanguage}
           </span>
         ) : (
           <>

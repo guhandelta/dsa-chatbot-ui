@@ -23,10 +23,10 @@ export function PathPanel({ path, focusId, onFocus }: Props) {
   const modules = path.nodes.filter((n) => n.kind === 'module')
   const item = (node: PathNode) => <li key={node.id}>
     <button type="button" onClick={() => onFocus(node.id)} aria-current={focusId === node.id}
-      className={`item-btn ${focusId === node.id ? 'is-active' : ''}`} title={node.status.replace('-', ' ')}>
+      className={`item-btn ${focusId === node.id ? 'is-active' : ''}`}>
       <span className="item-title"><span aria-hidden="true">{STATUS_MARK[node.status]} </span>
         {node.stage ? `${node.stage}. ` : ''}{node.title}{node.id === path.current_id ? ' (you are here)' : ''}</span>
-      <span className="text-xs">{node.level}</span>
+      <span className="text-xs">{node.level}<span className="sr-only">, {node.status.replace('-', ' ')}</span></span>
     </button>
   </li>
   return <aside className="island-shell rounded-2xl p-4" aria-label="Your learning path">

@@ -59,12 +59,13 @@ afterEach(cleanup)
 
 describe('RichText', () => {
   it('renders pipe tables as tables and the rest as markdown', () => {
-    const text = 'Intro **bold**\n| Aspect | Python | Java |\n|---|---|---|\n| syntax | d[k] | m.get(k) |\nWatch out: nulls.'
+    const text = 'Intro **bold**\n| Aspect | Python | Java |\n|---|---|---|\n| syntax | `d[k]` | m.get(k) |\nWatch out: nulls.'
     expect(splitBlocks(text).map((b) => b.kind)).toEqual(['text', 'table', 'text'])
     expect(splitBlocks('| a |\n| b |').map((b) => b.kind)).toEqual(['table'])
     render(<RichText text={text} />)
     expect(screen.getByRole('columnheader', { name: 'Python' })).toBeTruthy()
     expect(screen.getByRole('cell', { name: 'm.get(k)' })).toBeTruthy()
+    expect(screen.getByText('d[k]').tagName).toBe('CODE')
     expect(screen.getByText('bold')).toBeTruthy()
   })
 })
@@ -97,7 +98,7 @@ describe('NodeCard', () => {
     render(<NodeCard node={node()} language="python" levelLabel="Core constructs" />)
     expect(screen.getByText('Stage 1 · L1 · Core constructs')).toBeTruthy()
     expect(screen.getByText(/Graded exercise: not passed yet. Checks: not taken \(6 questions/)).toBeTruthy()
-    expect(screen.getByText('2. Practise: graded exercise').getAttribute('href')).toBe('/practice?problem=python-path-01-values')
+    expect(screen.getByText('2. Practise: graded exercise').getAttribute('href')).toBe('/practice?problem=python-path-01-values&language=python')
     expect(screen.getByText('Sum of Two Integers · Medium · stretch')).toBeTruthy()
     expect(screen.getByText('Valid Anagram (Easy) · coming soon')).toBeTruthy()
     fireEvent.click(screen.getByText('1. Learn: read the lesson'))
@@ -298,6 +299,7 @@ describe('Quiz mode', () => {
     expect(screen.getByText('Concepts to review: c2, c4, c5')).toBeTruthy()
     expect(screen.getByText('+10 peppercorns: stage completed')).toBeTruthy()
     expect(screen.getByText('+5 peppercorns: streak')).toBeTruthy()
+    expect(auth.setBalance).toHaveBeenLastCalledWith(65)
     expect(onComplete).toHaveBeenCalled()
     fireEvent.click(screen.getByText('Another quiz'))
     await waitFor(() => expect(study.startQuiz).toHaveBeenCalledTimes(2))
@@ -342,9 +344,10 @@ describe('What next', () => {
         { item_id: 'j', prompt: 'Why?', response: 'Because', correct: true, score: 1, feedback: '', misconception: '', created_at: 't2' }],
     })
     study.fetchStudyNotes.mockResolvedValue([
-      { id: '1', language: 'python', node_id: null, mode: 'explain', title: 'Use get', body: { concept: 'Use get', pitfall: 'KeyError' }, created_at: '' },
+      { id: '1', language: 'python', node_id: null, mode: 'explain', title: 'Use get', body: { concept: 'Use get', example: 'd.get(k, 0)', pitfall: 'KeyError' }, created_at: '' },
       { id: '2', language: 'python', node_id: null, mode: 'debug', title: 'Misconception logged', body: { my_fix: 'range(1, n + 1)' }, created_at: '' },
-      { id: '3', language: 'python', node_id: null, mode: 'compare', title: 'py vs js', body: { first: 'python', second: 'javascript', question: 'maps' }, created_at: '' },
+      { id: '3', language: 'python', node_id: null, mode: 'compare', title: 'py vs js', body: { first: 'python', second: 'javascript', question: 'maps', comparison: '| a |\nWatch out: undefined is not an error.' }, created_at: '' },
+      { id: '4', language: 'python', node_id: null, mode: 'compare', title: 'older', body: { first: 'python', second: 'javascript', question: 'q' }, created_at: '' },
     ])
     const onOpen = vi.fn()
     render(<NextMode language="python" onOpen={onOpen} />)
@@ -356,9 +359,10 @@ describe('What next', () => {
     expect(screen.getByText(/missed 1 time$/)).toBeTruthy()
     expect(screen.getByText('Inclusive needs <=')).toBeTruthy()
     expect(screen.getByText('Solid.')).toBeTruthy()
-    expect(screen.getByText(/Use get · Pitfall: KeyError/)).toBeTruthy()
+    expect(screen.getByText(/Example: d.get\(k, 0\) · Pitfall: KeyError/)).toBeTruthy()
     expect(screen.getByText(/My fix: range\(1, n \+ 1\)/)).toBeTruthy()
-    expect(screen.getByText(/python vs javascript: maps/)).toBeTruthy()
+    expect(screen.getByText(/Watch out: undefined is not an error/)).toBeTruthy()
+    expect(screen.getByText(/Side-by-side comparison saved/)).toBeTruthy()
   })
 
   it('links practice steps out of the Study Room and handles empty and failed loads', async () => {
@@ -368,7 +372,7 @@ describe('What next', () => {
     study.fetchInsights.mockResolvedValue({ weak_concepts: [], responses: [] })
     study.fetchStudyNotes.mockResolvedValue([])
     const first = render(<NextMode language="python" onOpen={vi.fn()} />)
-    expect((await screen.findByText('Open in practice')).getAttribute('href')).toBe('/practice?problem=python-path-01-values')
+    expect((await screen.findByText('Open in practice')).getAttribute('href')).toBe('/practice?problem=python-path-01-values&language=python')
     expect(screen.getByText(/Takeaway cards, logged misconceptions/)).toBeTruthy()
     expect(screen.queryByLabelText('How you are thinking')).toBeNull()
     first.unmount()

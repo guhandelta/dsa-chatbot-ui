@@ -66,6 +66,14 @@ describe('Study Room page', () => {
     expect(JSON.parse(screen.getByTestId('open-chat').textContent!)).toMatchObject({ language: 'java', languages: ['python', 'java'], provider: 'auto', userId: 'u1' })
   })
 
+  it('opens a deep-linked path node in its own language', () => {
+    render(<ChatPage initialMode="quiz" initialFocus="java:stage-07" />)
+    expect(workspace()).toMatchObject({ mode: 'quiz', focus: 'java:stage-07', language: 'java' })
+    cleanup()
+    render(<ChatPage initialMode="explain" initialFocus="two-sum" />)
+    expect(workspace()).toMatchObject({ focus: 'two-sum', language: 'python' })
+  })
+
   it('lets staff choose a model', () => {
     state.role = 'instructor'
     render(<ChatPage />)

@@ -56,7 +56,9 @@ export function ChatPage({ initialMode = 'explain', initialFocus, onNavigate }: 
   const [provider, setProvider] = useState<Provider>('gemini')
   const { user } = useAuth()
   const student = user?.role === 'student'
-  const [language, setLanguage] = useState(user?.preferred_language ?? '')
+  // A path node id ("python:stage-07") carries its language, so a deep link
+  // opens in that language rather than the account's preferred one.
+  const [language, setLanguage] = useState(initialFocus?.split(':')[1] ? initialFocus.split(':')[0] : user?.preferred_language ?? '')
   const [mode, setMode] = useState<StudyMode>(initialMode)
   const [focus, setFocus] = useState<string | undefined>(initialFocus)
 

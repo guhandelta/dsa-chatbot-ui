@@ -38,7 +38,7 @@ export function NodeCard({ node, language, levelLabel }: { node: PathNode; langu
       <button type="button" className="mini-btn" onClick={() => void toggleLesson()} disabled={loading || !node.lesson_ids.length}>
         {loading ? 'Loading…' : lesson !== null ? 'Hide lesson' : '1. Learn: read the lesson'}
       </button>
-      {node.exercise_id && <Link to="/practice" search={{ problem: node.exercise_id }} className="mini-btn">2. Practise: graded exercise</Link>}
+      {node.exercise_id && <Link to="/practice" search={{ problem: node.exercise_id, language }} className="mini-btn">2. Practise: graded exercise</Link>}
     </div>
     {error && <div className="error-banner mt-3" role="alert">{error}</div>}
     {lesson !== null && <div className="prose prose-sm mt-3 max-w-none dark:prose-invert"><ReactMarkdown>{lesson}</ReactMarkdown></div>}
@@ -46,7 +46,7 @@ export function NodeCard({ node, language, levelLabel }: { node: PathNode; langu
       <p className="mb-1 text-xs font-semibold">Problems at this level</p>
       <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
         {node.practice.map((p) => <li key={p.id}>
-          <Link to="/practice" search={{ problem: p.id }} className="mini-btn">{p.title} · {p.difficulty}{p.role === 'stretch' ? ' · stretch' : ''}</Link>
+          <Link to="/practice" search={{ problem: p.id, language }} className="mini-btn">{p.title} · {p.difficulty}{p.role === 'stretch' ? ' · stretch' : ''}</Link>
         </li>)}
         {node.planned_problems.map((p) => <li key={p} className="mini-btn opacity-60">{p} · coming soon</li>)}
       </ul>

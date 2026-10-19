@@ -10,9 +10,11 @@ interface Props {
   onOpen: (mode: StudyMode, focus: string) => void
 }
 
+// The note title already names the concept or question, so show what it adds.
 const describe = (note: StudyNote) => note.mode === 'explain'
-  ? `${note.body.concept} · Pitfall: ${note.body.pitfall}`
-  : note.mode === 'debug' ? `My fix: ${note.body.my_fix}` : `${note.body.first} vs ${note.body.second}: ${note.body.question}`
+  ? `Example: ${note.body.example} · Pitfall: ${note.body.pitfall}`
+  : note.mode === 'debug' ? `My fix: ${note.body.my_fix}`
+    : (note.body.comparison ?? '').split('\n').find((line) => line.startsWith('Watch out:')) ?? 'Side-by-side comparison saved.'
 
 export function NextMode({ language, onOpen }: Props) {
   const [step, setStep] = useState<NextStep | null>(null)
@@ -37,7 +39,7 @@ export function NextMode({ language, onOpen }: Props) {
       <p className="my-2 text-sm">{step.reason}</p>
       {step.link && inPage && <button type="button" className="primary-btn"
         onClick={() => onOpen(step.link!.search.mode as StudyMode, step.link!.search.focus)}>Start</button>}
-      {step.link && !inPage && <Link to="/practice" search={{ problem: step.link.search.problem }} className="primary-btn inline-block">Open in practice</Link>}
+      {step.link && !inPage && <Link to="/practice" search={{ problem: step.link.search.problem, language }} className="primary-btn inline-block">Open in practice</Link>}
     </section>
     {insights && (insights.weak_concepts.length > 0 || insights.responses.length > 0) && <section className="island-shell rounded-2xl p-4" aria-label="How you are thinking">
       <p className="island-kicker mb-2">How you are thinking</p>
@@ -45,7 +47,7 @@ export function NextMode({ language, onOpen }: Props) {
         <strong>{w.concept}</strong>: missed {w.misses} time{w.misses === 1 ? '' : 's'}{w.misconception ? `. Your answers suggest: ${w.misconception}` : ''}
       </li>)}</ul>}
       {insights.responses.slice(0, 3).map((r) => <div key={r.item_id + r.created_at} className="mentor-you mb-2">
-        <span className="mentor-label">{r.prompt}</span><p>{r.response}</p>
+        <p className="mb-1 text-xs font-semibold">{r.prompt}</p><p>{r.response}</p>
         <p className="cost-note">{r.correct ? 'Solid.' : r.feedback}</p>
       </div>)}
     </section>}

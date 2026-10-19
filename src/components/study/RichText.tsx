@@ -31,13 +31,16 @@ export function splitBlocks(text: string): Block[] {
   return blocks
 }
 
+// Table cells carry inline markdown such as `code`; render it without a <p>.
+const Cell = ({ text }: { text: string }) => <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{text}</ReactMarkdown>
+
 export function RichText({ text }: { text: string }) {
   return <div className="prose prose-sm max-w-none dark:prose-invert">
     {splitBlocks(text).map((block, index) => block.kind === 'text'
       ? <ReactMarkdown key={index}>{block.text}</ReactMarkdown>
       : <div key={index} className="study-table-wrap"><table className="study-table">
-        <thead><tr>{block.rows[0].map((cell, i) => <th key={i}>{cell}</th>)}</tr></thead>
-        <tbody>{block.rows.slice(1).map((row, r) => <tr key={r}>{row.map((cell, i) => <td key={i}>{cell}</td>)}</tr>)}</tbody>
+        <thead><tr>{block.rows[0].map((cell, i) => <th key={i}><Cell text={cell} /></th>)}</tr></thead>
+        <tbody>{block.rows.slice(1).map((row, r) => <tr key={r}>{row.map((cell, i) => <td key={i}><Cell text={cell} /></td>)}</tr>)}</tbody>
       </table></div>)}
   </div>
 }

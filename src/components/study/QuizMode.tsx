@@ -2,6 +2,7 @@
 // in six formats. Answers never reach the browser until after answering.
 import { useEffect, useState } from 'react'
 import { getApiErrorMessage } from '../../lib/api'
+import { useAuth } from '../../lib/auth'
 import { answerQuiz, startQuiz, type QuizItem, type QuizResult, type QuizStarted } from '../../lib/studyApi'
 
 const LABELS: Record<QuizItem['type'], string> = {
@@ -66,6 +67,7 @@ interface Props {
 }
 
 export function QuizMode({ language, focusId, onComplete }: Props) {
+  const { setBalance } = useAuth()
   const [count, setCount] = useState(4)
   const [quiz, setQuiz] = useState<QuizStarted | null>(null)
   const [index, setIndex] = useState(0)
@@ -90,6 +92,8 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
     try {
       const graded = await answerQuiz(quiz.quiz_id, quiz.items[index].id, response)
       setResult(graded); setResults((prev) => [...prev, graded])
+      // Stage and streak rewards credit peppercorns; keep the header in sync.
+      if (graded.rewards.length) setBalance(graded.rewards[graded.rewards.length - 1].balance)
       if (graded.complete) onComplete?.()
     } catch (err) {
       setError(getApiErrorMessage(err))
