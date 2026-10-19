@@ -4,7 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { getApiErrorMessage } from '../../lib/api'
-import { fetchNodeLesson, type PathNode } from '../../lib/studyApi'
+import { contentGapLabel, fetchNodeLesson, type PathNode } from '../../lib/studyApi'
 
 export function NodeCard({ node, language, levelLabel }: { node: PathNode; language: string; levelLabel?: string }) {
   const [lesson, setLesson] = useState<string | null>(null)
@@ -21,6 +21,7 @@ export function NodeCard({ node, language, levelLabel }: { node: PathNode; langu
       setLoading(false)
     }
   }
+  const supplement = node.kind === 'stage' && !!node.missing_content?.includes('stage_lesson')
   const checks = node.check_score === null ? 'not taken' : `${Math.round(node.check_score * 100)}%`
   return <section className="island-shell mb-4 rounded-2xl p-4" aria-label="Current focus">
     <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -34,14 +35,16 @@ export function NodeCard({ node, language, levelLabel }: { node: PathNode; langu
       {node.exercise_id ? `Graded exercise: ${node.exercise_passed ? 'passed' : 'not passed yet'}. ` : ''}
       {node.checks_available ? `Checks: ${checks} (${node.checks_available} questions in the pool).` : 'No checks for this node yet.'}
     </p>
+    {!!node.missing_content?.length && <p className="my-2 text-sm">Missing content: {node.missing_content.map(contentGapLabel).join(', ')}.</p>}
+    {supplement && node.lesson_ids.length > 0 && <p className="my-2 text-sm">The available fundamentals lesson is a supplement. A stage-specific lesson is still missing.</p>}
     <div className="flex flex-wrap gap-2">
       <button type="button" className="mini-btn" onClick={() => void toggleLesson()} disabled={loading || !node.lesson_ids.length}>
-        {loading ? 'Loading…' : lesson !== null ? 'Hide lesson' : '1. Learn: read the lesson'}
+        {loading ? 'Loading…' : lesson !== null ? 'Hide lesson' : supplement ? 'Read fundamentals supplement' : '1. Learn: read the lesson'}
       </button>
       {node.exercise_id && <Link to="/practice" search={{ problem: node.exercise_id, language }} className="mini-btn">2. Practise: graded exercise</Link>}
     </div>
     {error && <div className="error-banner mt-3" role="alert">{error}</div>}
-    {lesson !== null && <div className="prose prose-sm mt-3 max-w-none dark:prose-invert"><ReactMarkdown>{lesson}</ReactMarkdown></div>}
+    {lesson !== null && <div className="prose prose-sm mt-3 max-w-none dark:prose-invert">{supplement && <p className="font-semibold">Fundamentals supplement</p>}<ReactMarkdown>{lesson}</ReactMarkdown></div>}
     {(node.practice.length > 0 || node.planned_problems.length > 0) && <div className="mt-3">
       <p className="mb-1 text-xs font-semibold">Problems at this level</p>
       <ul className="m-0 flex list-none flex-wrap gap-2 p-0">

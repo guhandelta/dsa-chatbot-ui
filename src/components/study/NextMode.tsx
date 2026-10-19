@@ -3,7 +3,7 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { getApiErrorMessage } from '../../lib/api'
-import { fetchInsights, fetchNextStep, fetchStudyNotes, type Insights, type NextStep, type StudyMode, type StudyNote } from '../../lib/studyApi'
+import { contentGapLabel, hasCurriculumGaps, fetchStudyPath, fetchInsights, fetchNextStep, fetchStudyNotes, type StudyPath, type Insights, type NextStep, type StudyMode, type StudyNote } from '../../lib/studyApi'
 
 interface Props {
   language: string
@@ -17,29 +17,40 @@ const describe = (note: StudyNote) => note.mode === 'explain'
     : (note.body.comparison ?? '').split('\n').find((line) => line.startsWith('Watch out:')) ?? 'Side-by-side comparison saved.'
 
 export function NextMode({ language, onOpen }: Props) {
+  const [path, setPath] = useState<StudyPath | null>(null)
   const [step, setStep] = useState<NextStep | null>(null)
   const [insights, setInsights] = useState<Insights | null>(null)
   const [notes, setNotes] = useState<StudyNote[]>([])
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let active = true
-    setError(null)
-    Promise.all([fetchNextStep(language), fetchInsights(language), fetchStudyNotes(language)])
-      .then(([next, seen, saved]) => { if (active) { setStep(next); setInsights(seen); setNotes(saved) } })
+    setError(null); setStep(null); setPath(null)
+    Promise.all([fetchNextStep(language), fetchInsights(language), fetchStudyNotes(language), fetchStudyPath(language).catch(() => null)])
+      .then(([next, seen, saved, curriculum]) => { if (active) { setPath(curriculum); setStep(next); setInsights(seen); setNotes(saved) } })
       .catch((err) => { if (active) setError(getApiErrorMessage(err)) })
     return () => { active = false }
   }, [language])
   if (error) return <div className="error-banner" role="alert">{error}</div>
   if (!step) return <p role="status">Working out your next step…</p>
+  const blocked = step.kind === 'content-gap' || step.status === 'blocked'
+  const gaps = blocked || (path ? hasCurriculumGaps(path) : false)
+  const node = path?.nodes.find((node) => node.id === step.node_id)
+  const missing = step.missing_content ?? node?.missing_content ?? path?.readiness.missing_content?.find((gap) => gap.node_id === step.node_id)?.missing ?? []
+  const reason = step.reason.replace(/\b[a-z]+(?:_[a-z]+)*\b/g, (word) =>
+    word.includes('_') || missing.includes(word) ? contentGapLabel(word) : word)
   const inPage = step.link?.to === '/chat'
   return <div className="flex flex-col gap-4">
     <section className="island-shell rounded-2xl p-4" aria-label="Recommended next step">
       <p className="island-kicker mb-1">Recommended next step</p>
-      <h2 className="m-0 text-lg font-bold">{step.title}</h2>
-      <p className="my-2 text-sm">{step.reason}</p>
-      {step.link && inPage && <button type="button" className="primary-btn"
+      <h2 className="m-0 text-lg font-bold">{step.kind === 'done' && gaps ? 'Available work finished; curriculum gaps remain' : step.title}</h2>
+      <p className="my-2 text-sm">{step.kind === 'done' && gaps ? 'You have finished the available work. More curriculum content is still needed.' : reason}</p>
+      {blocked && <p className="my-2 text-sm" role="status">Waiting for missing curriculum content.</p>}
+      {gaps && <p className="my-2 text-sm">This curriculum still has missing content. Finishing available work does not complete the full curriculum.</p>}
+      {missing.length > 0 && <p className="my-2 text-sm">Missing for this step: {missing.map(contentGapLabel).join(', ')}.</p>}
+      {step.kind === 'lesson' && missing.includes('stage_lesson') && <p className="my-2 text-sm">Available fundamentals are a supplement; the stage-specific lesson is still missing.</p>}
+      {!blocked && step.link && inPage && <button type="button" className="primary-btn"
         onClick={() => onOpen(step.link!.search.mode as StudyMode, step.link!.search.focus)}>Start</button>}
-      {step.link && !inPage && <Link to="/practice" search={{ problem: step.link.search.problem, language }} className="primary-btn inline-block">Open in practice</Link>}
+      {!blocked && step.link && !inPage && <Link to="/practice" search={{ problem: step.link.search.problem, language }} className="primary-btn inline-block">Open in practice</Link>}
     </section>
     {insights && (insights.weak_concepts.length > 0 || insights.responses.length > 0) && <section className="island-shell rounded-2xl p-4" aria-label="How you are thinking">
       <p className="island-kicker mb-2">How you are thinking</p>

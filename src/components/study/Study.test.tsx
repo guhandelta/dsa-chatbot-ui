@@ -9,7 +9,9 @@ const study = vi.hoisted(() => ({
   resolveDebug: vi.fn(), startQuiz: vi.fn(), answerQuiz: vi.fn(), fetchQuizSummary: vi.fn(),
   fetchNextStep: vi.fn(), fetchStudyNotes: vi.fn(), fetchInsights: vi.fn(), fetchNextHint: vi.fn(),
 }))
-vi.mock('../../lib/studyApi', () => study)
+vi.mock('../../lib/studyApi', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../lib/studyApi')>(), ...study,
+}))
 vi.mock('../../lib/auth', () => ({ useAuth: () => auth }))
 vi.mock('../../lib/api', () => ({ getApiErrorMessage: (e: Error) => e.message }))
 vi.mock('@tanstack/react-router', () => ({
@@ -550,3 +552,90 @@ describe('Quiz session isolation', () => {
   })
 })
 
+
+describe('Honest curriculum reporting', () => {
+  it('shows all-node progress and partial coverage even for a stale launch-ready verdict', () => {
+    const curriculum = path({ total: 3, completed: 1, available_total: 1, unavailable_total: 2,
+      curriculum_complete: false, coverage_ready: false,
+      nodes: [node({ missing_content: ['stage_lesson', 'exercise', 'checks'], coverage_ready: false })],
+      readiness: { ...path().readiness, coverage_ready: false, spine_lessons: 1, spine_checks: 2, depth_assessments: 0,
+        missing_content: [{ node_id: 'python:stage-01', missing: ['stage_lesson', 'exercise', 'checks'] }] },
+    })
+    render(<PathPanel path={curriculum} focusId={null} onFocus={vi.fn()} />)
+    expect(screen.getByText('1/3 nodes mastered')).toBeTruthy()
+    expect(screen.getByText(/1 nodes with graded work available; 2 without graded work/)).toBeTruthy()
+    expect(screen.getByText(/Partial curriculum/)).toBeTruthy()
+    expect(screen.queryByText(/Full path with graded exercises/)).toBeNull()
+    expect(screen.getByText(/Stage lessons: 1\/12. Stage checks: 2\/12. Module assessments: 0\/8/)).toBeTruthy()
+    expect(screen.getByText('Missing: stage-specific lesson, graded stage exercise, graded checks.')).toBeTruthy()
+  })
+
+  it('labels fundamentals as a supplement when a stage lesson is missing', async () => {
+    study.fetchNodeLesson.mockResolvedValueOnce({ markdown: 'Shared fundamentals text' })
+    render(<NodeCard language="python" node={node({ missing_content: ['stage_lesson', 'exercise'], exercise_id: null })} />)
+    expect(screen.getByText(/Missing content: stage-specific lesson, graded stage exercise/)).toBeTruthy()
+    expect(screen.queryByText('1. Learn: read the lesson')).toBeNull()
+    fireEvent.click(screen.getByText('Read fundamentals supplement'))
+    expect(await screen.findByText('Shared fundamentals text')).toBeTruthy()
+    expect(screen.getByText('Fundamentals supplement')).toBeTruthy()
+    expect(screen.queryByText('2. Practise: graded exercise')).toBeNull()
+  })
+
+  it('shows a missing module assessment independently of its available lesson', () => {
+    render(<NodeCard language="python" node={node({ kind: 'module', stage: null, missing_content: ['module_assessment'], checks_available: 0, exercise_id: null })} />)
+    expect(screen.getByText('Missing content: module assessment.')).toBeTruthy()
+    expect((screen.getByText('1. Learn: read the lesson') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it.each(['done', 'lesson'] as const)('qualifies %s recommendations with curriculum gaps', async (kind) => {
+    study.fetchStudyPath.mockResolvedValueOnce(path({ coverage_ready: false, nodes: [node({ missing_content: ['stage_lesson', 'exercise'] })] }))
+    study.fetchNextStep.mockResolvedValueOnce({ kind, id: null, title: kind === 'done' ? 'Path complete' : 'Lesson: Values', reason: 'Available work.', node_id: 'python:stage-01', link: null })
+    study.fetchInsights.mockResolvedValueOnce({ weak_concepts: [], responses: [] })
+    study.fetchStudyNotes.mockResolvedValueOnce([])
+    render(<NextMode language="python" onOpen={vi.fn()} />)
+    expect(await screen.findByText(/Finishing available work does not complete the full curriculum/)).toBeTruthy()
+    expect(screen.getByText('Missing for this step: stage-specific lesson, graded stage exercise.')).toBeTruthy()
+    if (kind === 'done') {
+      expect(screen.queryByText('Path complete')).toBeNull()
+      expect(screen.getByText('Available work finished; curriculum gaps remain')).toBeTruthy()
+    } else expect(screen.getByText(/Available fundamentals are a supplement/)).toBeTruthy()
+  })
+})
+
+
+describe('Readiness compatibility', () => {
+  it('does not claim full readiness when coverage counts are partial', () => {
+    render(<PathPanel path={path({ readiness: { ...path().readiness, spine_lessons: 11 } })} focusId={null} onFocus={vi.fn()} />)
+    expect(screen.getByText(/Partial curriculum/)).toBeTruthy()
+    expect(screen.queryByText(/Full path with graded exercises/)).toBeNull()
+  })
+
+  it('keeps the full readiness label when all coverage is present', () => {
+    render(<PathPanel path={path({ coverage_ready: true, readiness: { ...path().readiness,
+      coverage_ready: true, missing_content: [], spine_lessons: 12, spine_checks: 12, depth_assessments: 8,
+    } })} focusId={null} onFocus={vi.fn()} />)
+    expect(screen.getByText(/Full path with graded exercises/)).toBeTruthy()
+    expect(screen.queryByText(/Partial curriculum/)).toBeNull()
+  })
+})
+
+
+describe('Blocked API recommendations', () => {
+  it.each([
+    { missing: ['stage_lesson', 'exercise', 'checks'], labels: 'stage-specific lesson, graded stage exercise, graded checks' },
+    { missing: ['module_lesson', 'checks'], labels: 'module lesson, graded checks' },
+  ])('renders friendly gap labels from the recommendation without path data: $labels', async ({ missing, labels }) => {
+    study.fetchStudyPath.mockRejectedValueOnce(new Error('Path unavailable'))
+    study.fetchNextStep.mockResolvedValueOnce({ kind: 'content-gap', status: 'blocked', id: 'gap', node_id: 'gap',
+      title: 'Content needed', reason: `Missing content: ${missing.join(', ')}.`, missing_content: missing, link: null })
+    study.fetchInsights.mockResolvedValueOnce({ weak_concepts: [], responses: [] })
+    study.fetchStudyNotes.mockResolvedValueOnce([])
+    render(<NextMode language="python" onOpen={vi.fn()} />)
+    expect(await screen.findByText(`Missing content: ${labels}.`)).toBeTruthy()
+    expect(screen.getByText(`Missing for this step: ${labels}.`)).toBeTruthy()
+    expect(screen.getByText('Waiting for missing curriculum content.')).toBeTruthy()
+    expect(screen.queryByText('Start')).toBeNull()
+    expect(screen.queryByText('Open in practice')).toBeNull()
+    expect(screen.queryByText(/stage_lesson|module_lesson/)).toBeNull()
+  })
+})

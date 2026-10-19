@@ -21,6 +21,8 @@ export interface PathNode {
   practice: PracticeProblem[]
   planned_problems: string[]
   checks_available: number
+  missing_content?: string[]
+  coverage_ready?: boolean
   available: boolean
   exercise_passed: boolean
   check_score: number | null
@@ -32,6 +34,11 @@ export interface PathNode {
 export interface Readiness {
   language: string
   label: string
+  missing_content?: { node_id: string; missing: string[] }[]
+  coverage_ready?: boolean
+  spine_lessons?: number
+  spine_checks?: number
+  depth_assessments?: number
   spine_stages: number
   spine_total: number
   depth_lessons: number
@@ -48,11 +55,29 @@ export interface StudyPath {
   current_id: string | null
   completed: number
   total: number
+  available_total?: number
+  unavailable_total?: number
+  curriculum_complete?: boolean
+  coverage_ready?: boolean
   completed_stages: number[]
   mastery_rule: string
   readiness: Readiness
   levels: Record<string, string>
 }
+
+// Keep unknown future gap codes readable without hiding them.
+export const contentGapLabel = (missing: string): string => ({
+  stage_lesson: 'stage-specific lesson', exercise: 'graded stage exercise',
+  checks: 'graded checks', curriculum: 'curriculum content', module_lesson: 'module lesson', module_assessment: 'module assessment',
+}[missing] ?? missing.replaceAll('_', ' '))
+
+export const hasCurriculumGaps = (path: StudyPath): boolean =>
+  path.coverage_ready === false || path.readiness.coverage_ready === false ||
+  !!path.readiness.missing_content?.length ||
+  (path.readiness.spine_lessons !== undefined && path.readiness.spine_lessons < path.readiness.spine_total) ||
+  (path.readiness.spine_checks !== undefined && path.readiness.spine_checks < path.readiness.spine_total) ||
+  (path.readiness.depth_assessments !== undefined && path.readiness.depth_assessments < path.readiness.depth_total) ||
+  path.nodes.some((node) => node.coverage_ready === false || !!node.missing_content?.length)
 
 export interface Allowance { daily_free: number; used_today: number; free_left: number; cost_after_free: number }
 
@@ -125,7 +150,9 @@ export interface QuizSummary {
 }
 
 export interface NextStep {
-  kind: 'quiz' | 'exercise' | 'problem' | 'lesson' | 'done'
+  kind: 'quiz' | 'exercise' | 'problem' | 'lesson' | 'done' | 'content-gap'
+  status?: string
+  missing_content?: string[]
   id: string | null
   title: string
   reason: string
