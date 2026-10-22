@@ -55,6 +55,10 @@ api.interceptors.response.use(
       if (!silent && !onAuthPage && !onPublicPage) {
         window.location.href = '/login?expired=1'
       }
+    } else if (!(error.config as { silentError?: boolean } | undefined)?.silentError) {
+      import('./errorStore').then(({ reportError }) => {
+        reportError(error, 'api')
+      }).catch(() => {})
     }
     return Promise.reject(error)
   },
@@ -298,9 +302,9 @@ export async function fetchSubscriptions(): Promise<import('../types').Subscript
 
 
 export async function fetchContentItem(
-  contentId: string,
+  contentId: string, language?: string,
 ): Promise<{ id: string; markdown: string }> {
-  const { data } = await api.get(`/tracks/items/${contentId}`)
+  const { data } = await api.get(`/tracks/items/${contentId}`, { params: { language } })
   return data
 }
 

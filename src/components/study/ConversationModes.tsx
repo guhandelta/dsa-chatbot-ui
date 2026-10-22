@@ -7,12 +7,15 @@ import { LANGUAGE_LABELS } from '../../lib/languageAccess'
 import { resolveDebug, sendStudyMessage, type Allowance, type MessageMode, type StudyReply } from '../../lib/studyApi'
 import type { ChatProvider } from '../../types'
 import { RichText } from './RichText'
+import { DebugChallenges } from './DebugChallenges'
+import type { DebugChallenge } from '../../lib/studyApi'
 
 interface Turn { id: string; question: string; reply: StudyReply }
 
 interface Shared {
   language: string
   focusId?: string
+  focusTitle?: string
   provider: ChatProvider
   onAllowance: (allowance: Allowance) => void
 }
@@ -29,7 +32,7 @@ function useStudyThread(mode: MessageMode, { language, focusId, provider, onAllo
     setTurns([]); setError(null); setLoading(false)
     return () => { session.current += 1 }
   }, [language, focusId, mode, context])
-  const send = async (message: string, extra: { code?: string; error?: string; compareLanguage?: string } = {}) => {
+  const send = async (message: string, extra: { code?: string; error?: string; compareLanguage?: string; focusId?: string } = {}) => {
     const requestSession = session.current
     setLoading(true); setError(null)
     let sent = false
@@ -47,7 +50,11 @@ function useStudyThread(mode: MessageMode, { language, focusId, provider, onAllo
     if (requestSession === session.current) setLoading(false)
     return sent
   }
-  return { turns, loading, error, send, threadId }
+  const reset = () => {
+    session.current += 1
+    setTurns([]); setError(null); setLoading(false)
+  }
+  return { turns, loading, error, send, threadId, reset }
 }
 
 const charge = (reply: StudyReply) => reply.peppercorns_charged
@@ -60,18 +67,37 @@ function FocusNote({ reply }: { reply: StudyReply }) {
     : null
 }
 
-export function ExplainMode(props: Shared) {
+export interface ExplainProps extends Shared {
+  activeQuestion?: string
+}
+
+export function ExplainMode(props: ExplainProps) {
   const thread = useStudyThread('explain', props)
   const [input, setInput] = useState('')
+  useEffect(() => { setInput('') }, [props.language, props.focusId])
   const submit = async () => {
     const text = input.trim()
     if (!text || thread.loading) return
-    if (await thread.send(text)) setInput('')
+    // The shown reflection question is not otherwise visible to the coach, so
+    // an answer to it must carry the question with it.
+    const framed = props.activeQuestion ? `Topic question under discussion: ${props.activeQuestion}\n\nMy message: ${text}` : text
+    if (await thread.send(framed.length <= 4000 ? framed : text)) setInput('')
   }
   return <div className="chat-container island-shell">
+    <div className="border-b border-[var(--line)] p-4">
+      <h2 className="m-0 font-bold">Understand {props.focusTitle ?? 'the current concept'}</h2>
+      <p className="mt-2 text-sm">Learn the idea, walk through a small correct example, and ask why it works. Each answer saves a takeaway and a common pitfall to your notes. Reflection here does not award a pass; Quiz me and graded exercises check mastery.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="mini-btn" onClick={() => setInput(`Explain ${props.focusTitle ?? 'this concept'} step by step with a small worked example.`)}>Walk through an example</button>
+        <button type="button" className="mini-btn" onClick={() => setInput(`What is the mental model behind ${props.focusTitle ?? 'this concept'}, and when should I use it?`)}>Explain the mental model</button>
+      </div>
+    </div>
     <div className="messages" aria-live="polite">
       {thread.turns.length === 0 && <p className="py-6 text-center text-sm text-[var(--sea-ink-soft)]">
-        Ask about the concept you are learning. Every answer ends with a takeaway card saved to your notes.</p>}
+        {props.activeQuestion
+          ? 'Type your answer to the topic question above in the input below, or ask any doubts about this concept.'
+          : 'Ask about the concept you are learning. Every answer ends with a takeaway card saved to your notes.'}
+      </p>}
       {thread.turns.map((turn) => <div key={turn.id} className="mentor-turn">
         <div className="mentor-you"><span className="mentor-label">You</span><p>{turn.question}</p></div>
         <div className="mentor-reply"><span className="mentor-label">Coach</span><FocusNote reply={turn.reply} /><RichText text={turn.reply.answer} />
@@ -89,14 +115,18 @@ export function ExplainMode(props: Shared) {
     {thread.error && <div className="error-banner" role="alert">{thread.error}</div>}
     <div className="input-bar">
       <input aria-label="Your question" value={input} onChange={(e) => setInput(e.target.value)} disabled={thread.loading}
-        onKeyDown={(e) => { if (e.key === 'Enter') void submit() }} placeholder="e.g. Why does my dict lookup raise KeyError?" />
-      <button type="button" onClick={() => void submit()} disabled={thread.loading || !input.trim()}>Ask</button>
+        onKeyDown={(e) => { if (e.key === 'Enter') void submit() }}
+        placeholder={props.activeQuestion ? "Answer the question above, or ask any doubts..." : "e.g. Why did this value change after the function call?"} />
+      <button type="button" onClick={() => void submit()} disabled={thread.loading || !input.trim()}>
+        {props.activeQuestion ? 'Send Answer / Ask' : 'Ask'}
+      </button>
     </div>
   </div>
 }
 
 export function DebugMode(props: Shared) {
-  const thread = useStudyThread('debug', props)
+  const [challengeId, setChallengeId] = useState<string | undefined>()
+  const thread = useStudyThread('debug', props, challengeId)
   const [code, setCode] = useState('')
   const [failure, setFailure] = useState('')
   const [thinking, setThinking] = useState('')
@@ -105,15 +135,22 @@ export function DebugMode(props: Shared) {
   const [resolveError, setResolveError] = useState<string | null>(null)
   const resolutionSession = useRef(0)
   useEffect(() => {
-    setLogged(null); setResolveError(null); setFix('')
+    setLogged(null); setResolveError(null); setFix(''); setCode(''); setFailure(''); setThinking(''); setChallengeId(undefined)
     resolutionSession.current += 1
     return () => { resolutionSession.current += 1 }
   }, [props.language, props.focusId])
+  const selectChallenge = (challenge: DebugChallenge | null) => {
+    thread.reset()
+    setChallengeId(challenge?.attempt_id)
+    setCode(challenge?.code ?? ''); setFailure(challenge?.failure ?? '')
+    setThinking(''); setFix(''); setLogged(null); setResolveError(null)
+    resolutionSession.current += 1
+  }
   const latest = thread.turns.at(-1)?.reply
   const ready = code.trim() && failure.trim() && thinking.trim()
   // The button is disabled until code, error and reasoning are filled in.
   const submit = async () => {
-    if (await thread.send(thinking.trim(), { code, error: failure })) setThinking('')
+    if (await thread.send(thinking.trim(), { code, error: failure, ...(challengeId ? { focusId: 'debug:' + challengeId } : {}) })) setThinking('')
   }
   const resolve = async () => {
     // Only shown after the first reply (so the thread exists) and enabled once a fix is typed.
@@ -128,6 +165,7 @@ export function DebugMode(props: Shared) {
     }
   }
   return <section className="island-shell rounded-2xl p-4">
+    <DebugChallenges language={props.language} focusId={props.focusId} onSelect={selectChallenge} />
     <p className="mb-3 text-sm text-[var(--sea-ink-soft)]">Paste your code and the actual error. I will ask questions, one at a time, using the same hint ladder as the mentor. I will not write the fix for you.</p>
     <label className="selector block"><span className="selector-label">Your code</span>
       <textarea className="train-textarea font-mono" rows={8} value={code} onChange={(e) => setCode(e.target.value)} /></label>
@@ -156,20 +194,24 @@ export function DebugMode(props: Shared) {
 }
 
 export function CompareMode(props: Shared & { languages: string[] }) {
-  const others = props.languages.filter((l) => l !== props.language)
+  const others = ['javascript', 'typescript'].includes(props.language) ? props.languages.filter((l) => ['javascript', 'typescript'].includes(l) && l !== props.language) : []
   const [selected, setSecond] = useState(others[0] ?? '')
   const second = others.includes(selected) ? selected : others[0] ?? ''
   const thread = useStudyThread('compare', props, second)
   const [question, setQuestion] = useState('')
+  useEffect(() => { setQuestion('') }, [props.language, props.focusId, second])
   const submit = async () => {
     // The input is disabled while a comparison is running.
     if (!question.trim() || thread.loading) return
     if (await thread.send(question.trim(), { compareLanguage: second })) setQuestion('')
   }
   if (!others.length) return <section className="island-shell rounded-2xl p-4">
-    <p className="m-0">Comparing needs a second language on your account. Add another language subscription to compare how a concept differs.</p>
+    <p className="m-0">This optional transfer guide is available only for JavaScript and TypeScript, with access to both languages. Use Explain for your selected language.</p>
   </section>
   return <section className="island-shell rounded-2xl p-4">
+    <h2 className="m-0 font-bold">JavaScript vs TypeScript</h2>
+    <p className="my-2 text-sm">Compare {props.focusTitle ?? 'the current topic'} through the same example: runtime behavior, static types, narrowing, and migration mistakes. This optional reference does not introduce a new exercise or change your progress.</p>
+    <button type="button" className="mini-btn mb-3" disabled={thread.loading} onClick={() => setQuestion(`Compare ${props.focusTitle ?? 'the current concept'} in both languages using the same small example and highlight the main transfer trap.`)}>Compare the current topic</button>
     <div className="controls mb-3">
       <label className="selector"><span className="selector-label">Compare {LANGUAGE_LABELS[props.language] ?? props.language} with</span>
         <select value={second} onChange={(e) => setSecond(e.target.value)}>

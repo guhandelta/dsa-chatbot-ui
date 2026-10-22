@@ -13,9 +13,10 @@ import { fetchContentItem, getApiErrorMessage } from '../lib/api'
 
 interface Props {
   problemId: string
+  language?: string
 }
 
-export function ProblemStatement({ problemId }: Props) {
+export function ProblemStatement({ problemId, language }: Props) {
   const [markdown, setMarkdown] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -29,12 +30,12 @@ export function ProblemStatement({ problemId }: Props) {
     setMarkdown(null)
     setLoading(true)
     setError(null)
-    fetchContentItem(problemId)
+    fetchContentItem(problemId, language)
       .then((data) => { if (active) setMarkdown(data.markdown) })
       .catch((err) => { if (active) setError(getApiErrorMessage(err)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [problemId])
+  }, [problemId, language])
 
   if (!problemId) {
     return (

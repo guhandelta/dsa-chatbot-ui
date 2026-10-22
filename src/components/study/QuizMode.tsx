@@ -125,7 +125,14 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
   const item = quiz.items[index]
   const finished = result?.complete
   const score = results.reduce((sum, r) => sum + r.score, 0)
-  const weak = [...new Set(results.filter((r) => !r.correct).map((r) => quiz.items.find((i) => i.id === r.item_id)!.concept))]
+  const weak = [
+    ...new Set(
+      results
+        .filter((r) => !r.correct)
+        .map((r) => quiz.items.find((i) => i.id === r.item_id)?.concept)
+        .filter((c): c is string => Boolean(c))
+    ),
+  ]
   const earned = results.flatMap((r) => r.rewards)
   return <section className="island-shell rounded-2xl p-4">
     <p className="mb-3 text-sm">{quiz.node_title} · question {Math.min(index + 1, quiz.total)} of {quiz.total}</p>

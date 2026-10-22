@@ -1,6 +1,6 @@
-// The learner's path: the shared 12 stages, then the language's depth
-// modules, with mastery status. Choosing a node sets the Study Room focus.
+import { useEffect } from 'react'
 import { contentGapLabel, hasCurriculumGaps, type PathNode, type StudyPath } from '../../lib/studyApi'
+import { addError, openErrorPopup } from '../../lib/errorStore'
 
 const STATUS_MARK: Record<PathNode['status'], string> = {
   complete: '✓', 'in-progress': '◐', 'not-started': '○', unavailable: '·',
@@ -15,36 +15,149 @@ const VERDICT: Record<StudyPath['readiness']['verdict'], string> = {
 interface Props {
   path: StudyPath
   focusId: string | null
+  unlockedNodes?: Set<string>
   onFocus: (nodeId: string) => void
 }
 
-export function PathPanel({ path, focusId, onFocus }: Props) {
+export function buildCurriculumGapsMessage(path: StudyPath): string | null {
+  const parts: string[] = []
+
+  if (path.available_total !== undefined) {
+    parts.push(
+      `${path.available_total} nodes with graded work available${
+        path.unavailable_total !== undefined ? `; ${path.unavailable_total} without graded work.` : '.'
+      }`
+    )
+  }
+
+  if (path.curriculum_complete === false) {
+    parts.push('Full curriculum not yet completed.')
+  }
+
+  const spineParts: string[] = []
+  if (path.readiness.spine_lessons !== undefined) {
+    spineParts.push(`Stage lessons: ${path.readiness.spine_lessons}/${path.readiness.spine_total}.`)
+  }
+  if (path.readiness.spine_checks !== undefined) {
+    spineParts.push(`Stage checks: ${path.readiness.spine_checks}/${path.readiness.spine_total}.`)
+  }
+  if (path.readiness.depth_assessments !== undefined) {
+    spineParts.push(`Module assessments: ${path.readiness.depth_assessments}/${path.readiness.depth_total}.`)
+  }
+  if (spineParts.length > 0) {
+    parts.push(spineParts.join(' '))
+  }
+
+  if (path.readiness.missing_content?.length) {
+    const missingItems = path.readiness.missing_content.map((gap) => {
+      const nodeTitle = path.nodes.find((node) => node.id === gap.node_id)?.title ?? gap.node_id
+      return `    ${nodeTitle}: missing ${gap.missing.map(contentGapLabel).join(', ')}.`
+    })
+    parts.push(missingItems.join('\n'))
+  }
+
+  return parts.length > 0 ? parts.join('\n\n') : null
+}
+
+export function isSectionEnabled(node: PathNode, path: StudyPath, unlockedNodes?: Set<string>): boolean {
+  if (unlockedNodes?.has(node.id)) {
+    return true
+  }
+  if (node.complete || node.status === 'complete' || node.status === 'in-progress' || node.id === path.current_id) {
+    return true
+  }
+
+  if (node.kind === 'stage') {
+    const stages = path.nodes.filter((n) => n.kind === 'stage')
+    const idx = stages.findIndex((n) => n.id === node.id)
+    if (idx <= 0) return true
+
+    // Check if the immediately preceding stage or all prior stages are complete or unlocked
+    const prevStage = stages[idx - 1]
+    if (unlockedNodes?.has(prevStage.id)) return true
+    return prevStage.complete || prevStage.status === 'complete'
+  }
+
+  const stages = path.nodes.filter((n) => n.kind === 'stage')
+  const allStagesCompleted = stages.length === 0 || stages.every((s) => s.complete || s.status === 'complete' || unlockedNodes?.has(s.id))
+  if (allStagesCompleted) return true
+
+  const modules = path.nodes.filter((n) => n.kind === 'module')
+  const modIdx = modules.findIndex((n) => n.id === node.id)
+  return modIdx === 0
+}
+
+export function PathPanel({ path, focusId, unlockedNodes, onFocus }: Props) {
   const gaps = hasCurriculumGaps(path)
+  const gapsMessage = buildCurriculumGapsMessage(path)
+
+  useEffect(() => {
+    if (gaps && gapsMessage) {
+      addError({
+        type: 'api',
+        title: 'Curriculum Notices & Incomplete Content',
+        message: gapsMessage,
+      })
+    }
+  }, [path.label, gaps, gapsMessage])
+
   const stages = path.nodes.filter((n) => n.kind === 'stage')
   const modules = path.nodes.filter((n) => n.kind === 'module')
-  const item = (node: PathNode) => <li key={node.id}>
-    <button type="button" onClick={() => onFocus(node.id)} aria-current={focusId === node.id}
-      className={`item-btn ${focusId === node.id ? 'is-active' : ''}`}>
-      <span className="item-title"><span aria-hidden="true">{STATUS_MARK[node.status]} </span>
-        {node.stage ? `${node.stage}. ` : ''}{node.title}{node.id === path.current_id ? ' (you are here)' : ''}</span>
-      <span className="text-xs">{node.level}<span className="sr-only">, {node.status.replace('-', ' ')}</span></span>
-    </button>
-    {!!node.missing_content?.length && <p className="my-1 text-xs">Missing: {node.missing_content.map(contentGapLabel).join(', ')}.</p>}
-  </li>
+  const item = (node: PathNode) => {
+    const enabled = isSectionEnabled(node, path, unlockedNodes)
+    return (
+      <li key={node.id}>
+        <button
+          type="button"
+          disabled={!enabled}
+          aria-disabled={!enabled}
+          title={enabled ? undefined : 'Complete previous sections to unlock'}
+          onClick={(e) => {
+            e.preventDefault()
+            if (enabled) onFocus(node.id)
+          }}
+          aria-current={focusId === node.id}
+          className={`item-btn ${focusId === node.id ? 'is-active' : ''} ${
+            !enabled ? 'opacity-40 cursor-not-allowed hover:bg-transparent' : ''
+          }`}
+        >
+          <span className="item-title">
+            <span aria-hidden="true">{enabled ? STATUS_MARK[node.status] : '🔒'} </span>
+            {node.stage ? `${node.stage}. ` : ''}
+            {node.title}
+            {node.id === path.current_id ? ' (you are here)' : ''}
+            {!enabled && <span className="text-[11px] font-normal text-[var(--sea-ink-soft)]"> (locked)</span>}
+          </span>
+          <span className="text-xs">
+            {node.level}
+            <span className="sr-only">, {enabled ? node.status.replace('-', ' ') : 'locked'}</span>
+          </span>
+        </button>
+        {!!node.missing_content?.length && (
+          <p className="my-1 text-xs">Missing: {node.missing_content.map(contentGapLabel).join(', ')}.</p>
+        )}
+      </li>
+    )
+  }
   return <aside className="island-shell rounded-2xl p-4" aria-label="Your learning path">
     <p className="island-kicker mb-1">{path.label} path</p>
     <p className="m-0 text-sm">{path.completed}/{path.total} nodes mastered</p>
     <p className="mt-1 mb-3 text-xs text-[var(--sea-ink-soft)]">{gaps ? 'Partial curriculum: some lessons or assessments are still missing' : VERDICT[path.readiness.verdict]}. {path.mastery_rule}</p>
     {path.available_total !== undefined && <p className="my-1 text-xs">{path.available_total} nodes with graded work available{path.unavailable_total !== undefined ? `; ${path.unavailable_total} without graded work` : ''}.</p>}
-    {path.curriculum_complete === false && <p className="my-1 text-xs">Full curriculum not yet completed.</p>}
-    {(path.readiness.spine_lessons !== undefined || path.readiness.spine_checks !== undefined || path.readiness.depth_assessments !== undefined) && <p className="my-1 text-xs">
+    {(path.readiness.spine_lessons !== undefined || path.readiness.spine_checks !== undefined || path.readiness.depth_assessments !== undefined) && <p className="my-1 text-xs text-[var(--sea-ink-soft)]">
       {path.readiness.spine_lessons !== undefined && `Stage lessons: ${path.readiness.spine_lessons}/${path.readiness.spine_total}. `}
       {path.readiness.spine_checks !== undefined && `Stage checks: ${path.readiness.spine_checks}/${path.readiness.spine_total}. `}
       {path.readiness.depth_assessments !== undefined && `Module assessments: ${path.readiness.depth_assessments}/${path.readiness.depth_total}.`}
     </p>}
-    {!!path.readiness.missing_content?.length && <ul className="my-2 text-xs">{path.readiness.missing_content.map((gap) => <li key={gap.node_id}>
-      {path.nodes.find((node) => node.id === gap.node_id)?.title ?? gap.node_id}: missing {gap.missing.map(contentGapLabel).join(', ')}.
-    </li>)}</ul>}
+    {gapsMessage && (
+      <button
+        type="button"
+        onClick={() => openErrorPopup()}
+        className="my-2 inline-flex items-center gap-1.5 rounded-lg border border-orange-500/30 bg-orange-500/10 px-2.5 py-1 text-xs font-semibold text-orange-700 dark:text-orange-300 hover:bg-orange-500/20 transition w-full justify-center"
+      >
+        <span>⚠️ View curriculum notices in error popup</span>
+      </button>
+    )}
     <p className="mb-1 text-xs font-semibold">Shared stages</p>
     <ul className="item-list mb-3">{stages.map(item)}</ul>
     {modules.length > 0 && <>

@@ -35,27 +35,27 @@ export const Route = createFileRoute("/practice")({
   component: PracticePage,
 });
 
+// Every language with a server-side runner and exercises.
+const PRACTICE_LANGUAGES = ["javascript", "java", "python", "cpp", "c", "rust", "typescript", "ruby", "go", "csharp"];
+
 function PracticePage() {
   const { user } = useAuth();
   const access = useLanguageAccess();
   const { problem: preselected, language: requested } = Route.useSearch();
   const [language, setLanguage] = useState(
-    requested ?? (user?.preferred_language === "java" ? "java" : "javascript"),
+    requested ?? user?.preferred_language ?? "",
   );
   const [problemId, setProblemId] = useState(preselected ?? "");
   useEffect(() => {
     if (requested) setLanguage(requested);
-    else if (
-      user?.preferred_language === "java" ||
-      user?.preferred_language === "javascript"
-    )
+    else if (user?.preferred_language)
       setLanguage(user.preferred_language);
   }, [user?.preferred_language, requested]);
   useEffect(() => {
     setProblemId(preselected ?? "");
   }, [preselected]);
-  const exerciseLanguage = /^(java|javascript|python)-path-/.exec(problemId)?.[1];
-  const practiceLanguages = (access.data?.languages ?? []).filter(l => ["javascript", "java", "python", "cpp", "c", "rust"].includes(l));
+  const exerciseLanguage = /^(java|javascript|python|typescript|c|cpp|rust|go|csharp|ruby)-path-/.exec(problemId)?.[1];
+  const practiceLanguages = (access.data?.languages ?? []).filter(l => PRACTICE_LANGUAGES.includes(l));
   const activeLanguage = exerciseLanguage ?? (practiceLanguages.includes(language) ? language : practiceLanguages[0] ?? "");
   return (
     <main className="page-wrap px-4 py-8">
@@ -72,7 +72,7 @@ function PracticePage() {
         ) : (
           <>
             <ProblemPicker value={problemId} onChange={setProblemId} />
-            <LanguageSelector value={language} onChange={setLanguage} supported={["javascript", "java", "python", "cpp", "c", "rust"]} />
+            <LanguageSelector value={language} onChange={setLanguage} supported={PRACTICE_LANGUAGES} />
           </>
         )}
         {exerciseLanguage && (
@@ -163,9 +163,7 @@ export function PracticeWorkspace({
         const item = items.find((i) => i.id === problemId);
         setCode(
           item?.starter_code ||
-            (language === "java"
-              ? "// Define the problem method in Java.\n"
-              : "// Define the problem function in JavaScript.\n"),
+            `${language === "python" || language === "ruby" ? "#" : "//"} Define the problem function in ${LANGUAGE_LABELS[language] ?? language}.\n`,
         );
         const saved = sessionStorage.getItem(sessionSlot);
         if (saved) {
@@ -267,7 +265,7 @@ export function PracticeWorkspace({
   };
   return (
     <>
-      <ProblemStatement problemId={problemId} />
+      <ProblemStatement problemId={problemId} language={language} />
       <section className="island-shell mt-4 rounded-2xl p-5">
         <fieldset disabled={loading}>
           <ProviderSelector value={provider} onChange={setProvider} />

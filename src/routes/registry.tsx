@@ -191,19 +191,17 @@ export function TrainingRegistryPage() {
                 key={key}
                 type="button"
                 onClick={() => setSelectedCategory(key)}
-                className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
-                  active
-                    ? "bg-[var(--sea-ink)] text-white shadow-sm"
-                    : "border border-[var(--chip-line)] bg-[var(--chip-bg)] text-[var(--sea-ink)] hover:bg-[var(--surface)]"
-                }`}
+                className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${active
+                  ? "border border-[var(--sea-ink)] bg-[var(--sea-ink)] text-[var(--chip-bg)] shadow-sm"
+                  : "border border-[var(--chip-line)] bg-[var(--chip-bg)] text-[var(--sea-ink)] hover:bg-[var(--surface)]"
+                  }`}
               >
                 <span>{config.label}</span>
                 <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                    active
-                      ? "bg-white/20 text-white"
-                      : "bg-[var(--line)] text-[var(--sea-ink-soft)]"
-                  }`}
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${active
+                    ? "bg-current/20 text-current font-medium"
+                    : "bg-[var(--line)] text-[var(--sea-ink-soft)]"
+                    }`}
                 >
                   {count}
                 </span>

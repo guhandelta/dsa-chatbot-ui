@@ -50,3 +50,20 @@ describe('study API client', () => {
     expect(http.post).toHaveBeenLastCalledWith('/study/debug/resolve', { thread_id: 't1', fix: 'my fix' })
   })
 })
+
+it('loads, draws, and self-reviews language-scoped debugging challenges', async () => {
+  await study.fetchDebugCatalog('java')
+  expect(http.get).toHaveBeenLastCalledWith('/study/debug/challenges', { params: { language: 'java' } })
+  await study.nextDebugChallenge('java', 'spring-data', 'extreme')
+  expect(http.post).toHaveBeenLastCalledWith('/study/debug/challenges/next', { language: 'java', subject: 'spring-data', difficulty: 'extreme' })
+  await study.reviewDebugChallenge('attempt/1', 'A diagnosis and a regression test.')
+  expect(http.post).toHaveBeenLastCalledWith('/study/debug/challenges/attempt%2F1/review', { diagnosis: 'A diagnosis and a regression test.' })
+})
+
+
+it('passes the selected topic to debugging catalog and draw requests', async () => {
+  await study.fetchDebugCatalog('java','java:stage-07')
+  expect(http.get).toHaveBeenLastCalledWith('/study/debug/challenges', { params:{ language:'java', focus_id:'java:stage-07' } })
+  await study.nextDebugChallenge('java','java','medium','java:stage-07')
+  expect(http.post).toHaveBeenLastCalledWith('/study/debug/challenges/next', { language:'java', subject:'java', difficulty:'medium', focus_id:'java:stage-07' })
+})

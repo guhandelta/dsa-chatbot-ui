@@ -4,6 +4,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import Header from '../components/Header'
 import Footer from '../components/Footer'
+import { ErrorPopupManager } from '../components/ErrorPopupManager'
 import { AuthProvider } from '../lib/auth'
 
 import '../styles.css'
@@ -16,6 +17,7 @@ function RootComponent() {
   return (
     <AuthProvider>
       <Header />
+      <ErrorPopupManager />
       <Outlet />
       <Footer />
       {/* Devtools only in dev builds — never shipped to production */}

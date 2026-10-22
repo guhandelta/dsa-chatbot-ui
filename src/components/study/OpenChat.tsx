@@ -12,9 +12,10 @@ interface Props {
   provider: ChatProvider
   userId?: string
   initialSubject?: string
+  onSubjectChange?: (subject: string) => void
 }
 
-export function OpenChat({ language, languages, provider, userId, initialSubject }: Props) {
+export function OpenChat({ language, languages, provider, userId, initialSubject, onSubjectChange }: Props) {
   const defaultTrack = ['javascript', 'java'].includes(language) ? 'dsa' : 'language'
   const [subjectId, setSubjectId] = useState(initialSubject ?? '')
   const [agentic, setAgentic] = useState(false)
@@ -28,7 +29,7 @@ export function OpenChat({ language, languages, provider, userId, initialSubject
   return <>
     {references.length > 0 && <section className="mb-4 rounded-xl border border-[var(--line)] p-4">
       <label className="block text-sm font-semibold" htmlFor="reference-subject">Learning material (optional)</label>
-      <select id="reference-subject" value={subject?.id ?? ''} onChange={(event) => setSubjectId(event.target.value)} className="mt-2 rounded-lg border p-2">
+      <select id="reference-subject" value={subject?.id ?? ''} onChange={(event) => { setSubjectId(event.target.value); onSubjectChange?.(event.target.value) }} className="mt-2 rounded-lg border p-2">
         <option value="">General tutor</option>
         {references.map((item) => (
           <option key={item.id} value={item.id}>{item.id.replaceAll('-', ' ')} ({item.retrievable_records} references)</option>

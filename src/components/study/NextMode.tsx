@@ -1,5 +1,7 @@
 // What next? One recommended step from progress and weak concepts, plus the
 // learner's weak spots, their own recent explanations and saved notes.
+import { LearningTips } from './LearningTips'
+import { ProgressCharts } from './ProgressCharts'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { getApiErrorMessage } from '../../lib/api'
@@ -30,7 +32,7 @@ export function NextMode({ language, onOpen }: Props) {
       .catch((err) => { if (active) setError(getApiErrorMessage(err)) })
     return () => { active = false }
   }, [language])
-  if (error) return <div className="error-banner" role="alert">{error}</div>
+  if (error) return <><ProgressCharts language={language} /><div className="error-banner" role="alert">{error}</div></>
   if (!step) return <p role="status">Working out your next step…</p>
   const blocked = step.kind === 'content-gap' || step.status === 'blocked'
   const gaps = blocked || (path ? hasCurriculumGaps(path) : false)
@@ -40,6 +42,12 @@ export function NextMode({ language, onOpen }: Props) {
     word.includes('_') || missing.includes(word) ? contentGapLabel(word) : word)
   const inPage = step.link?.to === '/chat'
   return <div className="flex flex-col gap-4">
+    <section className="island-shell rounded-2xl p-4" aria-label="Your learning plan">
+      <h2 className="m-0 font-bold">Decide what to do next</h2>
+      <p className="mt-2 text-sm">This is your progress dashboard. It recommends one lesson, review quiz, or exercise and explains why, using your completed work and weak spots. Your recent answers and saved notes help you prepare before you open that activity.</p>
+    </section>
+    <ProgressCharts language={language} />
+    <LearningTips guidance={insights?.guidance} onOpen={onOpen} />
     <section className="island-shell rounded-2xl p-4" aria-label="Recommended next step">
       <p className="island-kicker mb-1">Recommended next step</p>
       <h2 className="m-0 text-lg font-bold">{step.kind === 'done' && gaps ? 'Available work finished; curriculum gaps remain' : step.title}</h2>
@@ -54,6 +62,7 @@ export function NextMode({ language, onOpen }: Props) {
     </section>
     {insights && (insights.weak_concepts.length > 0 || insights.responses.length > 0) && <section className="island-shell rounded-2xl p-4" aria-label="How you are thinking">
       <p className="island-kicker mb-2">How you are thinking</p>
+      <p className="mb-2 text-xs">This is your quiz history. Earlier misses can remain here after recent improvement; the skill tips above use your latest distinct answers.</p>
       {insights.weak_concepts.length > 0 && <ul className="mb-3">{insights.weak_concepts.map((w) => <li key={w.concept} className="text-sm">
         <strong>{w.concept}</strong>: missed {w.misses} time{w.misses === 1 ? '' : 's'}{w.misconception ? `. Your answers suggest: ${w.misconception}` : ''}
       </li>)}</ul>}

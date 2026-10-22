@@ -125,6 +125,15 @@ describe('TrainingRegistryPage (Tech Board)', () => {
       expect(screen.getByText('HTML5, CSS & Tailwind')).toBeTruthy()
     })
 
+    const allButton = screen.getByRole('button', { name: /All Technologies/i })
+    const webButton = screen.getByRole('button', { name: /Web & Frontend/i })
+
+    // Verify initial active state flips text and background color
+    expect(allButton.className).toContain('bg-[var(--sea-ink)]')
+    expect(allButton.className).toContain('text-[var(--chip-bg)]')
+    expect(webButton.className).toContain('bg-[var(--chip-bg)]')
+    expect(webButton.className).toContain('text-[var(--sea-ink)]')
+
     // Search for Python
     const searchInput = screen.getByPlaceholderText(/Search technologies/i)
     fireEvent.change(searchInput, { target: { value: 'python' } })
@@ -134,8 +143,13 @@ describe('TrainingRegistryPage (Tech Board)', () => {
 
     // Clear search and click Web & Frontend category pill
     fireEvent.change(searchInput, { target: { value: '' } })
-    const webButton = screen.getByRole('button', { name: /Web & Frontend/i })
     fireEvent.click(webButton)
+
+    // Verify clicked button now has flipped colors and previous button reverted
+    expect(webButton.className).toContain('bg-[var(--sea-ink)]')
+    expect(webButton.className).toContain('text-[var(--chip-bg)]')
+    expect(allButton.className).toContain('bg-[var(--chip-bg)]')
+    expect(allButton.className).toContain('text-[var(--sea-ink)]')
 
     expect(screen.getByText('HTML5, CSS & Tailwind')).toBeTruthy()
     expect(screen.queryByText('Python')).toBeNull()

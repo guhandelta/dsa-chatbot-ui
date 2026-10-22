@@ -155,8 +155,17 @@ pre code {
 }
 
 .page-wrap {
-  width: min(1080px, calc(100% - 2rem));
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-left: 1.25em;
+  padding-right: 1.25em;
   margin-inline: auto;
+}
+
+.page-wrap.px-4 {
+  padding-left: 1.25em;
+  padding-right: 1.25em;
 }
 
 .display-title {

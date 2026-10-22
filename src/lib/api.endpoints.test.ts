@@ -169,7 +169,9 @@ describe('endpoint wrappers', () => {
     expect(http.get).toHaveBeenCalledWith('/tracks/algorithms/bfs/practice', { params: {} })
     expect(http.get).toHaveBeenCalledWith('/tracks/algorithms/bfs/practice', { params: { difficulty: 'Hard' } })
     expect(http.patch).toHaveBeenCalledWith('/auth/me/language', { language: 'rust' })
-    expect(http.get).toHaveBeenCalledWith('/tracks/items/two-sum')
+    expect(http.get).toHaveBeenCalledWith('/tracks/items/two-sum', { params: { language: undefined } })
+    await api.fetchContentItem('two-sum', 'java')
+    expect(http.get).toHaveBeenCalledWith('/tracks/items/two-sum', { params: { language: 'java' } })
   })
 
   it('mentor, profile, subscriptions', async () => {

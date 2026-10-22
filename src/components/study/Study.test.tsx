@@ -6,8 +6,10 @@ import type { PathNode, QuizItem, QuizResult, StudyPath, StudyReply } from '../.
 const auth = vi.hoisted(() => ({ setBalance: vi.fn() }))
 const study = vi.hoisted(() => ({
   fetchStudyPath: vi.fn(), fetchNodeLesson: vi.fn(), fetchAllowance: vi.fn(), sendStudyMessage: vi.fn(),
+  fetchDebugCatalog: vi.fn().mockResolvedValue({ language: 'python', difficulties: ['easy', 'medium', 'hard', 'expert', 'extreme'], subjects: [] }),
+  nextDebugChallenge: vi.fn(), reviewDebugChallenge: vi.fn(),
   resolveDebug: vi.fn(), startQuiz: vi.fn(), answerQuiz: vi.fn(), fetchQuizSummary: vi.fn(),
-  fetchNextStep: vi.fn(), fetchStudyNotes: vi.fn(), fetchInsights: vi.fn(), fetchNextHint: vi.fn(),
+  fetchProgressOverview: vi.fn(), fetchNextStep: vi.fn(), fetchStudyNotes: vi.fn(), fetchInsights: vi.fn(), fetchNextHint: vi.fn(),
 }))
 vi.mock('../../lib/studyApi', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../lib/studyApi')>(), ...study,
@@ -54,6 +56,8 @@ const reply = (over: Partial<StudyReply> = {}): StudyReply => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  study.fetchDebugCatalog.mockResolvedValue({ language: 'python', difficulties: ['easy','medium','hard','expert','extreme'], subjects: [] })
+  study.fetchProgressOverview.mockResolvedValue({ language: 'python', sections: [] })
   study.fetchAllowance.mockResolvedValue(allowance)
   study.fetchStudyPath.mockResolvedValue(path())
 })
@@ -91,6 +95,30 @@ describe('PathPanel', () => {
       expect(screen.queryByText(/depth modules/)).toBeNull()
       unmount()
     }
+  })
+
+  it('disables sections where the previous section is not completed', () => {
+    const onFocus = vi.fn()
+    // Stage 1 not complete, Stage 2 not complete, Stage 3 not complete
+    const testPath = path({
+      current_id: 'python:stage-01',
+      nodes: [
+        node({ id: 'python:stage-01', stage: 1, title: 'Stage One', status: 'not-started', complete: false }),
+        node({ id: 'python:stage-02', stage: 2, title: 'Stage Two', status: 'not-started', complete: false }),
+        node({ id: 'python:stage-03', stage: 3, title: 'Stage Three', status: 'not-started', complete: false }),
+      ],
+    })
+    render(<PathPanel path={testPath} focusId="python:stage-01" onFocus={onFocus} />)
+
+    // Stage 1 is current/first, so enabled
+    const stage1Btn = screen.getByRole('button', { name: /Stage One/i })
+    expect(stage1Btn.hasAttribute('disabled')).toBe(false)
+
+    // Stage 2 is locked because Stage 1 is not completed
+    const stage2Btn = screen.getByRole('button', { name: /Stage Two/i })
+    expect(stage2Btn.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(stage2Btn)
+    expect(onFocus).not.toHaveBeenCalledWith('python:stage-02')
   })
 })
 
@@ -207,41 +235,24 @@ describe('Debug mode', () => {
 })
 
 describe('Compare mode', () => {
-  it('explains that a second language is needed', () => {
-    render(<CompareMode {...shared} languages={['python']} />)
-    expect(screen.getByText(/needs a second language/)).toBeTruthy()
+  it('requires JavaScript and TypeScript access', () => {
+    render(<CompareMode {...shared} languages={['python', 'java']} />)
+    expect(screen.getByText(/available only for JavaScript and TypeScript/)).toBeTruthy()
+    expect(screen.queryByLabelText('What to compare')).toBeNull()
   })
-
-  it('compares with the chosen language and renders the table', async () => {
-    study.sendStudyMessage.mockResolvedValueOnce(reply({ mode: 'compare', answer: '| Aspect | python | java |\n|---|---|---|\n| equality | == | equals |', focus: { kind: 'node', id: 'a', title: 'A', auto: false } }))
-      .mockRejectedValueOnce(new Error('Choose a second language'))
-    render(<CompareMode {...shared} languages={['python', 'java', 'rust']} />)
-    fireEvent.change(screen.getByLabelText(/Compare Python with/), { target: { value: 'rust' } })
-    fireEvent.change(screen.getByLabelText(/Compare Python with/), { target: { value: 'java' } })
-    const input = screen.getByLabelText('What to compare')
-    fireEvent.keyDown(input, { key: 'Enter' })
-    expect(study.sendStudyMessage).not.toHaveBeenCalled()
-    fireEvent.change(input, { target: { value: 'equality' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
-    expect(await screen.findByRole('cell', { name: 'equals' })).toBeTruthy()
-    expect(study.sendStudyMessage).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'compare', compareLanguage: 'java' }))
-    expect(screen.getByText(/Saved to your notes/)).toBeTruthy()
-    fireEvent.change(input, { target: { value: 'again' } })
-    fireEvent.keyDown(input, { key: 'x' })
+  it('compares the supported pair and renders the answer', async () => {
+    study.sendStudyMessage.mockResolvedValueOnce(reply({ mode: 'compare', answer: 'Types are checked before runtime.' }))
+    render(<CompareMode {...shared} language="javascript" languages={['javascript', 'typescript', 'java']} />)
+    expect(screen.getAllByRole('option').map(x => x.textContent)).toEqual(['TypeScript'])
+    fireEvent.change(screen.getByLabelText('What to compare'), { target: { value: 'narrowing' } })
     fireEvent.click(screen.getByText('Compare'))
-    expect(await screen.findByRole('alert')).toBeTruthy()
+    await screen.findByText('Types are checked before runtime.')
+    expect(study.sendStudyMessage).toHaveBeenCalledWith(expect.objectContaining({ language: 'javascript', compareLanguage: 'typescript' }))
   })
-
-  it('shows raw language ids that have no label', () => {
-    render(<CompareMode {...shared} language="kotlin" languages={['kotlin', 'zig']} />)
-    expect(screen.getByText('Compare kotlin with')).toBeTruthy()
-    expect(screen.getByRole('option', { name: 'zig' })).toBeTruthy()
-  })
-
-  it('falls back to a valid second language when the list changes', () => {
-    const { rerender } = render(<CompareMode {...shared} languages={['python', 'java']} />)
-    rerender(<CompareMode {...shared} languages={['python', 'rust']} />)
-    expect((screen.getByLabelText(/Compare Python with/) as HTMLSelectElement).value).toBe('rust')
+  it('disables comparison when the second subscription is removed', () => {
+    const { rerender } = render(<CompareMode {...shared} language="javascript" languages={['javascript', 'typescript']} />)
+    rerender(<CompareMode {...shared} language="javascript" languages={['javascript']} />)
+    expect(screen.queryByLabelText('What to compare')).toBeNull()
   })
 })
 
@@ -420,7 +431,7 @@ describe('StudyWorkspace', () => {
     expect(screen.getByRole('heading', { name: 'Conditions' })).toBeTruthy()
     expect(screen.getByLabelText('Your code')).toBeTruthy()
     rerender(<StudyWorkspace {...props} mode="compare" />)
-    expect(screen.getByLabelText(/Compare Python with/)).toBeTruthy()
+    expect(screen.getByText(/available only for JavaScript and TypeScript/)).toBeTruthy()
     rerender(<StudyWorkspace {...props} mode="quiz" />)
     expect(screen.getByText('Start quiz')).toBeTruthy()
     study.fetchNextStep.mockResolvedValue({ kind: 'done', id: null, title: 'Path complete', reason: '', node_id: null, link: null })
@@ -505,20 +516,20 @@ describe('Study session regressions', () => {
     expect(study.sendStudyMessage).toHaveBeenLastCalledWith(expect.objectContaining({ threadId: 't1', focusId: 'python:stage-01' }))
   })
 
-  it('resets comparison context and discards a pending reply when the second language changes', async () => {
+  it('discards a pending comparison when the language direction changes', async () => {
     let resolve!: (value: StudyReply) => void
-    study.sendStudyMessage.mockReturnValueOnce(new Promise((yes) => { resolve = yes }))
-      .mockResolvedValueOnce(reply({ answer: 'Rust comparison' }))
-    render(<CompareMode language="python" provider="auto" onAllowance={vi.fn()} languages={['python', 'java', 'rust']} />)
+    study.sendStudyMessage.mockReturnValueOnce(new Promise((yes) => { resolve = yes })).mockResolvedValueOnce(reply({ answer: 'New comparison' }))
+    const props = { provider: 'auto' as const, onAllowance: vi.fn(), languages: ['javascript', 'typescript'] }
+    const { rerender } = render(<CompareMode {...props} language="javascript" />)
     fireEvent.change(screen.getByLabelText('What to compare'), { target: { value: 'maps' } })
     fireEvent.click(screen.getByText('Compare'))
-    fireEvent.change(screen.getByLabelText(/Compare Python with/), { target: { value: 'rust' } })
-    fireEvent.change(screen.getByLabelText('What to compare'), { target: { value: 'ownership' } })
+    rerender(<CompareMode {...props} language="typescript" />)
+    fireEvent.change(screen.getByLabelText('What to compare'), { target: { value: 'narrowing' } })
     fireEvent.click(screen.getByText('Compare'))
-    await screen.findByText('Rust comparison')
+    await screen.findByText('New comparison')
     await act(async () => resolve(reply({ answer: 'Old comparison' })))
     expect(screen.queryByText('Old comparison')).toBeNull()
-    expect(study.sendStudyMessage).toHaveBeenLastCalledWith(expect.objectContaining({ compareLanguage: 'rust', threadId: undefined }))
+    expect(study.sendStudyMessage).toHaveBeenLastCalledWith(expect.objectContaining({ compareLanguage: 'javascript', threadId: undefined }))
   })
 
   it('keeps a completed automatic quiz summary when the refreshed path advances', async () => {
@@ -651,4 +662,90 @@ describe('Blocked API recommendations', () => {
     expect(screen.queryByText('Open in practice')).toBeNull()
     expect(screen.queryByText(/stage_lesson|module_lesson/)).toBeNull()
   })
+})
+
+
+it('coaches the assigned framework problem and resets the thread for the next problem', async () => {
+  const first = { id:'bug-one', attempt_id:'attempt-one', language:'python', subject:'python-fastapi', difficulty:'easy',
+    title:'A dependency is missing', code:'def route(user=current_user): return user', failure:'The route receives a function.',
+    goal:'Investigate dependency injection.', source:'authored', code_language:'python', status:'assigned' }
+  const second = { ...first, id:'bug-two', attempt_id:'attempt-two', title:'A request blocks', code:'async def route(): time.sleep(5)', failure:'Other requests stall.' }
+  study.fetchDebugCatalog.mockResolvedValue({ language:'python', difficulties:['easy'], subjects:[{
+    id:'python-fastapi', levels:[{ difficulty:'easy', total:10, remaining:8, reviewed:0, current:first }],
+  }] })
+  study.nextDebugChallenge.mockResolvedValue(second)
+  study.sendStudyMessage.mockResolvedValueOnce(reply({ mode:'debug', answer:'Which value is injected?', hint_tier:1, tier_label:'Orient' }))
+    .mockResolvedValueOnce(reply({ mode:'debug', thread_id:'t2', answer:'Which operation blocks?', hint_tier:1, tier_label:'Orient' }))
+  render(<DebugMode {...shared} />)
+  await screen.findByText('A dependency is missing')
+  expect((screen.getByLabelText('Your code') as HTMLTextAreaElement).value).toBe(first.code)
+  fireEvent.change(screen.getByLabelText('What do you think is happening?'), { target:{ value:'The dependency was not called.' } })
+  fireEvent.click(screen.getByText('Debug with me'))
+  await screen.findByText('Which value is injected?')
+  expect(study.sendStudyMessage).toHaveBeenLastCalledWith(expect.objectContaining({ focusId:'debug:attempt-one', code:first.code }))
+  fireEvent.click(screen.getByRole('button', { name:'Next unseen problem' }))
+  await screen.findByText('A request blocks')
+  expect(screen.queryByText('Which value is injected?')).toBeNull()
+  fireEvent.change(screen.getByLabelText('What do you think is happening?'), { target:{ value:'A blocking sleep runs in the event loop.' } })
+  fireEvent.click(screen.getByText('Debug with me'))
+  await screen.findByText('Which operation blocks?')
+  expect(study.sendStudyMessage).toHaveBeenLastCalledWith(expect.objectContaining({ focusId:'debug:attempt-two', threadId:undefined, code:second.code }))
+})
+
+
+it('keeps reflection prompts exclusive to Explain', async () => {
+  const props = { language:'python', languages:['python','java'], provider:'auto' as const, onFocus:vi.fn(), onOpen:vi.fn() }
+  const view = render(<StudyWorkspace {...props} mode="explain" />)
+  await screen.findByLabelText('Concept reflection')
+  expect(screen.getByText(/Reflection here does not award a pass/)).toBeTruthy()
+  for (const mode of ['debug','compare','quiz'] as const) {
+    view.rerender(<StudyWorkspace {...props} mode={mode} />)
+    expect(screen.queryByLabelText('Concept reflection')).toBeNull()
+  }
+  study.fetchNextStep.mockResolvedValue({ kind:'done', title:'Path complete', reason:'Done', link:null })
+  study.fetchInsights.mockResolvedValue({ weak_concepts:[], responses:[] })
+  study.fetchStudyNotes.mockResolvedValue([])
+  view.rerender(<StudyWorkspace {...props} mode="next" />)
+  await screen.findByLabelText('Your learning plan')
+  expect(screen.queryByLabelText('Current focus')).toBeNull()
+  expect(screen.queryByLabelText('Concept reflection')).toBeNull()
+})
+
+it('uses the current path node for Debug even without an explicit URL focus', async () => {
+  render(<StudyWorkspace language="python" languages={['python']} mode="debug" provider="auto" onFocus={vi.fn()} onOpen={vi.fn()} />)
+  await screen.findByRole('heading', { name:'Values and arithmetic' })
+  await waitFor(() => expect(study.fetchDebugCatalog).toHaveBeenCalledWith('python','python:stage-01'))
+})
+
+it('an Explain answer cannot unlock the next stage or claim a graded pass', async () => {
+  study.fetchStudyPath.mockResolvedValue(path({ completed:0, nodes:[node(),node({ id:'python:stage-02', stage:2, order:2, title:'Conditions', status:'not-started' })] }))
+  study.sendStudyMessage.mockResolvedValue(reply({ answer:'Division depends on the operand types.' }))
+  render(<StudyWorkspace language="python" languages={['python']} mode="explain" provider="auto" onFocus={vi.fn()} onOpen={vi.fn()} />)
+  await screen.findByLabelText('Concept reflection')
+  const next = screen.getByRole('button', { name:/2\. Conditions/ }) as HTMLButtonElement
+  expect(next.disabled).toBe(true)
+  fireEvent.change(screen.getByLabelText('Your question'), { target:{ value:'Why does division truncate?' } })
+  fireEvent.click(screen.getByText('Send Answer / Ask'))
+  await screen.findByText('Division depends on the operand types.')
+  const sent = study.sendStudyMessage.mock.calls.at(-1)![0].message as string
+  expect(sent).toContain('Topic question under discussion:')
+  expect(sent).toContain('Why does division truncate?')
+  expect(next.disabled).toBe(true)
+  expect(screen.queryByText('Challenge Completed')).toBeNull()
+})
+
+it('Explain example prompts prepare a question without automatically sending it', () => {
+  render(<ExplainMode language="java" focusId="java:stage-03" focusTitle="Loops and accumulation" provider="auto" onAllowance={vi.fn()} />)
+  fireEvent.click(screen.getByText('Walk through an example'))
+  expect((screen.getByLabelText('Your question') as HTMLInputElement).value).toContain('Loops and accumulation')
+  expect(study.sendStudyMessage).not.toHaveBeenCalled()
+})
+
+
+it('pauses a foreign tiered Explain topic instead of showing another language’s coach', async () => {
+  render(<StudyWorkspace language="python" languages={['python']} mode="quiz" focus="explain:javascript:arrays" provider="auto" onFocus={vi.fn()} onOpen={vi.fn()} />)
+  await screen.findByText(/not available in your active language/)
+  expect(screen.queryByText('Start quiz')).toBeNull()
+  expect(screen.queryByLabelText('Your question')).toBeNull()
+  expect(study.sendStudyMessage).not.toHaveBeenCalled()
 })

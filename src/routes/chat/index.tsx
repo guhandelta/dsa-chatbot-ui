@@ -14,11 +14,11 @@ import type { StudyMode } from '../../lib/studyApi'
 import type { Provider } from '../../types'
 
 export const STUDY_MODES: { id: StudyMode; label: string; blurb: string }[] = [
-  { id: 'explain', label: 'Explain', blurb: 'Ask about the concept you are learning now.' },
+  { id: 'explain', label: 'Explain', blurb: 'Learn the current concept: a mental model, a small worked example, and a common pitfall. Ask why; save a takeaway.' },
   { id: 'quiz', label: 'Quiz me', blurb: 'A short mixed-format quiz, graded on the server.' },
-  { id: 'debug', label: 'Debug with me', blurb: 'Find the cause of an error yourself, one question at a time.' },
-  { id: 'compare', label: 'Compare languages', blurb: 'See the same idea side by side in two languages.' },
-  { id: 'next', label: 'What next?', blurb: 'One recommended step, from your progress and weak spots.' },
+  { id: 'debug', label: 'Debug with me', blurb: 'Investigate code for your current topic: trace its behavior or find a defect with guided questions.' },
+  { id: 'compare', label: 'JavaScript vs TypeScript', blurb: 'Understand runtime JavaScript versus TypeScript’s static checks, type narrowing, and migration traps through the same example.' },
+  { id: 'next', label: 'What next?', blurb: 'Your progress dashboard: one recommended action and its reason, weak spots to revisit, and saved notes.' },
   { id: 'chat', label: 'Open chat', blurb: 'The free-form tutor and reference collections.' },
 ]
 
@@ -45,7 +45,14 @@ function StudyRoomRoute() {
   const search = Route.useSearch()
   const navigate = useNavigate()
   return <ChatPage initialMode={search.mode ?? 'explain'} initialFocus={search.focus} initialLanguage={search.language} initialSubject={search.subject}
-    onNavigate={(mode, focus) => void navigate({ to: '/chat', search: { mode, ...(focus ? { focus } : {}) } })} />
+    onNavigate={(mode, focus, subject) => void navigate({ to: '/chat', search: { mode, ...(focus ? { focus } : {}), ...(subject ? { subject } : {}), ...(search.language ? { language: search.language } : {}) } })} />
+}
+
+function languageFromFocus(focus?: string): string | undefined {
+  const parts = focus?.split(':') ?? []
+  if (parts.length === 3 && parts[0] === 'explain') return parts[1]
+  if (parts.length === 2 && /^(?:stage-\d+|module-[a-z0-9-]+)$/.test(parts[1])) return parts[0]
+  return undefined
 }
 
 interface PageProps {
@@ -53,7 +60,7 @@ interface PageProps {
   initialFocus?: string
   initialLanguage?: string
   initialSubject?: string
-  onNavigate?: (mode: StudyMode, focus?: string) => void
+  onNavigate?: (mode: StudyMode, focus?: string, subject?: string) => void
 }
 
 export function ChatPage({ initialMode = 'explain', initialFocus, initialLanguage, initialSubject, onNavigate }: PageProps) {
@@ -62,14 +69,16 @@ export function ChatPage({ initialMode = 'explain', initialFocus, initialLanguag
   const student = user?.role === 'student'
   // A path node id ("python:stage-07") carries its language, so a deep link
   // opens in that language rather than the account's preferred one.
-  const [language, setLanguage] = useState(initialFocus?.split(':')[1] ? initialFocus.split(':')[0] : initialLanguage ?? user?.preferred_language ?? '')
+  const [language, setLanguage] = useState(languageFromFocus(initialFocus) ?? initialLanguage ?? user?.preferred_language ?? '')
   const [mode, setMode] = useState<StudyMode>(initialMode)
   const [focus, setFocus] = useState<string | undefined>(initialFocus)
+  const [referenceSubject, setReferenceSubject] = useState(initialSubject)
+  useEffect(() => { setReferenceSubject(initialSubject) }, [initialSubject])
   // Back/forward navigation updates route props without remounting the page.
   useEffect(() => {
     setMode(initialMode)
     setFocus(initialFocus)
-    if (initialFocus?.split(':')[1]) setLanguage(initialFocus.split(':')[0])
+    if (languageFromFocus(initialFocus)) setLanguage(languageFromFocus(initialFocus)!)
     else if (initialLanguage) setLanguage(initialLanguage)
   }, [initialMode, initialFocus, initialLanguage])
 
@@ -80,8 +89,13 @@ export function ChatPage({ initialMode = 'explain', initialFocus, initialLanguag
   const go = (next: StudyMode, nextFocus?: string) => {
     setMode(next)
     setFocus(nextFocus)
-    onNavigate?.(next, nextFocus)
+    if (nextFocus) { setReferenceSubject(undefined); onNavigate?.(next, nextFocus) }
+    else if (referenceSubject) onNavigate?.(next, undefined, referenceSubject)
+    else onNavigate?.(next, nextFocus)
   }
+  const comparisonAvailable = ['javascript', 'typescript'].includes(effectiveLanguage)
+    && ['javascript', 'typescript'].every(l => access.data?.languages.includes(l))
+  useEffect(() => { if (access.data && mode === 'compare' && !comparisonAvailable) setMode('explain') }, [access.data, mode, comparisonAvailable])
   const current = STUDY_MODES.find((m) => m.id === mode)!
 
   return (
@@ -98,12 +112,12 @@ export function ChatPage({ initialMode = 'explain', initialFocus, initialLanguag
         </div>
         <div className="controls">
           {access.data && !student && <ProviderSelector value={provider} onChange={setProvider} />}
-          {access.data && <LanguageSelector value={effectiveLanguage} onChange={(value) => { setLanguage(value); setFocus(undefined) }} />}
+          {access.data && <LanguageSelector value={effectiveLanguage} onChange={(value) => { setLanguage(value); setFocus(undefined); setReferenceSubject(undefined) }} />}
         </div>
       </div>
       {student && <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">AI selection is automatic for each question. Choose your learning language and a mode.</p>}
       <nav className="lang-tabs mb-2" aria-label="Study Room modes">
-        {STUDY_MODES.map((m) => <button key={m.id} type="button" aria-pressed={mode === m.id}
+        {STUDY_MODES.filter(m => m.id !== 'compare' || comparisonAvailable).map((m) => <button key={m.id} type="button" aria-pressed={mode === m.id}
           className={`lang-tab ${mode === m.id ? 'is-active' : ''}`} onClick={() => go(m.id, focus)}>{m.label}</button>)}
       </nav>
       <p className="mb-4 text-sm text-[var(--sea-ink-soft)]">{current.blurb}</p>
@@ -122,11 +136,11 @@ export function ChatPage({ initialMode = 'explain', initialFocus, initialLanguag
         <Link className="font-semibold underline" to="/profile">Review your account and subscription</Link>
       </section>}
       {!access.isError && effectiveLanguage && (mode === 'chat'
-        ? <OpenChat key={`${effectiveLanguage}:${initialSubject ?? ''}`} initialSubject={initialSubject} language={effectiveLanguage} languages={access.data!.languages}
+        ? <OpenChat key={`${effectiveLanguage}:${referenceSubject ?? ''}`} initialSubject={referenceSubject} onSubjectChange={(value) => { setReferenceSubject(value || undefined); setFocus(undefined); onNavigate?.('chat', undefined, value || undefined) }} language={effectiveLanguage} languages={access.data!.languages}
             provider={student ? 'auto' : provider} userId={user?.id} />
         : <StudyWorkspace key={effectiveLanguage} language={effectiveLanguage} languages={access.data!.languages}
-            mode={mode} focus={focus} provider={student ? 'auto' : provider}
-            onFocus={(nodeId) => { setFocus(nodeId); onNavigate?.(mode, nodeId) }} onOpen={go} />)}
+            mode={mode} focus={focus} subject={referenceSubject} provider={student ? 'auto' : provider}
+            onFocus={(nodeId) => { setFocus(nodeId); setReferenceSubject(undefined); onNavigate?.(mode, nodeId) }} onOpen={go} />)}
     </main>
   )
 }

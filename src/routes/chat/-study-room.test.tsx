@@ -41,7 +41,7 @@ describe('Study Room page', () => {
     render(<ChatPage />)
     expect(screen.getByRole('heading', { name: 'Study Room' })).toBeTruthy()
     expect(screen.getAllByRole('button', { pressed: false }).map((b) => b.textContent)).toEqual(
-      ['Quiz me', 'Debug with me', 'Compare languages', 'What next?', 'Open chat'])
+      ['Quiz me', 'Debug with me', 'What next?', 'Open chat'])
     expect(workspace()).toEqual({ mode: 'explain', language: 'python', provider: 'auto' })
     expect(screen.getByText(/5 free messages a day/)).toBeTruthy()
     expect(screen.queryByText('Model selector')).toBeNull()
@@ -111,10 +111,10 @@ describe('Study Room page', () => {
   })
 
   it('reads mode and focus from the URL and writes changes back', () => {
-    state.search = { mode: 'compare', focus: 'python:stage-07' }
+    state.search = { mode: 'debug', focus: 'python:stage-07' }
     const Component = (Route as unknown as { component: () => React.ReactElement }).component
     render(<Component />)
-    expect(workspace()).toMatchObject({ mode: 'compare', focus: 'python:stage-07' })
+    expect(workspace()).toMatchObject({ mode: 'debug', focus: 'python:stage-07' })
     fireEvent.click(screen.getByText('What next?'))
     expect(state.navigate).toHaveBeenLastCalledWith({ to: '/chat', search: { mode: 'next', focus: 'python:stage-07' } })
     cleanup()
@@ -133,4 +133,47 @@ describe('Study Room page', () => {
     state.role = 'student'
     expect(beforeLoad()).toBeUndefined()
   })
+})
+
+
+it('only offers Compare languages when two languages are accessible', () => {
+  state.languages = ['python']
+  render(<ChatPage />)
+  expect(screen.queryByRole('button', { name:'JavaScript vs TypeScript' })).toBeNull()
+  expect(screen.getByRole('button', { name:'What next?' })).toBeTruthy()
+})
+
+it('retains the selected framework when opening Debug', () => {
+  const navigate = vi.fn()
+  render(<ChatPage initialSubject="python-fastapi" initialMode="chat" onNavigate={navigate} />)
+  fireEvent.click(screen.getByRole('button', { name:'Debug with me' }))
+  expect(navigate).toHaveBeenLastCalledWith('debug', undefined, 'python-fastapi')
+})
+
+
+it('only shows comparison for the JavaScript and TypeScript pair and rejects foreign deep links', () => {
+  state.languages = ['javascript', 'typescript', 'java']
+  const view = render(<ChatPage initialLanguage="javascript" />)
+  expect(screen.getByRole('button', { name: 'JavaScript vs TypeScript' })).toBeTruthy()
+  fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'java' } })
+  expect(screen.queryByRole('button', { name: 'JavaScript vs TypeScript' })).toBeNull()
+  view.unmount()
+  render(<ChatPage initialLanguage="java" initialMode="compare" />)
+  expect(workspace().mode).toBe('explain')
+})
+
+it('opens tiered Explain deep links in their language, including back navigation', () => {
+  state.languages = ['python', 'javascript']
+  const view = render(<ChatPage initialFocus="explain:javascript:arrays" />)
+  expect(workspace()).toMatchObject({ language: 'javascript', focus: 'explain:javascript:arrays' })
+  view.rerender(<ChatPage initialFocus="python:stage-05" />)
+  expect(workspace().language).toBe('python')
+  view.rerender(<ChatPage initialFocus="explain:javascript:objects-map" />)
+  expect(workspace()).toMatchObject({ language: 'javascript', focus: 'explain:javascript:objects-map' })
+})
+
+it('resolves a practice activity deep link to JavaScript, not the preferred language', () => {
+  state.languages = ['python', 'javascript']
+  render(<ChatPage initialFocus="explain:javascript:arrays/arrays-11" />)
+  expect(workspace()).toMatchObject({ language: 'javascript', focus: 'explain:javascript:arrays/arrays-11' })
 })

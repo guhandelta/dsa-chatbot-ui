@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
+import { fetchContentItem } from '../lib/api'
 import { ProblemStatement } from './ProblemStatement'
 vi.mock('../lib/api', () => ({
   fetchContentItem: vi.fn().mockResolvedValue({ markdown: '# Lesson\n\n## Worked example\n```javascript\nconst hours = 2;\n```\n\n## Problem\nCompute the total cost.\n\n## Starter code\n```javascript\nfunction totalCost(price, quantity) {}\n```' }),
@@ -10,4 +11,14 @@ it('preserves the exercise after a worked code example in the server-safe docume
   render(<ProblemStatement problemId="javascript-path-01-values" />)
   await screen.findByText('Compute the total cost.')
   expect(screen.getByText('function totalCost(price, quantity) {}')).toBeTruthy()
+})
+
+
+it('requests shared content in the language selected by the student', async () => {
+  const view = render(<ProblemStatement problemId="two-sum" language="java" />)
+  await screen.findByText('Compute the total cost.')
+  expect(fetchContentItem).toHaveBeenCalledWith('two-sum', 'java')
+  view.rerender(<ProblemStatement problemId="two-sum" language="python" />)
+  await screen.findByText('Compute the total cost.')
+  expect(fetchContentItem).toHaveBeenCalledWith('two-sum', 'python')
 })

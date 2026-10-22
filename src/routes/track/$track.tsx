@@ -77,26 +77,26 @@ function TrackPage() {
       </aside>
       <section>{focus ? mode === 'learn'
         ? <ChatWindow key={`${language}-${focus.id}`} provider={student ? 'auto' : provider} language={language} track={focus.track as Track} focusId={focus.id} chatCost={1} />
-        : <Lesson key={focus.id} item={focus} practice={mode === 'practice'} />
+        : <Lesson key={`${language}-${focus.id}`} item={focus} language={language} practice={mode === 'practice'} />
         : <div className="island-shell rounded-2xl p-5">Choose a topic to read its lesson, ask questions, or practice. Interview candidates can start with any DSA problem.</div>}
       </section>
     </div>
   </main>
 }
 
-function Lesson({ item, practice }: { item: ContentMeta; practice: boolean }) {
+function Lesson({ item, practice, language }: { item: ContentMeta; practice: boolean; language: string }) {
   const [markdown, setMarkdown] = useState('')
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let active = true
-    fetchContentItem(item.id).then((data) => { if (active) setMarkdown(data.markdown) }).catch((e) => { if (active) setError(getApiErrorMessage(e)) })
+    fetchContentItem(item.id, language).then((data) => { if (active) setMarkdown(data.markdown) }).catch((e) => { if (active) setError(getApiErrorMessage(e)) })
     return () => { active = false }
-  }, [item.id])
+  }, [item.id, language])
   return <article className="island-shell rounded-2xl p-5">
     {error && <div className="error-banner" role="alert">{error}</div>}
     {!markdown && !error && <p>Loading lesson…</p>}
     <div className="prose prose-sm max-w-none dark:prose-invert"><ReactMarkdown>{markdown}</ReactMarkdown></div>
-    {item.has_tests ? <Link to="/practice" search={{ problem: item.id }} className="primary-btn mt-5 inline-block">{practice ? 'Open exercise' : 'Check your understanding'}</Link>
+    {item.has_tests ? <Link to="/practice" search={{ problem: item.id, language }} className="primary-btn mt-5 inline-block">{practice ? 'Open exercise' : 'Check your understanding'}</Link>
       : <p className="mt-4 text-sm">This is a reference lesson. Choose an exercise in the curriculum or a DSA workout to practice with evaluated code.</p>}
   </article>
 }

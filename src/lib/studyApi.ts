@@ -170,7 +170,21 @@ export interface StudyNote {
   created_at: string
 }
 
+export interface LearningTip {
+  title: string
+  evidence: string
+  tip: string
+  action: { label: string; mode: StudyMode; focus: string } | null
+}
+export interface LearningGuidance {
+  focus: LearningTip[]
+  strengths: LearningTip[]
+  strengths_empty: string
+  evidence_note: string
+}
+
 export interface Insights {
+  guidance?: LearningGuidance
   weak_concepts: { concept: string; misses: number; correct: number; misconception: string }[]
   responses: { item_id: string; prompt: string; response: string; correct: boolean; score: number; feedback: string; misconception: string; created_at: string }[]
 }
@@ -242,4 +256,105 @@ export async function fetchInsights(language: string): Promise<Insights> {
 
 export async function fetchNextHint(problemId: string, language: string): Promise<{ tier: number; tier_label: string; cost: number; free_tiers: number; max_tier: number }> {
   return (await api.get('/mentor/next-hint', { params: { problem_id: problemId, language } })).data
+}
+
+export type DebugDifficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'extreme'
+export interface DebugChallenge {
+  id: string
+  attempt_id: string
+  language: string
+  subject: string
+  difficulty: DebugDifficulty
+  title: string
+  code: string
+  failure: string
+  goal: string
+  source: string
+  code_language: string
+  status: 'assigned' | 'reviewed'
+  task_kind: 'repair' | 'trace'
+  assessment: 'self-review'
+  automatically_graded: false
+}
+export interface DebugLevel {
+  difficulty: DebugDifficulty
+  total: number
+  remaining: number
+  reviewed: number
+  current: DebugChallenge | null
+}
+export interface DebugCatalog {
+  scope?: { id: string; title: string; kind: 'node' | 'subject' | 'explain-unit' } | null
+  language: string
+  difficulties: DebugDifficulty[]
+  subjects: { id: string; levels: DebugLevel[] }[]
+}
+export async function fetchDebugCatalog(language: string, focusId?: string): Promise<DebugCatalog> {
+  return (await api.get<DebugCatalog>('/study/debug/challenges', { params: { language, ...(focusId ? { focus_id: focusId } : {}) } })).data
+}
+export async function nextDebugChallenge(language: string, subject: string, difficulty: DebugDifficulty, focusId?: string): Promise<DebugChallenge> {
+  return (await api.post<DebugChallenge>('/study/debug/challenges/next', { language, subject, difficulty, ...(focusId ? { focus_id: focusId } : {}) })).data
+}
+export async function reviewDebugChallenge(attemptId: string, diagnosis: string): Promise<{ status: string }> {
+  return (await api.post<{ status: string }>(`/study/debug/challenges/${encodeURIComponent(attemptId)}/review`, { diagnosis })).data
+}
+
+
+export interface ProgressSection {
+  id: string
+  title: string
+  metric: string
+  completed: number | null
+  total: number | null
+  in_progress: number
+  status: 'available' | 'content-incomplete' | 'coming-soon'
+  detail: string
+  lessons_available?: number
+}
+export interface ProgressOverview { language: string; sections: ProgressSection[] }
+export async function fetchProgressOverview(language: string): Promise<ProgressOverview> {
+  return (await api.get('/study/progress-overview', { params: { language } })).data
+}
+
+
+export interface ExplainActivity {
+  id: string
+  family_id: string
+  title: string
+  prompt: string
+  step: 'understand' | 'operate' | 'boundaries' | 'apply' | 'justify' | 'transfer' | 'review'
+  kind: 'trace' | 'implement' | 'explain' | 'design' | 'debug' | 'review'
+  route: 'core' | 'extension' | 'review'
+  checklist: string[]
+  assessment: 'ungraded'
+  source: string
+}
+export interface ExplainUnit {
+  activities?: ExplainActivity[]
+  id: string
+  slug: string
+  tier: number
+  title: string
+  prerequisite_ids: string[]
+  objective: string
+  mental_model: string
+  structure: { code: string; expected_output: string }
+  applied_task: string
+  pitfall: string
+  dsa_bridge: string
+  assessment_node_id: string | null
+  assessment: { node_id: string; title: string; checks_available: number; checks_passed: boolean; exercise_id: string | null; exercise_passed: boolean; coverage_ready: boolean } | null
+  practice: { id: string; title: string; difficulty: string; solved: boolean }[]
+}
+export interface ExplainCourseData {
+  language: string
+  status: string
+  version?: number
+  tiers: { id: number; title: string; description: string }[]
+  units: ExplainUnit[]
+  foundations: { id: string; title: string; complete: boolean }[]
+  assessment_note?: string
+}
+export async function fetchExplainPathway(language: string): Promise<ExplainCourseData> {
+  return (await api.get('/study/explain-pathway', { params: { language } })).data
 }
