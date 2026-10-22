@@ -13,6 +13,17 @@ import type {
 // Configured via .env (VITE_API_URL); falls back to local dev default
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /** Do not raise the global error toast; the caller handles failure itself. */
+    silentError?: boolean
+    /** Do not redirect to /login on 401 (session restore etc.). */
+    skipAuthRedirect?: boolean
+  }
+}
+
+const SILENT = { silentError: true } as const
+
 export const TOKEN_KEY = 'dsa_token'
 
 export const api = axios.create({ baseURL: BASE_URL })
@@ -46,8 +57,7 @@ api.interceptors.response.use(
       //     simply appear logged out, not be thrown to a login form.
       //   - the auth pages themselves, or a failed login would reload the
       //     form out from under the user mid-typing.
-      const silent = (error.config as { skipAuthRedirect?: boolean } | undefined)
-        ?.skipAuthRedirect
+      const silent = error.config?.skipAuthRedirect
       const path = window.location.pathname
       const onAuthPage = path === '/login' || path === '/register'
       const onPublicPage = path === '/' || path === '/about'
@@ -55,7 +65,7 @@ api.interceptors.response.use(
       if (!silent && !onAuthPage && !onPublicPage) {
         window.location.href = '/login?expired=1'
       }
-    } else if (!(error.config as { silentError?: boolean } | undefined)?.silentError) {
+    } else if (!error.config?.silentError && !axios.isCancel(error) && error.code !== 'ERR_CANCELED') {
       import('./errorStore').then(({ reportError }) => {
         reportError(error, 'api')
       }).catch(() => {})
@@ -64,13 +74,35 @@ api.interceptors.response.use(
   },
 )
 
+export const NETWORK_ERROR_MESSAGE =
+  "Can't reach the server. Check your connection and try again."
+
+/** One FastAPI 422 item -> "field: message". */
+function formatValidationItem(item: unknown): string {
+  if (typeof item === 'string') return item
+  if (!item || typeof item !== 'object') return ''
+  const { loc, msg } = item as { loc?: unknown; msg?: unknown }
+  if (typeof msg !== 'string') return ''
+  const path = Array.isArray(loc)
+    ? loc.filter((p) => p !== 'body' && p !== 'query' && p !== 'path').join('.')
+    : ''
+  return path ? `${path}: ${msg}` : msg
+}
+
 /** Extracts a human-readable message from an API error. */
 export function getApiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
+    const status = err.response?.status
     const detail = (err.response?.data as { detail?: unknown } | undefined)?.detail
+    if (status === 402) return 'Not enough peppercorns for this action.'
+    if (err.code === 'ERR_NETWORK' || (!err.response && err.request)) return NETWORK_ERROR_MESSAGE
+    // Raw server text for 5xx can leak internals; show a generic line instead.
+    if (status && status >= 500) return 'The server ran into a problem. Please try again in a moment.'
     if (typeof detail === 'string') return detail
-    if (err.response?.status === 402) return 'Not enough peppercorns for this action.'
-    if (err.code === 'ERR_NETWORK') return 'Cannot reach the API — is the backend running on port 8000?'
+    if (Array.isArray(detail)) {
+      const lines = detail.map(formatValidationItem).filter(Boolean)
+      if (lines.length) return lines.join('; ')
+    }
   }
   return 'Something went wrong. Please try again.'
 }
@@ -110,7 +142,8 @@ export async function fetchMe(): Promise<User> {
   // state on any public page. Never redirect off the back of it.
   const { data } = await api.get<User>('/auth/me', {
     skipAuthRedirect: true,
-  } as never)
+    ...SILENT,
+  })
   return data
 }
 
@@ -164,7 +197,7 @@ export async function submitSolution(params: {
 // ---------- Problems catalog ----------
 
 export async function fetchProblems(): Promise<import('../types').ProblemMeta[]> {
-  const { data } = await api.get<import('../types').ProblemMeta[]>('/problems/')
+  const { data } = await api.get<import('../types').ProblemMeta[]>('/problems/', SILENT)
   return data
 }
 
@@ -172,7 +205,7 @@ export async function fetchProblems(): Promise<import('../types').ProblemMeta[]>
 // ---------- Training (teacher/admin) ----------
 
 export async function fetchTrainingStatus(): Promise<import('../types').TrainingStatus> {
-  const { data } = await api.get('/training/status')
+  const { data } = await api.get('/training/status', SILENT)
   return data
 }
 
@@ -211,7 +244,7 @@ export async function setUserRole(userId: string, role: string): Promise<User> {
 // ---------- Tracks ----------
 
 export async function fetchTracks(): Promise<import('../types').TracksResponse> {
-  const { data } = await api.get('/tracks/')
+  const { data } = await api.get('/tracks/', SILENT)
   return data
 }
 
@@ -267,7 +300,7 @@ export async function askMentor(params: {
 export async function fetchEntitlement(
   language: string,
 ): Promise<import('../types').Entitlement> {
-  const { data } = await api.get('/mentor/entitlement', { params: { language } })
+  const { data } = await api.get('/mentor/entitlement', { params: { language }, ...SILENT })
   return data
 }
 
@@ -296,7 +329,7 @@ export async function exportLearningProfile(): Promise<unknown> {
 // ---------- Subscriptions ----------
 
 export async function fetchSubscriptions(): Promise<import('../types').Subscription[]> {
-  const { data } = await api.get('/subscriptions/')
+  const { data } = await api.get('/subscriptions/', SILENT)
   return data
 }
 
@@ -313,7 +346,7 @@ export async function fetchContentItem(
 // admin uploads publish immediately. The API enforces both.
 
 export async function fetchLearnStatus(): Promise<import('../types').LearnStatus> {
-  const { data } = await api.get('/teach/status')
+  const { data } = await api.get('/teach/status', SILENT)
   return data
 }
 
@@ -386,7 +419,7 @@ export async function trainKnowledgeBaseDocument(params: {
 
 // Solutions are fetched only after an explicit learner action.
 export async function fetchSolutionAccess(problemId: string, language: string): Promise<boolean> {
-  const { data } = await api.get(`/problems/${encodeURIComponent(problemId)}/solution-access`, { params: { language } })
+  const { data } = await api.get(`/problems/${encodeURIComponent(problemId)}/solution-access`, { params: { language }, ...SILENT })
   return data.available
 }
 
@@ -396,7 +429,7 @@ export async function revealSolution(problemId: string, language: string): Promi
 }
 
 export async function fetchCurriculumProgress(language: string): Promise<{ completed_ids: string[]; total: number; next_id: string | null }> {
-  const { data } = await api.get('/tracks/language/progress', { params: { language } })
+  const { data } = await api.get('/tracks/language/progress', { params: { language }, ...SILENT })
   return data
 }
 

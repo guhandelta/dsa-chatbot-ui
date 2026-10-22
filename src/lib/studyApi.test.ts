@@ -19,7 +19,7 @@ describe('study API client', () => {
     await study.fetchNodeLesson('python:stage-01', 'python')
     expect(http.get).toHaveBeenLastCalledWith('/study/nodes/python%3Astage-01/lesson', { params: { language: 'python' } })
     await study.fetchAllowance()
-    expect(http.get).toHaveBeenLastCalledWith('/study/allowance')
+    expect(http.get).toHaveBeenLastCalledWith('/study/allowance', { silentError: true })
     await study.fetchNextStep('java')
     expect(http.get).toHaveBeenLastCalledWith('/study/next', { params: { language: 'java' } })
     expect(await study.fetchStudyNotes('java')).toEqual(['n'])

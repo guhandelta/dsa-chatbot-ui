@@ -1,6 +1,4 @@
-import { useEffect } from 'react'
 import { contentGapLabel, hasCurriculumGaps, type PathNode, type StudyPath } from '../../lib/studyApi'
-import { addError, openErrorPopup } from '../../lib/errorStore'
 
 const STATUS_MARK: Record<PathNode['status'], string> = {
   complete: '✓', 'in-progress': '◐', 'not-started': '○', unavailable: '·',
@@ -17,46 +15,6 @@ interface Props {
   focusId: string | null
   unlockedNodes?: Set<string>
   onFocus: (nodeId: string) => void
-}
-
-export function buildCurriculumGapsMessage(path: StudyPath): string | null {
-  const parts: string[] = []
-
-  if (path.available_total !== undefined) {
-    parts.push(
-      `${path.available_total} nodes with graded work available${
-        path.unavailable_total !== undefined ? `; ${path.unavailable_total} without graded work.` : '.'
-      }`
-    )
-  }
-
-  if (path.curriculum_complete === false) {
-    parts.push('Full curriculum not yet completed.')
-  }
-
-  const spineParts: string[] = []
-  if (path.readiness.spine_lessons !== undefined) {
-    spineParts.push(`Stage lessons: ${path.readiness.spine_lessons}/${path.readiness.spine_total}.`)
-  }
-  if (path.readiness.spine_checks !== undefined) {
-    spineParts.push(`Stage checks: ${path.readiness.spine_checks}/${path.readiness.spine_total}.`)
-  }
-  if (path.readiness.depth_assessments !== undefined) {
-    spineParts.push(`Module assessments: ${path.readiness.depth_assessments}/${path.readiness.depth_total}.`)
-  }
-  if (spineParts.length > 0) {
-    parts.push(spineParts.join(' '))
-  }
-
-  if (path.readiness.missing_content?.length) {
-    const missingItems = path.readiness.missing_content.map((gap) => {
-      const nodeTitle = path.nodes.find((node) => node.id === gap.node_id)?.title ?? gap.node_id
-      return `    ${nodeTitle}: missing ${gap.missing.map(contentGapLabel).join(', ')}.`
-    })
-    parts.push(missingItems.join('\n'))
-  }
-
-  return parts.length > 0 ? parts.join('\n\n') : null
 }
 
 export function isSectionEnabled(node: PathNode, path: StudyPath, unlockedNodes?: Set<string>): boolean {
@@ -89,17 +47,6 @@ export function isSectionEnabled(node: PathNode, path: StudyPath, unlockedNodes?
 
 export function PathPanel({ path, focusId, unlockedNodes, onFocus }: Props) {
   const gaps = hasCurriculumGaps(path)
-  const gapsMessage = buildCurriculumGapsMessage(path)
-
-  useEffect(() => {
-    if (gaps && gapsMessage) {
-      addError({
-        type: 'api',
-        title: 'Curriculum Notices & Incomplete Content',
-        message: gapsMessage,
-      })
-    }
-  }, [path.label, gaps, gapsMessage])
 
   const stages = path.nodes.filter((n) => n.kind === 'stage')
   const modules = path.nodes.filter((n) => n.kind === 'module')
@@ -149,15 +96,6 @@ export function PathPanel({ path, focusId, unlockedNodes, onFocus }: Props) {
       {path.readiness.spine_checks !== undefined && `Stage checks: ${path.readiness.spine_checks}/${path.readiness.spine_total}. `}
       {path.readiness.depth_assessments !== undefined && `Module assessments: ${path.readiness.depth_assessments}/${path.readiness.depth_total}.`}
     </p>}
-    {gapsMessage && (
-      <button
-        type="button"
-        onClick={() => openErrorPopup()}
-        className="my-2 inline-flex items-center gap-1.5 rounded-lg border border-orange-500/30 bg-orange-500/10 px-2.5 py-1 text-xs font-semibold text-orange-700 dark:text-orange-300 hover:bg-orange-500/20 transition w-full justify-center"
-      >
-        <span>⚠️ View curriculum notices in error popup</span>
-      </button>
-    )}
     <p className="mb-1 text-xs font-semibold">Shared stages</p>
     <ul className="item-list mb-3">{stages.map(item)}</ul>
     {modules.length > 0 && <>

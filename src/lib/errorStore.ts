@@ -1,7 +1,6 @@
-// Global error store for capturing UI and API errors.
-// Distinguishes between UI errors (red) and API errors (orange).
-import { getApiErrorMessage } from './api'
+// Global store behind the toast stack: UI and API failures that no caller handled itself.
 import { isAxiosError } from 'axios'
+import { getApiErrorMessage, NETWORK_ERROR_MESSAGE } from './api'
 
 export type ErrorType = 'ui' | 'api'
 
@@ -11,81 +10,68 @@ export interface AppError {
   title: string
   message: string
   status?: number
+  /** Severe toasts (network down, 5xx) are announced assertively. */
+  severe: boolean
+  /** How many identical errors were collapsed into this one. */
+  count: number
   timestamp: number
 }
 
 type Listener = () => void
 
+const DEDUPE_WINDOW_MS = 5000
+const MAX_STORED = 20
+
 let errors: AppError[] = []
-let activeError: AppError | null = null
-let isPopupOpen = false
 const listeners = new Set<Listener>()
 
 function notify() {
   listeners.forEach((l) => l())
 }
 
+/** Newest first. */
 export function getErrors(): AppError[] {
   return errors
 }
 
-export function getActiveError(): AppError | null {
-  return activeError
-}
-
-export function isErrorPopupOpen(): boolean {
-  return isPopupOpen
-}
-
-export function addError(err: { type: ErrorType; title?: string; message: string; status?: number }) {
-  // A failing API fires many identical errors at once; collapse repeats so the
-  // popup does not re-open or flood the list after the user closed it.
+export function addError(err: {
+  type: ErrorType
+  title?: string
+  message: string
+  status?: number
+  severe?: boolean
+}) {
+  const now = Date.now()
+  // A failing API fires many identical errors at once; collapse repeats into a counter.
   const dup = errors.find((e) => e.type === err.type && e.message === err.message && e.status === err.status
-    && Date.now() - e.timestamp < 5000)
-  if (dup) return
+    && now - e.timestamp < DEDUPE_WINDOW_MS)
+  if (dup) {
+    errors = errors.map((e) => (e.id === dup.id ? { ...e, count: e.count + 1, timestamp: now } : e))
+    notify()
+    return
+  }
   const newErr: AppError = {
-    id: `err-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `err-${now}-${Math.random().toString(36).slice(2, 7)}`,
     type: err.type,
-    title: err.title || (err.type === 'ui' ? 'Application UI Error' : 'API Service Error'),
+    title: err.title || (err.type === 'ui' ? 'Something went wrong' : 'Request failed'),
     message: err.message,
     status: err.status,
-    timestamp: Date.now(),
+    severe: err.severe ?? false,
+    count: 1,
+    timestamp: now,
   }
-  errors = [newErr, ...errors].slice(0, 20)
-  activeError = newErr
-  isPopupOpen = true // opens the popup automatically when an error occurs
+  errors = [newErr, ...errors].slice(0, MAX_STORED)
   notify()
 }
 
-export function openErrorPopup(error?: AppError) {
-  if (error) {
-    activeError = error
-  } else if (!activeError && errors.length > 0) {
-    activeError = errors[0]
-  }
-  isPopupOpen = true
-  notify()
-}
-
-export function closeErrorPopup() {
-  isPopupOpen = false
-  notify()
-}
-
-export function dismissActiveError() {
-  if (!activeError) return
-  errors = errors.filter((e) => e.id !== activeError?.id)
-  activeError = errors[0] || null
-  if (!activeError) {
-    isPopupOpen = false
-  }
+export function dismissError(id: string) {
+  if (!errors.some((e) => e.id === id)) return
+  errors = errors.filter((e) => e.id !== id)
   notify()
 }
 
 export function clearAllErrors() {
   errors = []
-  activeError = null
-  isPopupOpen = false
   notify()
 }
 
@@ -96,43 +82,27 @@ export function subscribeToErrors(listener: Listener): () => void {
   }
 }
 
-/**
- * Convenience helper to report an error from anywhere in the app.
- */
+/** Report an error from anywhere in the app. Never toasts cancelled requests. */
 export function reportError(err: unknown, defaultType: ErrorType = 'ui') {
   if (isAxiosError(err)) {
+    if (err.code === 'ERR_CANCELED') return
     const status = err.response?.status
-    const message = getApiErrorMessage(err)
+    const network = !err.response
+    const serverError = status !== undefined && status >= 500
     addError({
       type: 'api',
-      title: status ? `API Error (${status})` : 'API Network Error',
-      message: message || 'Failed to communicate with the server.',
+      title: network ? 'Connection problem' : serverError ? 'Server error' : 'Request failed',
+      message: getApiErrorMessage(err) || (network ? NETWORK_ERROR_MESSAGE : 'Failed to communicate with the server.'),
       status,
+      severe: network || serverError,
     })
     return
   }
 
   if (err instanceof Error) {
-    addError({
-      type: defaultType,
-      title: defaultType === 'ui' ? 'UI Error' : 'API Error',
-      message: err.message,
-    })
+    addError({ type: defaultType, message: err.message })
     return
   }
 
-  if (typeof err === 'string') {
-    addError({
-      type: defaultType,
-      title: defaultType === 'ui' ? 'UI Notice' : 'API Notice',
-      message: err,
-    })
-    return
-  }
-
-  addError({
-    type: defaultType,
-    title: 'Unknown Error',
-    message: String(err),
-  })
+  addError({ type: defaultType, message: typeof err === 'string' ? err : String(err) })
 }

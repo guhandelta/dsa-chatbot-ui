@@ -1,111 +1,134 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
-import { ErrorPopupManager } from './ErrorPopupManager'
-import { addError, clearAllErrors } from '../lib/errorStore'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
+import axios, { AxiosError } from 'axios'
+import { ErrorPopupManager, TOAST_DURATION_MS } from './ErrorPopupManager'
+import { addError, clearAllErrors, getErrors, reportError } from '../lib/errorStore'
+import { api, getApiErrorMessage } from '../lib/api'
 
-describe('ErrorPopupManager', () => {
-  beforeEach(() => {
-    clearAllErrors()
-  })
+function axiosError(status: number | undefined, data?: unknown, config: Record<string, unknown> = {}) {
+  const err = new AxiosError('fail', status ? 'ERR_BAD_RESPONSE' : 'ERR_NETWORK', { headers: {}, ...config } as never,
+    {}, status ? ({ status, data, statusText: '', headers: {}, config: { headers: {} } } as never) : undefined)
+  return err
+}
 
-  afterEach(() => {
-    cleanup()
-    clearAllErrors()
-  })
+describe('ErrorPopupManager toasts', () => {
+  beforeEach(() => { vi.useFakeTimers(); clearAllErrors() })
+  afterEach(() => { cleanup(); clearAllErrors(); vi.useRealTimers() })
 
-  it('renders a red popup for UI errors and flips to a floating icon when closed', async () => {
-    render(<ErrorPopupManager />)
-
-    // Add a UI error
-    addError({
-      type: 'ui',
-      title: 'Render Crash',
-      message: 'Failed to mount component on client.',
-    })
-
-    // Check dialog is open with red UI error branding
-    expect(await screen.findByRole('alertdialog')).toBeTruthy()
-    expect(screen.getByText('Render Crash')).toBeTruthy()
-    expect(screen.getByText('Failed to mount component on client.')).toBeTruthy()
-    expect(screen.getByText('UI Error')).toBeTruthy()
-
-    // Close the popup
-    fireEvent.click(screen.getByLabelText('Close error popup'))
-    expect(screen.queryByRole('alertdialog')).toBeNull()
-
-    // Floating icon should be present with red theme and clicking reopens popup
-    const floatingBtn = screen.getByRole('button', { name: /Open UI error details/i })
-    expect(floatingBtn).toBeTruthy()
-    expect(floatingBtn.className).toContain('bg-red-600')
-
-    // Click floating icon to re-open
-    fireEvent.click(floatingBtn)
-    expect(await screen.findByRole('alertdialog')).toBeTruthy()
-    expect(screen.getByText('Render Crash')).toBeTruthy()
-  })
-
-  it('renders an orange popup for API errors', async () => {
-    render(<ErrorPopupManager />)
-
-    // Add an API error
-    addError({
-      type: 'api',
-      title: 'No Data Available',
-      message: 'The requested resource returned 404 not found.',
-      status: 404,
-    })
-
-    // Verify orange API error branding
-    expect(await screen.findByRole('alertdialog')).toBeTruthy()
-    expect(screen.getByText('No Data Available')).toBeTruthy()
+  it('shows a non-blocking toast in a polite status region, without stealing focus', () => {
+    render(<><button>field</button><ErrorPopupManager /></>)
+    screen.getByText('field').focus()
+    act(() => addError({ type: 'api', title: 'Request failed', message: 'Nope', status: 404 }))
+    expect(screen.getByRole('status').getAttribute('aria-live')).toBe('polite')
+    expect(screen.getByText('Request failed')).toBeTruthy()
     expect(screen.getByText('Status 404')).toBeTruthy()
-    expect(screen.getByText('API Error')).toBeTruthy()
-
-    // Close popup
-    fireEvent.click(screen.getByRole('button', { name: 'Close Popup' }))
     expect(screen.queryByRole('alertdialog')).toBeNull()
-
-    // Floating icon has orange theme
-    const floatingBtn = screen.getByRole('button', { name: /Open API error details/i })
-    expect(floatingBtn).toBeTruthy()
-    expect(floatingBtn.className).toContain('bg-orange-500')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(document.activeElement).toBe(screen.getByText('field'))
   })
 
-  it('renders curriculum gaps message in the orange API error popup', async () => {
+  it('uses role=alert only for severe toasts', () => {
     render(<ErrorPopupManager />)
-
-    const gapsMessage = `12 nodes with graded work available; 6 without graded work.
-
-Full curriculum not yet completed.
-
-Stage lessons: 12/12. Stage checks: 12/12. Module assessments: 0/6.
-
-    Closures, this and prototypes: missing module assessment.
-    Coercion: missing module assessment.`
-
-    addError({
-      type: 'api',
-      title: 'Curriculum Notices & Incomplete Content',
-      message: gapsMessage,
-    })
-
-    expect(await screen.findByRole('alertdialog')).toBeTruthy()
-    expect(screen.getByText('Curriculum Notices & Incomplete Content')).toBeTruthy()
-    expect(screen.getByText(/12 nodes with graded work available; 6 without graded work/)).toBeTruthy()
-    expect(screen.getByText(/Full curriculum not yet completed/)).toBeTruthy()
-    expect(screen.getByText(/Closures, this and prototypes: missing module assessment/)).toBeTruthy()
-    expect(screen.getByText('API Error')).toBeTruthy()
+    act(() => reportError(axiosError(503), 'api'))
+    expect(screen.getByRole('alert').textContent).toContain('Server error')
   })
 
-  it('closes on Escape, focuses the close button and collapses duplicate errors', async () => {
+  it('collapses duplicates into a ×N counter', () => {
     render(<ErrorPopupManager />)
-    addError({ type: 'api', message: 'down', status: 500 })
-    const close = await screen.findByLabelText('Close error popup')
-    expect(document.activeElement).toBe(close)
+    act(() => { for (let i = 0; i < 3; i++) addError({ type: 'api', message: 'down', status: 500 }) })
+    expect(screen.getAllByTestId('toast')).toHaveLength(1)
+    expect(screen.getByText(/×3/)).toBeTruthy()
+  })
+
+  it('shows at most 3 toasts, newest first', () => {
+    render(<ErrorPopupManager />)
+    act(() => { for (let i = 1; i <= 5; i++) addError({ type: 'ui', message: `m${i}` }) })
+    const toasts = screen.getAllByTestId('toast')
+    expect(toasts).toHaveLength(3)
+    expect(toasts[0].textContent).toContain('m5')
+    expect(getErrors()).toHaveLength(5)
+  })
+
+  it('auto-dismisses and pauses while hovered', () => {
+    render(<ErrorPopupManager />)
+    act(() => addError({ type: 'ui', message: 'hello' }))
+    const toast = screen.getByTestId('toast')
+    fireEvent.mouseEnter(toast)
+    act(() => { vi.advanceTimersByTime(TOAST_DURATION_MS * 2) })
+    expect(screen.getByTestId('toast')).toBeTruthy()
+    fireEvent.mouseLeave(toast)
+    act(() => { vi.advanceTimersByTime(TOAST_DURATION_MS + 10) })
+    expect(screen.queryByTestId('toast')).toBeNull()
+  })
+
+  it('closes via the close button and Escape', () => {
+    render(<ErrorPopupManager />)
+    act(() => addError({ type: 'ui', message: 'a' }))
+    fireEvent.click(screen.getByRole('button', { name: /Dismiss/ }))
+    expect(screen.queryByTestId('toast')).toBeNull()
+    act(() => addError({ type: 'ui', message: 'b' }))
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(screen.queryByRole('alertdialog')).toBeNull()
-    addError({ type: 'api', message: 'down', status: 500 })
-    expect(screen.queryByRole('alertdialog')).toBeNull()
-    expect(screen.getByRole('button', { name: /Open API error details \(1 notices\)/ })).toBeTruthy()
+    expect(screen.queryByTestId('toast')).toBeNull()
+  })
+
+  it('ignores axios rejections in the unhandledrejection handler', () => {
+    render(<ErrorPopupManager />)
+    const ev = new Event('unhandledrejection') as Event & { reason: unknown }
+    ev.reason = { isAxiosError: true }
+    act(() => { window.dispatchEvent(ev) })
+    expect(getErrors()).toHaveLength(0)
+    const ev2 = new Event('unhandledrejection') as Event & { reason: unknown }
+    ev2.reason = new Error('boom')
+    act(() => { window.dispatchEvent(ev2) })
+    expect(getErrors()).toHaveLength(1)
+  })
+})
+
+describe('API error reporting', () => {
+  beforeEach(() => clearAllErrors())
+  afterEach(() => clearAllErrors())
+
+  const failWith = async (config: Record<string, unknown>, error: AxiosError) => {
+    // The adapter error carries the request config, as real axios errors do.
+    await expect(api.get('/x', {
+      ...config,
+      adapter: (c) => { error.config = c; return Promise.reject(error) },
+    })).rejects.toBeTruthy()
+    await new Promise((r) => setTimeout(r, 0))
+  }
+
+  it('toasts failing requests but skips silentError and cancelled ones', async () => {
+    await failWith({ silentError: true }, axiosError(500))
+    expect(getErrors()).toHaveLength(0)
+    const cancelled = axiosError(undefined)
+    cancelled.code = 'ERR_CANCELED'
+    await failWith({}, cancelled)
+    expect(getErrors()).toHaveLength(0)
+    await failWith({}, axiosError(500))
+    expect(getErrors()).toHaveLength(1)
+  })
+
+  it('never toasts 401', async () => {
+    await failWith({ skipAuthRedirect: true }, axiosError(401))
+    expect(getErrors()).toHaveLength(0)
+  })
+})
+
+describe('getApiErrorMessage', () => {
+  it('formats FastAPI 422 detail arrays', () => {
+    const msg = getApiErrorMessage(axiosError(422, { detail: [
+      { loc: ['body', 'email'], msg: 'value is not a valid email address' },
+      { loc: ['body', 'password'], msg: 'field required' },
+    ] }))
+    expect(msg).toBe('email: value is not a valid email address; password: field required')
+  })
+  it('hides raw 5xx detail and gives a friendly network message', () => {
+    expect(getApiErrorMessage(axiosError(500, { detail: 'Traceback: secret' }))).not.toContain('secret')
+    const net = getApiErrorMessage(axiosError(undefined))
+    expect(net).not.toMatch(/8000|backend/i)
+    expect(axios.isAxiosError(axiosError(undefined))).toBe(true)
+  })
+  it('keeps string detail for 4xx', () => {
+    expect(getApiErrorMessage(axiosError(400, { detail: 'Bad thing' }))).toBe('Bad thing')
   })
 })

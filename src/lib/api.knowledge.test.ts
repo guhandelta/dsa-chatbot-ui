@@ -36,7 +36,7 @@ describe('knowledge base api', () => {
 
   it('fetches the pipeline status', async () => {
     expect(await fetchLearnStatus()).toBe('got')
-    expect(http.get).toHaveBeenCalledWith('/teach/status')
+    expect(http.get).toHaveBeenCalledWith('/teach/status', { silentError: true })
   })
 
   it('uploads a file as multipart form data', async () => {

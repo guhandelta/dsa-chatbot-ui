@@ -1055,3 +1055,57 @@ a {
 .study-table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
 .study-table th, .study-table td { border: 1px solid var(--line); padding: 0.35rem 0.55rem; text-align: left; vertical-align: top; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Error toasts ---------- */
+.toast-stack {
+  position: fixed;
+  top: 4.75rem;
+  right: 1rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(24rem, calc(100vw - 2rem));
+  pointer-events: none; /* only the toasts themselves take clicks */
+}
+@media (max-width: 639px) {
+  /* Pinned to the top so the bottom composer/inputs stay uncovered. */
+  .toast-stack { left: 1rem; right: 1rem; width: auto; }
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.625rem 0.5rem 0.625rem 0.75rem;
+  border: 1px solid var(--line);
+  border-left: 4px solid #f97316;
+  border-radius: 0.75rem;
+  background: var(--surface-strong);
+  color: var(--sea-ink);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  animation: toast-in 160ms ease-out;
+}
+.toast-severe { border-left-color: #dc2626; }
+.toast-icon { width: 1.125rem; height: 1.125rem; flex: none; margin-top: 0.125rem; color: #f97316; }
+.toast-severe .toast-icon { color: #dc2626; }
+.toast-body { min-width: 0; flex: 1; }
+.toast-title { font-size: 0.875rem; font-weight: 700; }
+.toast-count { font-weight: 800; color: var(--sea-ink-soft); }
+.toast-message { margin-top: 0.125rem; font-size: 0.8125rem; line-height: 1.4; overflow-wrap: anywhere; }
+.toast-meta { margin-top: 0.125rem; font-family: ui-monospace, monospace; font-size: 0.6875rem; color: var(--sea-ink-soft); }
+.toast-close {
+  flex: none;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  color: var(--sea-ink-soft);
+}
+.toast-close:hover { background: var(--surface); color: var(--sea-ink); }
+.toast-close:focus-visible { outline: 2px solid var(--lagoon-deep); outline-offset: 1px; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

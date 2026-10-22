@@ -26,7 +26,7 @@ describe('getApiErrorMessage', () => {
   })
 
   it('explains a network error', () => {
-    expect(getApiErrorMessage(axiosErrorWith(0, undefined, 'ERR_NETWORK'))).toMatch(/backend/i)
+    expect(getApiErrorMessage(axiosErrorWith(0, undefined, 'ERR_NETWORK'))).toMatch(/can't reach the server/i)
   })
 
   it('falls back for unknown errors', () => {

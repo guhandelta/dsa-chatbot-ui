@@ -27,7 +27,7 @@ export function NextMode({ language, onOpen }: Props) {
   useEffect(() => {
     let active = true
     setError(null); setStep(null); setPath(null)
-    Promise.all([fetchNextStep(language), fetchInsights(language), fetchStudyNotes(language), fetchStudyPath(language).catch(() => null)])
+    Promise.all([fetchNextStep(language), fetchInsights(language), fetchStudyNotes(language), fetchStudyPath(language, { silent: true }).catch(() => null)])
       .then(([next, seen, saved, curriculum]) => { if (active) { setPath(curriculum); setStep(next); setInsights(seen); setNotes(saved) } })
       .catch((err) => { if (active) setError(getApiErrorMessage(err)) })
     return () => { active = false }

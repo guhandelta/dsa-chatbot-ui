@@ -84,7 +84,7 @@ describe('response interceptor', () => {
 
   it('does not redirect for silent session restores', async () => {
     const loc = at('/practice')
-    const err = { response: { status: 401 }, config: { skipAuthRedirect: true } }
+    const err = { response: { status: 401 }, config: { skipAuthRedirect: true, silentError: true } }
     await expect(http.handlers.rejected!(err)).rejects.toBe(err)
     expect(loc.href).toBe('http://app/practice')
   })
@@ -112,7 +112,7 @@ describe('endpoint wrappers', () => {
     await api.fetchMe()
     expect(http.post).toHaveBeenCalledWith('/auth/register', { email: 'a@x.com', password: 'pw' })
     expect(http.post).toHaveBeenCalledWith('/auth/login', { email: 'a@x.com', password: 'pw' })
-    expect(http.get).toHaveBeenCalledWith('/auth/me', { skipAuthRedirect: true })
+    expect(http.get).toHaveBeenCalledWith('/auth/me', { skipAuthRedirect: true, silentError: true })
   })
 
   it('chat applies defaults', async () => {
@@ -143,8 +143,8 @@ describe('endpoint wrappers', () => {
     await api.deleteTrainedProblem('p')
     await api.fetchUsers()
     await api.setUserRole('u', 'teacher')
-    expect(http.get).toHaveBeenCalledWith('/problems/')
-    expect(http.get).toHaveBeenCalledWith('/training/status')
+    expect(http.get).toHaveBeenCalledWith('/problems/', { silentError: true })
+    expect(http.get).toHaveBeenCalledWith('/training/status', { silentError: true })
     expect(http.post).toHaveBeenCalledWith('/training/submit', {
       problem_id: 'p', problem: 'd', solutions: { python: 'x' }, provider: 'gemini',
     })
@@ -162,7 +162,7 @@ describe('endpoint wrappers', () => {
     await api.fetchAlgorithmPractice('bfs', 'Hard')
     await api.setPreferredLanguage('rust')
     await api.fetchContentItem('two-sum')
-    expect(http.get).toHaveBeenCalledWith('/tracks/')
+    expect(http.get).toHaveBeenCalledWith('/tracks/', { silentError: true })
     expect(http.get).toHaveBeenCalledWith('/tracks/dsa/items', { params: {} })
     expect(http.get).toHaveBeenCalledWith('/tracks/dsa/items', { params: { difficulty: 'Easy' } })
     expect(http.get).toHaveBeenCalledWith('/tracks/algorithms/tags')
@@ -189,14 +189,14 @@ describe('endpoint wrappers', () => {
     expect(http.post).toHaveBeenNthCalledWith(2, '/mentor/ask', {
       problem_id: 'p', language: 'python', reasoning: 'r', current_code: 'x', provider: 'openai',
     }, expect.objectContaining({ headers: expect.objectContaining({ 'Idempotency-Key': expect.any(String) }) }))
-    expect(http.get).toHaveBeenCalledWith('/mentor/entitlement', { params: { language: 'python' } })
+    expect(http.get).toHaveBeenCalledWith('/mentor/entitlement', { params: { language: 'python' }, silentError: true })
     expect(http.get).toHaveBeenCalledWith('/mentor/profile')
     expect(http.post).toHaveBeenCalledWith('/mentor/reflect', null, {
       params: { problem_id: 'p', reasoning: 'because', language: 'python' },
     })
     expect(http.delete).toHaveBeenCalledWith('/mentor/profile')
     expect(http.get).toHaveBeenCalledWith('/mentor/profile/export')
-    expect(http.get).toHaveBeenCalledWith('/subscriptions/')
+    expect(http.get).toHaveBeenCalledWith('/subscriptions/', { silentError: true })
   })
 })
 

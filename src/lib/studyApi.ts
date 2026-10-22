@@ -189,8 +189,8 @@ export interface Insights {
   responses: { item_id: string; prompt: string; response: string; correct: boolean; score: number; feedback: string; misconception: string; created_at: string }[]
 }
 
-export async function fetchStudyPath(language: string): Promise<StudyPath> {
-  return (await api.get<StudyPath>('/study/path', { params: { language } })).data
+export async function fetchStudyPath(language: string, opts?: { silent?: boolean }): Promise<StudyPath> {
+  return (await api.get<StudyPath>('/study/path', { params: { language }, silentError: opts?.silent })).data
 }
 
 export async function fetchNodeLesson(nodeId: string, language: string): Promise<{ markdown: string }> {
@@ -198,7 +198,7 @@ export async function fetchNodeLesson(nodeId: string, language: string): Promise
 }
 
 export async function fetchAllowance(): Promise<Allowance> {
-  return (await api.get<Allowance>('/study/allowance')).data
+  return (await api.get<Allowance>('/study/allowance', { silentError: true })).data
 }
 
 export async function sendStudyMessage(params: {
