@@ -1,5 +1,6 @@
 // What next? One recommended step from progress and weak concepts, plus the
 // learner's weak spots, their own recent explanations and saved notes.
+import { EvidenceSection } from './EvidenceSection'
 import { LearningTips } from './LearningTips'
 import { ProgressCharts } from './ProgressCharts'
 import { Link } from '@tanstack/react-router'
@@ -48,6 +49,7 @@ export function NextMode({ language, onOpen }: Props) {
     </section>
     <ProgressCharts language={language} />
     <LearningTips guidance={insights?.guidance} onOpen={onOpen} />
+    <EvidenceSection language={language} />
     <section className="island-shell rounded-2xl p-4" aria-label="Recommended next step">
       <p className="island-kicker mb-1">Recommended next step</p>
       <h2 className="m-0 text-lg font-bold">{step.kind === 'done' && gaps ? 'Available work finished; curriculum gaps remain' : step.title}</h2>

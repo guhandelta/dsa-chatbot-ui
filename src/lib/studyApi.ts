@@ -250,6 +250,12 @@ export async function fetchStudyNotes(language: string): Promise<StudyNote[]> {
   return (await api.get<{ notes: StudyNote[] }>('/study/notes', { params: { language } })).data.notes
 }
 
+export type EvidenceItem = { concept: string; item_id: string; item_type: string; code: string; passed_at: string }
+
+export async function fetchEvidence(language: string): Promise<EvidenceItem[]> {
+  return (await api.get<{ items: EvidenceItem[] }>('/study/evidence', { params: { language } })).data.items
+}
+
 export async function fetchInsights(language: string): Promise<Insights> {
   return (await api.get<Insights>('/study/insights', { params: { language } })).data
 }
