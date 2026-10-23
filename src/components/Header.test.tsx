@@ -1,15 +1,18 @@
 import type { ReactNode } from 'react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
+const logout = vi.hoisted(() => vi.fn())
+const navigate = vi.hoisted(() => vi.fn())
+
 const auth = vi.hoisted(() => ({ role: null as 'student' | 'admin' | 'instructor' | null }))
-vi.mock('../lib/auth', () => ({ hasToken: () => false, useAuth: () => ({ user: auth.role ? { role: auth.role } : null, logout: vi.fn() }) }))
+vi.mock('../lib/auth', () => ({ hasToken: () => false, useAuth: () => ({ user: auth.role ? { role: auth.role } : null, logout }) }))
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...await importOriginal<typeof import('@tanstack/react-router')>(),
   Link: ({ to, children }: { to: string; children: ReactNode }) => <a href={to}>{children}</a>,
-  useNavigate: () => vi.fn(),
+  useNavigate: () => navigate,
 }))
-vi.mock('./ThemeToggle', () => ({ default: () => null }))
+vi.mock('./ThemeSwitcher', () => ({ default: () => null }))
 vi.mock('./PeppercornBadge', () => ({ PeppercornBadge: () => null }))
 import Header from './Header'
 import { App as HomePage } from '../routes/index'
@@ -35,4 +38,12 @@ it.each([null, 'student', 'instructor', 'admin'] as const)('keeps home page link
   const teach = screen.queryByRole('link', { name: 'Teach' })
   expect(teach?.getAttribute('href') ?? null).toBe(role === 'admin' || role === 'instructor' ? '/teach' : null)
   expect(Boolean(screen.queryByRole('link', { name: 'Tech Board' }))).toBe(role === 'admin' || role === 'instructor')
+})
+
+it('logs out and returns to the login page when a learner signs out', () => {
+  auth.role = 'student'
+  render(<Header />)
+  fireEvent.click(screen.getByRole('button', { name: 'Log out' }))
+  expect(logout).toHaveBeenCalledTimes(1)
+  expect(navigate).toHaveBeenCalledWith({ to: '/login' })
 })
