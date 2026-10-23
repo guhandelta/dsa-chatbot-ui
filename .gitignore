@@ -13,3 +13,7 @@ __unconfig*
 todos.json
 vite.config.ts.timestamp-*.mjs
 coverage
+
+# Cypress run artifacts
+cypress/screenshots/
+cypress/videos/

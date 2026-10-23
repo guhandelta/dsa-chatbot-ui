@@ -63,3 +63,13 @@ Nav links for both appear automatically based on the signed-in user's role.
   Facts before interpretation, so feedback is auditable.
 - **`/profile`** shows behavioural patterns only — what they did, never what
   kind of person they are — plus subscriptions and export/erase controls.
+
+## End-to-end tests (Cypress)
+
+Start the dev server (`npm run dev`, port 3000), then run:
+
+- `npm run e2e` runs every spec headless.
+- `npm run e2e:open` opens the interactive runner.
+
+The specs live in `cypress/e2e/`. Every API call is stubbed with `cy.intercept`, so the
+tests need no backend, database or sandbox. Shared helpers are in `cypress/support/e2e.ts`.
