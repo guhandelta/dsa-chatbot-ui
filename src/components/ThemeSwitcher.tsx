@@ -1,13 +1,15 @@
 import { useEffect, useId, useState, type ReactNode } from 'react'
-import { applyMode, readStoredMode, writeStoredMode, type ThemeMode } from '../lib/theme'
+import {
+  applyChoice, applyStoredChoice, PALETTES, writeStoredChoice, type ThemeChoice,
+} from '../lib/theme'
 
 /**
- * One choice the learner can make in the header: its stored value, the name shown
- * on hover and to assistive technology, and the icon that represents it.
+ * One choice in the header: its value, the name shown on hover and to assistive
+ * technology, a one-line description, and the icon that represents it.
  */
-type ThemeOption = { mode: ThemeMode; name: string; description: string; icon: ReactNode }
+type ThemeOption = { choice: ThemeChoice; name: string; description: string; icon: ReactNode }
 
-/** Shared SVG attributes: decorative (aria-hidden), outlined, scaled by the button's font size. */
+/** Shared SVG attributes: decorative (hidden from assistive technology), outlined, sized by the button's font. */
 const svg = {
   viewBox: '0 0 24 24',
   width: '1em',
@@ -21,76 +23,91 @@ const svg = {
   focusable: false,
 }
 
-/** The three modes, in the order they appear in the header. */
+/**
+ * The five choices, in header order: Auto first, then the four palettes.
+ * Each palette's name and description come from PALETTES so they can't drift apart.
+ */
 export const THEME_OPTIONS: readonly ThemeOption[] = [
   {
-    mode: 'auto',
+    choice: 'auto',
     name: 'Auto',
     description: 'Follows your device setting',
     // A half-filled circle: one side light, one side dark.
     icon: (<svg {...svg}><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" /></svg>),
   },
   {
-    mode: 'light',
-    name: 'Light',
-    description: 'Light background',
-    // A sun.
-    icon: (<svg {...svg}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>),
+    choice: 'calm',
+    name: PALETTES.calm.label,
+    description: 'Light, teal: a quiet, open background',
+    // A leaf.
+    icon: (<svg {...svg}><path d="M4 20c0-9 5-14 16-16-1 11-6 16-14 16" /><path d="M4 20l8-8" /></svg>),
   },
   {
-    mode: 'dark',
-    name: 'Dark',
-    description: 'Dark background',
-    // A crescent moon.
-    icon: (<svg {...svg}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>),
+    choice: 'energize',
+    name: PALETTES.energize.label,
+    description: 'Light, orange: a brighter, lively background',
+    // A lightning bolt.
+    icon: (<svg {...svg}><path d="M13 2L4 14h7l-1 8 9-12h-7z" /></svg>),
+  },
+  {
+    choice: 'focus',
+    name: PALETTES.focus.label,
+    description: 'Dark, indigo: low glare for long sessions',
+    // A target.
+    icon: (<svg {...svg}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg>),
+  },
+  {
+    choice: 'warm',
+    name: PALETTES.warm.label,
+    description: 'Dark, amber: a soft, cozy background',
+    // A flame.
+    icon: (<svg {...svg}><path d="M12 22a6 6 0 0 0 6-6c0-4-3-6-4-10-2 2-2 4-2 4-1-1-2-2-2-4-3 3-6 6-6 10a6 6 0 0 0 6 6z" /></svg>),
   },
 ]
 
 /**
- * The header's theme control: three icon buttons, one per mode. The current mode
- * is marked with aria-pressed. Each button shows its name as a tooltip on hover
- * and on keyboard focus, and sets the same name as its accessible label.
+ * The header's theme control: five icon buttons, shared by every page. The current
+ * choice is marked with aria-pressed. Each button shows its name as a tooltip on
+ * hover and on keyboard focus, and the same name is its accessible label.
  */
 export default function ThemeSwitcher() {
-  const [mode, setMode] = useState<ThemeMode>('auto')
+  const [choice, setChoice] = useState<ThemeChoice>('auto')
   const groupId = useId()
 
-  // On mount, restore the stored choice before the first user interaction.
+  // On mount, mirror the choice already applied at startup (see main.tsx).
   useEffect(() => {
-    const initial = readStoredMode()
-    setMode(initial)
-    applyMode(initial)
+    setChoice(applyStoredChoice())
   }, [])
 
   // In auto, follow live changes to the device setting.
   useEffect(() => {
-    if (mode !== 'auto') return
+    if (choice !== 'auto') return
     const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => applyMode('auto')
+    const onChange = () => applyChoice('auto')
     media.addEventListener('change', onChange)
     return () => media.removeEventListener('change', onChange)
-  }, [mode])
+  }, [choice])
 
-  function choose(next: ThemeMode) {
-    setMode(next)
-    applyMode(next)
-    writeStoredMode(next)
+  function choose(next: ThemeChoice) {
+    setChoice(next)
+    applyChoice(next)
+    writeStoredChoice(next)
   }
 
   return (
     <div role="group" aria-labelledby={groupId} className="theme-switcher">
       <span id={groupId} className="sr-only">Color theme</span>
       {THEME_OPTIONS.map((option) => {
-        const pressed = option.mode === mode
+        const pressed = option.choice === choice
         return (
           <button
-            key={option.mode}
+            key={option.choice}
             type="button"
             className="theme-switcher-btn"
             aria-pressed={pressed}
             aria-label={`${option.name} theme: ${option.description}`}
             title={option.name}
-            onClick={() => choose(option.mode)}
+            onClick={() => choose(option.choice)}
           >
             {option.icon}
             <span role="tooltip" className="theme-switcher-tip">{option.name}</span>

@@ -2,6 +2,10 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { routeTree } from './routeTree.gen'
+import { applyStoredChoice } from './lib/theme'
+
+// Apply the learner's theme before the first render, so the page never flashes the default.
+applyStoredChoice()
 
 const queryClient = new QueryClient()
 
