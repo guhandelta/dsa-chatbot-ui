@@ -99,6 +99,9 @@ export function getApiErrorMessage(err: unknown): string {
     // Raw server text for 5xx can leak internals; show a generic line instead.
     if (status && status >= 500) return 'The server ran into a problem. Please try again in a moment.'
     if (typeof detail === 'string') return detail
+    // Structured details (e.g. open strikes, autosave conflicts) carry a message.
+    const message = (detail as { message?: unknown } | null)?.message
+    if (detail && !Array.isArray(detail) && typeof message === 'string') return message
     if (Array.isArray(detail)) {
       const lines = detail.map(formatValidationItem).filter(Boolean)
       if (lines.length) return lines.join('; ')

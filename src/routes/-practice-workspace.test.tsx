@@ -24,6 +24,7 @@ vi.mock('../lib/workspaceApi', () => ({
   openWorkspace: vi.fn(), saveWorkspace: vi.fn(), resetWorkspace: vi.fn(), createCheckpoint: vi.fn(),
   restoreCheckpoint: vi.fn(), deleteCheckpoint: vi.fn(), runWorkspaceTests: vi.fn(), fetchSessionSummary: vi.fn(),
 }))
+vi.mock('../components/workspace/StrikesPanel', () => ({ StrikesPanel: () => <p>Strikes panel</p> }))
 vi.mock('../lib/auth', () => ({ hasToken: () => true, useAuth: () => ({ setBalance: vi.fn(), user: { id: 'u' } }) }))
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { ariaLabel: string } }) => (
@@ -220,4 +221,13 @@ it('exports the workspace files as a download', async () => {
   expect(payload).toMatchObject({ problem_id: 'python-path-01-values', language: 'python', entry: 'solution.py',
     files: [{ name: 'solution.py', content: SOLUTION }] })
   click.mockRestore()
+})
+
+it('hides the reference solution section when solutions are hidden for good', async () => {
+  vi.mocked(openWorkspace).mockResolvedValue(state({ reveal: { ...state().reveal, policy: 'disabled' } }))
+  show()
+  await loaded()
+  expect(screen.getByText('Strikes panel')).toBeTruthy()
+  expect(screen.queryByRole('region', { name: 'Reference solution' })).toBeNull()
+  expect(screen.queryByText(/Reference solution/)).toBeNull()
 })

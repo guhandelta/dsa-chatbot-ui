@@ -1320,3 +1320,10 @@ body.practice-focus .practice-chrome { display: none !important; }
 .ws-stats dt { color: var(--sea-ink-soft); font-size: 0.72rem; }
 .ws-stats dd { margin: 0; font-weight: 600; }
 .ws-quote { margin: 0.5rem 0 1rem; padding-left: 0.8rem; border-left: 3px solid var(--line); font-size: 0.85rem; }
+.ws-strikes { margin: 0.6rem 0 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.85rem; }
+.ws-set { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.4rem; }
+.ws-question { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.6rem; border: 1px solid var(--line); border-radius: 0.7rem; }
+.ws-choices { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.ws-choice { display: flex; gap: 0.45rem; align-items: baseline; font-size: 0.82rem; }
+.ws-code-answer textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 0.8rem; border: 1px solid var(--line); border-radius: 0.6rem; background: var(--surface-strong); color: var(--sea-ink); padding: 0.5rem; }
+.ws-extra { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }

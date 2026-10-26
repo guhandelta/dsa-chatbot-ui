@@ -44,6 +44,7 @@ import { CheckpointsPanel } from "../components/workspace/CheckpointsPanel";
 import { ProgressPanel } from "../components/workspace/ProgressPanel";
 import { SessionSummaryCard } from "../components/workspace/SessionSummaryCard";
 import { useAutosave } from "../components/workspace/useAutosave";
+import { StrikesPanel } from "../components/workspace/StrikesPanel";
 import type { AnalysisResult, Evidence, Provider } from "../types";
 
 export const Route = createFileRoute("/practice")({
@@ -178,6 +179,7 @@ export function PracticeWorkspace({
   const [focusMode, setFocusMode] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [summary, setSummary] = useState<SessionSummary | null>(null);
+  const [strikeRefresh, setStrikeRefresh] = useState(0);
 
   const [provider, setProvider] = useState<Provider>("gemini");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -357,6 +359,7 @@ export function PracticeWorkspace({
       const sid = await ensureSession();
       applyPractice(await practiceAction(sid, "submit", code, "", undefined, workspacePayload));
       void refreshWorkspace();
+      setStrikeRefresh((n) => n + 1);
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -714,7 +717,8 @@ export function PracticeWorkspace({
           )}
           {evidence && <EvidencePanel evidence={evidence} />}
           {analysis && <AnalysisPanel result={analysis} />}
-          <section
+          {/* Courses that hide solutions (the default) clear strikes instead. */}
+          {reveal?.policy !== "disabled" && <section
             className="island-shell mt-4 rounded-2xl p-5"
             aria-label="Reference solution"
           >
@@ -757,7 +761,7 @@ export function PracticeWorkspace({
                 Test runs, unavailable runtimes and service errors do not unlock it.
               </p>
             )}
-          </section>
+          </section>}
         </div>
         <aside className="practice-side" aria-label="Mentor and progress">
           <MentorPanel
@@ -774,6 +778,11 @@ export function PracticeWorkspace({
                   : "/track/dsa?mode=browse";
             }}
           />
+          {serverWorkspace && (
+            <div className="mt-4">
+              <StrikesPanel language={language} problemId={problemId} refreshKey={strikeRefresh} />
+            </div>
+          )}
           {progress && <div className="practice-chrome mt-4"><ProgressPanel progress={progress} /></div>}
           {serverWorkspace && (
             <div className="practice-chrome mt-4">
