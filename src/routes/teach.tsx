@@ -120,9 +120,9 @@ export function TeachPage() {
       {status && (
         <div className="vr-toolchains mb-5">
           <strong>This machine can verify:</strong>{' '}
-          {status.executed_languages.join(', ') || 'nothing'} (executed against tests)
-          {status.compiled_languages.length > 0 &&
-            `; ${status.compiled_languages.join(', ')} (compiled)`}
+          {status.executed_languages.join(', ') || 'nothing'} (function tests)
+          {status.stdio_languages && status.stdio_languages.length > 0 &&
+            `; ${status.stdio_languages.join(', ')} (stdin/stdout tests)`}
           {status.unavailable.length > 0 && (
             <span className="vr-warn">
               {' '}— no toolchain for {status.unavailable.join(', ')}, so those are

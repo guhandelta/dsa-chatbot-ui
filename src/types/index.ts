@@ -125,7 +125,9 @@ export interface TrainingStatus {
   role: string
   toolchains: Record<string, boolean>
   executed_languages: string[]
+  stdio_languages?: string[]
   compiled_languages: string[]
+  execution_capabilities?: Record<string, { installed: boolean; function_execution: boolean; stdio_execution: boolean }>
   unavailable: string[]
   note: string
 }
