@@ -8,6 +8,13 @@ vi.mock('@tanstack/react-router', () => ({
   redirect: (value: unknown) => value,
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }))
+// The server workspace is covered in -practice-workspace.test.tsx; here it is
+// unreachable, which must leave the single-file editor fully usable.
+vi.mock('../lib/workspaceApi', () => ({
+  openWorkspace: vi.fn().mockRejectedValue(new Error('offline')),
+  saveWorkspace: vi.fn(), resetWorkspace: vi.fn(), createCheckpoint: vi.fn(), restoreCheckpoint: vi.fn(),
+  deleteCheckpoint: vi.fn(), runWorkspaceTests: vi.fn(), fetchSessionSummary: vi.fn().mockRejectedValue(new Error('offline')),
+}));
 vi.mock('../lib/auth', () => ({ hasToken: () => true, useAuth: () => ({ user: { id: 'u', preferred_language: state.preferred }, setBalance: vi.fn() }) }))
 vi.mock('../lib/languageAccess', () => ({
   LANGUAGE_LABELS: { python: 'Python', javascript: 'JavaScript' },

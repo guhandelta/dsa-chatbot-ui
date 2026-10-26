@@ -452,6 +452,9 @@ export interface PracticeReply {
   next_hint_cost?: number
   // Earn-back peppercorns from a passing evaluation.
   rewards?: { key: string; amount: number; reason: string; balance: number }[]
+  // Learner-safe test output of an evaluation (submit only).
+  tests?: import('./workspaceApi').TestRun
+  source_map?: import('./workspaceApi').SourceSpan[] | null
 }
 export async function startPractice(problemId: string, language: string, provider: Provider): Promise<PracticeReply> {
   const { data } = await reliablePost<PracticeReply>('/practice/sessions', { problem_id: problemId, language, provider })
@@ -460,8 +463,13 @@ export async function startPractice(problemId: string, language: string, provide
 export async function fetchPractice(sid: string): Promise<PracticeReply> {
   return (await api.get<PracticeReply>(`/practice/sessions/${encodeURIComponent(sid)}`)).data
 }
-export async function practiceAction(sid: string, action: 'submit' | 'hint' | 'reflect' | 'quit', code = '', reasoning = '', maxCost?: number): Promise<PracticeReply> {
-  const { data } = await reliablePost<PracticeReply>(`/practice/sessions/${encodeURIComponent(sid)}/actions`, { action, code, reasoning, max_hint_cost: maxCost })
+export async function practiceAction(
+  sid: string, action: 'submit' | 'hint' | 'reflect' | 'quit', code = '', reasoning = '', maxCost?: number,
+  // A multi-file workspace; the server bundles it into one program.
+  workspace?: { files: { name: string; content: string }[]; entry: string },
+): Promise<PracticeReply> {
+  const { data } = await reliablePost<PracticeReply>(`/practice/sessions/${encodeURIComponent(sid)}/actions`,
+    { action, code, reasoning, max_hint_cost: maxCost, ...(workspace ?? {}) })
   return data
 }
 

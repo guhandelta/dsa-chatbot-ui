@@ -211,7 +211,7 @@ export function ProfilePage() {
         {confirming && (
           <p className="mt-2 text-xs text-[var(--sea-ink-soft)]">
             Erasing removes the patterns above and the mentor&apos;s ability to
-            recall how you reasoned before. Saved practice sessions and chat conversations remain.
+            recall how you reasoned before. Saved practice sessions, workspace files and chat conversations remain.
           </p>
         )}
       </section>

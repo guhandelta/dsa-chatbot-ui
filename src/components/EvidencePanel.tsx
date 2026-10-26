@@ -32,6 +32,11 @@ export function EvidencePanel({ evidence }: { evidence: Evidence }) {
               {r.passed_cases}/{r.total_cases} passed
             </span>
           </div>
+        ) : r.language && r.status === 'unverified' ? (
+          <div key={r.language} className="ev-row">
+            <span className="ev-name">Curated tests</span>
+            <span className="ev-neutral">Not run: {r.detail}</span>
+          </div>
         ) : null,
       )}
 

@@ -32,6 +32,13 @@ vi.mock("../lib/api", () => ({
   fetchPractice: vi.fn(),
   getApiErrorMessage: () => "Service unavailable",
 }));
+// The server workspace is covered in -practice-workspace.test.tsx; here it is
+// unreachable, which must leave the single-file editor fully usable.
+vi.mock("../lib/workspaceApi", () => ({
+  openWorkspace: vi.fn().mockRejectedValue(new Error("offline")),
+  saveWorkspace: vi.fn(), resetWorkspace: vi.fn(), createCheckpoint: vi.fn(), restoreCheckpoint: vi.fn(),
+  deleteCheckpoint: vi.fn(), runWorkspaceTests: vi.fn(), fetchSessionSummary: vi.fn().mockRejectedValue(new Error("offline")),
+}));
 vi.mock("../lib/auth", () => ({
   hasToken: () => true,
   useAuth: () => ({
