@@ -6,7 +6,9 @@
     "#/*": "./src/*"
   },
   "scripts": {
+    "predev": "node scripts/build-preview-runtime.mjs",
     "dev": "vite dev --port 3000",
+    "prebuild": "node scripts/build-preview-runtime.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",

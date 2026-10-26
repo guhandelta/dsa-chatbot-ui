@@ -9,7 +9,7 @@ import {
   listPlayground, openPlayground, savePlayground, transpileTypeScript,
   type PlaygroundListing, type TsDiagnostic,
 } from '../lib/playgroundApi'
-import { PREVIEW_SANDBOX, autoRefreshable, buildPreview } from '../lib/preview'
+import { PREVIEW_SANDBOX, autoRefreshable, buildPreview, loadReactRuntime, needsCompile, needsReact } from '../lib/preview'
 import type { WorkspaceFile } from '../lib/workspaceApi'
 import { FileTabs } from '../components/workspace/FileTabs'
 import { useAutosave, type Saver } from '../components/workspace/useAutosave'
@@ -26,7 +26,7 @@ export const Route = createFileRoute('/playground')({
 })
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,39}$/
-const MONACO: Record<string, string> = { html: 'html', css: 'css', js: 'javascript', ts: 'typescript', md: 'markdown', txt: 'plaintext' }
+const MONACO: Record<string, string> = { html: 'html', css: 'css', js: 'javascript', ts: 'typescript', jsx: 'javascript', tsx: 'typescript', md: 'markdown', txt: 'plaintext' }
 
 function PlaygroundPage() {
   const { project, template } = Route.useSearch()
@@ -104,6 +104,7 @@ function PlaygroundEditor({ slug, template: requested }: { slug: string; templat
   const [running, setRunning] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const compiled = useRef<Record<string, string>>({})
+  const runtime = useRef('')
   const token = useRef('')
   const frame = useRef<HTMLIFrameElement | null>(null)
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null)
@@ -117,7 +118,7 @@ function PlaygroundEditor({ slug, template: requested }: { slug: string; templat
   const render = useCallback((current: WorkspaceFile[]) => {
     token.current = crypto.randomUUID()
     setConsoleLines([])
-    setSrcDoc(buildPreview(current, compiled.current, token.current))
+    setSrcDoc(buildPreview(current, compiled.current, token.current, runtime.current))
     setFrameKey((k) => k + 1)
   }, [])
 
@@ -125,7 +126,8 @@ function PlaygroundEditor({ slug, template: requested }: { slug: string; templat
     setRunning(true)
     setError(null)
     try {
-      if (current.some((f) => f.name.endsWith('.ts'))) {
+      runtime.current = needsReact(current) ? await loadReactRuntime() : ''
+      if (needsCompile(current)) {
         const result = await transpileTypeScript(current)
         compiled.current = result.outputs
         setDiagnostics(result.diagnostics)
@@ -245,8 +247,8 @@ function PlaygroundEditor({ slug, template: requested }: { slug: string; templat
         <p className="ws-hint">Scripts run when you press Run preview (Ctrl/⌘+Enter). The preview has no network access, so external libraries and images do not load.</p>
         {error && <p className="ws-error" role="alert">{error}</p>}
         {diagnostics.length > 0 && (
-          <div className="ws-diagnostic" aria-label="TypeScript problems">
-            <h3 className="ws-heading">TypeScript problems</h3>
+          <div className="ws-diagnostic" aria-label="Compiler problems">
+            <h3 className="ws-heading">Compiler problems</h3>
             <ul className="ws-list">
               {diagnostics.map((d, i) => (
                 <li key={i}>

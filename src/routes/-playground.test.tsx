@@ -61,6 +61,7 @@ it('compiles TypeScript, renders a sandboxed preview and reports type errors', a
   expect(frame.getAttribute('srcdoc')).toContain('let n = "x";')
   expect(frame.getAttribute('srcdoc')).toContain('Content-Security-Policy')
   expect(await screen.findByText(/TS2322/)).toBeTruthy()
+  expect(screen.getByRole('region', { name: 'Preview' })).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Go to line 1' })).toBeTruthy()
 })
 
