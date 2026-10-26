@@ -14,7 +14,11 @@ export interface Snapshot {
   template: string
 }
 
-export function useAutosave(problemId: string, language: string, enabled: boolean, delay = 1000) {
+export type Saver = (snapshot: Snapshot & { revision: number | null; force: boolean }) =>
+  Promise<{ revision: number; updated_at: string }>
+
+/** `saver` replaces the practice-workspace endpoint (the web playground passes its own). */
+export function useAutosave(problemId: string, language: string, enabled: boolean, delay = 1000, saver?: Saver) {
   const [status, setStatus] = useState<SaveStatus>(enabled ? 'idle' : 'offline')
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
@@ -34,7 +38,8 @@ export function useAutosave(problemId: string, language: string, enabled: boolea
     pending.current = null
     if (alive.current) setStatus('saving')
     try {
-      const saved = await saveWorkspace(problemId, { language, ...snapshot, revision: revision.current, force })
+      const body = { ...snapshot, revision: revision.current, force }
+      const saved = saver ? await saver(body) : await saveWorkspace(problemId, { language, ...body })
       revision.current = saved.revision
       blocked.current = false
       if (alive.current) {
@@ -53,7 +58,7 @@ export function useAutosave(problemId: string, language: string, enabled: boolea
         setStatus('error')
       }
     }
-  }, [problemId, language])
+  }, [problemId, language, saver])
 
   const flush = useCallback(async (force = false) => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null }

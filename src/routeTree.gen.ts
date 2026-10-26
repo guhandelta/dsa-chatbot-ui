@@ -15,6 +15,7 @@ import { Route as RegistryRouteImport } from './routes/registry'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PracticeRouteImport } from './routes/practice'
+import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LearnRouteImport } from './routes/learn'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -51,6 +52,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const PracticeRoute = PracticeRouteImport.update({
   id: '/practice',
   path: '/practice',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaygroundRoute = PlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/learn': typeof LearnRoute
   '/login': typeof LoginRoute
+  '/playground': typeof PlaygroundRoute
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/learn': typeof LearnRoute
   '/login': typeof LoginRoute
+  '/playground': typeof PlaygroundRoute
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/learn': typeof LearnRoute
   '/login': typeof LoginRoute
+  '/playground': typeof PlaygroundRoute
   '/practice': typeof PracticeRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/learn'
     | '/login'
+    | '/playground'
     | '/practice'
     | '/profile'
     | '/register'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/learn'
     | '/login'
+    | '/playground'
     | '/practice'
     | '/profile'
     | '/register'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/learn'
     | '/login'
+    | '/playground'
     | '/practice'
     | '/profile'
     | '/register'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LearnRoute: typeof LearnRoute
   LoginRoute: typeof LoginRoute
+  PlaygroundRoute: typeof PlaygroundRoute
   PracticeRoute: typeof PracticeRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/practice'
       fullPath: '/practice'
       preLoaderRoute: typeof PracticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playground': {
+      id: '/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof PlaygroundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -301,6 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   LearnRoute: LearnRoute,
   LoginRoute: LoginRoute,
+  PlaygroundRoute: PlaygroundRoute,
   PracticeRoute: PracticeRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,

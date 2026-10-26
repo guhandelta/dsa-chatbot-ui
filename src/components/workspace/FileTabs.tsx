@@ -7,6 +7,7 @@ import type { WorkspaceFile } from '../../lib/workspaceApi'
 const SOURCE_EXT: Record<string, string[]> = {
   python: ['.py'], javascript: ['.js'], typescript: ['.ts'], java: ['.java'], c: ['.c', '.h'],
   cpp: ['.cpp', '.hpp', '.h'], rust: ['.rs'], ruby: ['.rb'], go: ['.go'], csharp: ['.cs'],
+  web: ['.html', '.css', '.js', '.ts'],
 }
 const NOTE_EXT = ['.md', '.txt']
 const NAME = /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/

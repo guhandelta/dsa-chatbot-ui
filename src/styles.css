@@ -1327,3 +1327,14 @@ body.practice-focus .practice-chrome { display: none !important; }
 .ws-choice { display: flex; gap: 0.45rem; align-items: baseline; font-size: 0.82rem; }
 .ws-code-answer textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 0.8rem; border: 1px solid var(--line); border-radius: 0.6rem; background: var(--surface-strong); color: var(--sea-ink); padding: 0.5rem; }
 .ws-extra { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+
+/* ---------- Web playground ---------- */
+.pg-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1100px) { .pg-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.pg-frame { width: 100%; height: 420px; border: 1px solid var(--line); border-radius: 0.7rem; background: #fff; }
+.pg-console { margin-top: 0.8rem; }
+.pg-log { list-style: none; margin: 0.4rem 0 0; padding: 0.5rem; max-height: 12rem; overflow: auto; border-radius: 0.6rem;
+  background: rgba(10, 25, 30, 0.9); color: #e6f2ef; font-family: ui-monospace, monospace; font-size: 0.78rem; }
+.pg-log li { white-space: pre-wrap; padding: 0.1rem 0; }
+.pg-warn { color: #f0c674; }
+.pg-error { color: #ff8f8f; }
