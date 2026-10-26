@@ -1,0 +1,25 @@
+name: Verify UI
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p .
+      - run: npm test -- --dir src
+      - run: npm run build
+      - name: Browser smoke tests
+        uses: cypress-io/github-action@v6
+        with:
+          install: false
+          start: npm run dev -- --host 127.0.0.1
+          wait-on: http://localhost:3000
+          browser: chrome

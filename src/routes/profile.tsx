@@ -186,7 +186,7 @@ export function ProfilePage() {
         </h2>
         <p className="mb-3 text-sm text-[var(--sea-ink-soft)]">
           This profile is built from your submissions and the notes you write
-          about your own thinking. You can export or erase it at any time.
+          about your own thinking. Erasing it also deletes saved practice and playground files, checkpoints, test history, strikes and clearing answers. You can export your data first.
           Minimal hint billing records remain so erasing your profile does not reset hint prices.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -196,7 +196,7 @@ export function ProfilePage() {
           {confirming ? (
             <>
               <button type="button" className="mini-btn" onClick={erase}>
-                Yes, erase profile events
+                Yes, erase learning data
               </button>
               <button type="button" className="mini-btn" onClick={() => setConfirming(false)}>
                 Cancel
