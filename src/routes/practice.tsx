@@ -483,6 +483,18 @@ export function PracticeWorkspace({
     applyDraft((await openWorkspace(problemId, language)).draft);
   });
 
+  // The learner's own files, downloaded as one JSON document they can keep.
+  const exportFiles = () => {
+    const payload = { problem_id: problemId, language, entry, exported_at: new Date().toISOString(), files };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${problemId}-${language}-workspace.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setAnnouncement("Workspace files downloaded.");
+  };
+
   const jump = (file: string, line: number) => {
     jumpTo.current = { file, line };
     if (file === activeFile) applyJump();
@@ -558,6 +570,9 @@ export function PracticeWorkspace({
               <button type="button" className="lang-tab" aria-pressed={focusMode} aria-keyshortcuts="Control+Alt+F"
                 onClick={() => setFocusMode((v) => !v)}>
                 {focusMode ? "Exit focus mode" : "Focus mode"}
+              </button>
+              <button type="button" className="lang-tab" onClick={exportFiles}>
+                Export files
               </button>
               <span className={`ws-save is-${autosave.status}`} role="status">
                 {SAVE_LABEL[autosave.status]}

@@ -206,3 +206,18 @@ it('says when no reference solution exists', async () => {
   show()
   expect(await screen.findByText(/no reference solution for this problem/)).toBeTruthy()
 })
+
+it('exports the workspace files as a download', async () => {
+  const created: Blob[] = []
+  const urls = { createObjectURL: vi.fn((blob: Blob) => { created.push(blob); return 'blob:x' }), revokeObjectURL: vi.fn() }
+  Object.assign(URL, urls)
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  show()
+  await loaded()
+  fireEvent.click(screen.getByRole('button', { name: 'Export files' }))
+  expect(click).toHaveBeenCalled()
+  const payload = JSON.parse(await created[0].text())
+  expect(payload).toMatchObject({ problem_id: 'python-path-01-values', language: 'python', entry: 'solution.py',
+    files: [{ name: 'solution.py', content: SOLUTION }] })
+  click.mockRestore()
+})
