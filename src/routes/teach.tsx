@@ -132,7 +132,9 @@ export function TeachPage() {
         </div>
       )}
 
-      <section className="island-shell rounded-2xl p-4 sm:p-6">
+      {user && <KnowledgeUploadPanel isAdmin={user.role === 'admin'} />}
+
+      <section className="island-shell mt-6 rounded-2xl p-4 sm:p-6">
         <div className="controls mb-3">
           <label className="selector grow">
             <span className="selector-label">Problem ID (slug)</span>
@@ -202,7 +204,6 @@ export function TeachPage() {
 
       {result && <ValidationReportView result={result} />}
 
-      {user && <KnowledgeUploadPanel isAdmin={user.role === 'admin'} />}
     </main>
   )
 }

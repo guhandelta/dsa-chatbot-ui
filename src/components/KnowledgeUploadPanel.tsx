@@ -45,6 +45,7 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
   const [learnStatus, setLearnStatus] = useState<(LearnStatus & { training_languages?: string[] }) | null>(null)
   const [mode, setMode] = useState<'file' | 'text'>('file')
   const [file, setFile] = useState<File | null>(null)
+  const [dragging, setDragging] = useState(false)
   const [fileInputKey, setFileInputKey] = useState(0)
   const [text, setText] = useState('')
   const [filename, setFilename] = useState('')
@@ -205,18 +206,51 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
         ))}
       </div>
 
-      <div className="controls mb-3">
-        {mode === 'file' ? (
-          <label className="selector grow">
+      <div className="mb-4">
+          <label
+            className="selector grow rounded-xl border-2 border-dashed p-5 transition-colors"
+            style={{ borderColor: dragging ? 'var(--lagoon)' : 'var(--line)', background: dragging ? 'var(--sand)' : 'var(--surface)' }}
+            onDragOver={(event) => {
+              event.preventDefault()
+              event.dataTransfer.dropEffect = uploading ? 'none' : 'copy'
+              if (!uploading) setDragging(true)
+            }}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false)
+            }}
+            onDrop={(event) => {
+              event.preventDefault()
+              setDragging(false)
+              if (uploading) return
+              if (event.dataTransfer.files.length !== 1) {
+                setError('Drop one document at a time.')
+                return
+              }
+              setFile(event.dataTransfer.files[0])
+              setMode('file')
+              setError(null)
+              setNotice(null)
+            }}
+          >
+            <span className="font-semibold text-[var(--sea-ink)]">Drag and drop training data here, or choose a file</span>
             <span className="selector-label">Document ({formats.join(', ')} · max {maxMb} MB)</span>
             <input
               key={fileInputKey}
               type="file"
               accept={formats.join(',')}
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              disabled={uploading}
+              onChange={(e) => {
+                setFile(e.target.files?.[0] ?? null)
+                setMode('file')
+                setError(null)
+              }}
             />
+            <span aria-live="polite" className="text-sm text-[var(--sea-ink)]">{file ? `Selected: ${file.name}` : ''}</span>
           </label>
-        ) : (
+      </div>
+
+      <div className="controls mb-3">
+        {mode === 'text' && (
           <label className="selector grow">
             <span className="selector-label">Name (optional)</span>
             <input
@@ -240,6 +274,7 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
           <span className="selector-label">Reference language</span>
           <select value={language} onChange={(e) => setLanguage(e.target.value)}>
             <option value="">Detect from filename</option>
+            <option value="all_languages">Language-neutral / all languages</option>
             {(learnStatus?.training_languages ?? languages).map(l => <option key={l} value={l}>{LANGUAGE_LABELS[l] ?? l}</option>)}
           </select>
         </label>
@@ -312,6 +347,11 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
                       {doc.status === 'published' && ` · ${doc.chunks} chunks`}
                       {isAdmin && doc.owner_email && ` · ${doc.owner_email}`}
                     </span>
+                    {doc.status === 'published' && (
+                      <span className="kb-sub">
+                        Scope: {doc.reference_language === 'all_languages' ? 'All languages' : (doc.reference_language ?? 'Unclassified')} · {doc.retrieval_status ?? 'status unavailable'}
+                      </span>
+                    )}
                     {doc.review_note && <span className="kb-sub">Note: {doc.review_note}</span>}
                   </div>
                   <div className="kb-actions">

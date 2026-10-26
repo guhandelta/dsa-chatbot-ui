@@ -277,6 +277,9 @@ export interface KnowledgeDocument {
   review_note: string
   created_at: string | null
   reviewed_at: string | null
+  retrieval_status?: string
+  reference_language?: string | null
+  reference_chunks?: number
 }
 
 export interface KnowledgeDocumentDetail extends KnowledgeDocument {

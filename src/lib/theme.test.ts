@@ -163,6 +163,10 @@ describe('palette definitions', () => {
     ['sea-ink', 'bg-base'], ['sea-ink', 'foam'], ['sea-ink', 'sand'],
     ['sea-ink-soft', 'bg-base'], ['sea-ink-soft', 'sand'],
     ['lagoon', 'bg-base'], ['kicker', 'bg-base'], ['palm', 'bg-base'],
+    ['text-primary', 'bg-app'], ['text-primary', 'bg-surface'],
+    ['text-muted', 'bg-app'], ['text-muted', 'bg-surface'],
+    ['accent-calm', 'bg-surface'], ['accent-calm', 'accent-calm-subtle'],
+    ['accent-energize', 'bg-app'], ['accent-energize', 'accent-subtle'],
   ]
 
   it.each(PALETTE_NAMES)('%s meets WCAG AA for body text (4.5:1) on every text pair', (name) => {

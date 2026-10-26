@@ -7,28 +7,117 @@
 }
 
 :root {
-  --sea-ink: #173a40;
-  --sea-ink-soft: #416166;
-  --lagoon: #4fb8b2;
-  --lagoon-deep: #328f97;
-  --palm: #2f6a4a;
-  --sand: #e7f0e8;
-  --foam: #f3faf5;
-  --surface: rgba(255, 255, 255, 0.74);
-  --surface-strong: rgba(255, 255, 255, 0.9);
-  --line: rgba(23, 58, 64, 0.14);
-  --inset-glint: rgba(255, 255, 255, 0.82);
-  --kicker: rgba(47, 106, 74, 0.9);
-  --bg-base: #e7f3ec;
-  --header-bg: rgba(251, 255, 248, 0.84);
-  --chip-bg: rgba(255, 255, 255, 0.8);
-  --chip-line: rgba(47, 106, 74, 0.18);
-  --link-bg-hover: rgba(255, 255, 255, 0.9);
-  --hero-a: rgba(79, 184, 178, 0.36);
-  --hero-b: rgba(47, 106, 74, 0.2);
+  /* Canvas & Containers */
+  --bg-app: #dce6e3;             /* Replaces the stark white background */
+  --bg-surface: #e8efec;         /* Tech Board cards & table surfaces */
+  --border-subtle: #cbd7d5;      /* Subtle borders for cards and inputs */
+
+  /* Typography */
+  --text-primary: #182c29;       /* Headings ("CSS3 & Modern Architecture", etc.) */
+  --text-muted: #455c57;         /* "Total Records", "Category: Web & Frontend" */
+
+  /* Interactive & Identity ("Calm") */
+  --accent-calm: #245b56;        /* Active tab indicator, search focus, primary buttons */
+  --accent-calm-hover: #32766f;  /* Subtle lift on hover */
+  --accent-calm-subtle: #cdded8; /* Background for selected filter pills */
+
+  /* Status Tokens */
+  --status-trained-text: #285444;
+  --status-trained-bg: #e2ede8;
+  --status-trained-border: #b8d4c7;
+
+  /* Interactive & Accents (The "Energize" Pop) */
+  --accent-energize: #914015; /* Active nav underline, selected pills, button accents */
+  --accent-energize-hover: #7f3510;
+  --accent-subtle: #e4d5c2;   /* Pill/badge backgrounds for active filters */
+
+  --sea-ink: #182c29;
+  --sea-ink-soft: #455c57;
+  --lagoon: #245b56;
+  --lagoon-deep: #32766f;
+  --palm: #245b56;
+  --sand: #cdded8;
+  --foam: #e8efec;
+  --surface: #e8efec;
+  --surface-strong: rgba(232, 239, 236, 0.95);
+  --line: #cbd7d5;
+  --inset-glint: rgba(255, 255, 255, 0.85);
+  --kicker: #245b56;
+  --bg-base: #dce6e3;
+  --header-bg: rgba(220, 230, 227, 0.92);
+  --chip-bg: #e8efec;
+  --chip-line: #cbd7d5;
+  --link-bg-hover: #cdded8;
+  --hero-a: rgba(36, 91, 86, 0.18);
+  --hero-b: rgba(36, 91, 86, 0.08);
+}
+
+:root[data-palette="energize"] {
+  /* Canvas & Containers */
+  --bg-app: #e5ddd1;          /* Replaces harsh #FFFFFF page background */
+  --bg-surface: #efe8dd;      /* Tech board card background */
+  --border-subtle: #dbcfc2;   /* Card borders, grid dividers, search outlines */
+
+  /* Typography */
+  --text-primary: #2a1b16;    /* Headings, titles, tech names (e.g., "Embedded C") */
+  --text-muted: #68544d;      /* Category subtitles, labels ("Total Records", etc.) */
+
+  /* Interactive & Accents (The "Energize" Pop) */
+  --accent-energize: #914015; /* Active nav underline, selected pills, button accents */
+  --accent-energize-hover: #7f3510;
+  --accent-subtle: #e4d5c2;   /* Pill/badge backgrounds for active filters */
+
+  /* Status Tokens */
+  --status-trained-text: #2f6044;
+  --status-trained-bg: #eaf3ed;
+  --status-trained-border: #b8dac5;
+
+  /* Aliases for general accent usage */
+  --accent-calm: var(--accent-energize);
+  --accent-calm-hover: var(--accent-energize-hover);
+  --accent-calm-subtle: var(--accent-subtle);
+
+  --sea-ink: #2a1b16;
+  --sea-ink-soft: #68544d;
+  --lagoon: #914015;
+  --lagoon-deep: #7f3510;
+  --palm: #914015;
+  --sand: #e4d5c2;
+  --foam: #efe8dd;
+  --surface: #efe8dd;
+  --surface-strong: rgba(239, 232, 221, 0.95);
+  --line: #dbcfc2;
+  --inset-glint: rgba(255, 255, 255, 0.85);
+  --kicker: #914015;
+  --bg-base: #e5ddd1;
+  --header-bg: rgba(229, 221, 209, 0.92);
+  --chip-bg: #efe8dd;
+  --chip-line: #dbcfc2;
+  --link-bg-hover: #e4d5c2;
+  --hero-a: rgba(200, 100, 40, 0.16);
+  --hero-b: rgba(200, 100, 40, 0.08);
 }
 
 :root[data-theme="dark"] {
+  /* Canvas & Containers */
+  --bg-app: #0a1418;
+  --bg-surface: #101d22;
+  --border-subtle: rgba(141, 229, 219, 0.18);
+
+  /* Typography */
+  --text-primary: #d7ece8;
+  --text-muted: #afcdc8;
+
+  /* Interactive & Identity */
+  --accent-calm: #60d7cf;
+  --accent-calm-hover: #8de5db;
+  --accent-calm-subtle: #0f1a1e;
+
+  /* Status Tokens */
+  --status-trained-text: #6ec89a;
+  --status-trained-bg: rgba(110, 200, 154, 0.15);
+  --status-trained-border: rgba(110, 200, 154, 0.3);
+
   --sea-ink: #d7ece8;
   --sea-ink-soft: #afcdc8;
   --lagoon: #60d7cf;
@@ -52,6 +141,25 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    /* Canvas & Containers */
+    --bg-app: #0a1418;
+    --bg-surface: #101d22;
+    --border-subtle: rgba(141, 229, 219, 0.18);
+
+    /* Typography */
+    --text-primary: #d7ece8;
+    --text-muted: #afcdc8;
+
+    /* Interactive & Identity */
+    --accent-calm: #60d7cf;
+    --accent-calm-hover: #8de5db;
+    --accent-calm-subtle: #0f1a1e;
+
+    /* Status Tokens */
+    --status-trained-text: #6ec89a;
+    --status-trained-bg: rgba(110, 200, 154, 0.15);
+    --status-trained-border: rgba(110, 200, 154, 0.3);
+
     --sea-ink: #d7ece8;
     --sea-ink-soft: #afcdc8;
     --lagoon: #60d7cf;

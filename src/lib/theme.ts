@@ -26,7 +26,11 @@ export const THEME_STORAGE_KEY = 'theme'
 export type PaletteTokens = Record<
   | 'sea-ink' | 'sea-ink-soft' | 'lagoon' | 'lagoon-deep' | 'palm' | 'sand' | 'foam'
   | 'surface' | 'surface-strong' | 'line' | 'inset-glint' | 'kicker' | 'bg-base' | 'header-bg'
-  | 'chip-bg' | 'chip-line' | 'link-bg-hover' | 'hero-a' | 'hero-b',
+  | 'chip-bg' | 'chip-line' | 'link-bg-hover' | 'hero-a' | 'hero-b'
+  | 'bg-app' | 'bg-surface' | 'border-subtle' | 'text-primary' | 'text-muted'
+  | 'accent-calm' | 'accent-calm-hover' | 'accent-calm-subtle'
+  | 'accent-energize' | 'accent-energize-hover' | 'accent-subtle'
+  | 'status-trained-text' | 'status-trained-bg' | 'status-trained-border',
   string
 >
 
@@ -47,26 +51,36 @@ export const PALETTES: Record<Palette, PaletteDefinition> = {
     label: 'Calm',
     base: 'light',
     tokens: {
-      'sea-ink': '#1F3A3D', 'sea-ink-soft': '#4B6568', lagoon: '#1F6F78', 'lagoon-deep': '#155A62',
-      palm: '#1F6F78', sand: '#E3EFEC', foam: '#F8FBFA', surface: 'rgba(255, 255, 255, 0.82)',
-      'surface-strong': 'rgba(255, 255, 255, 0.94)', line: 'rgba(31, 58, 61, 0.16)',
-      'inset-glint': 'rgba(255, 255, 255, 0.85)', kicker: '#1F6F78', 'bg-base': '#F4F8F7',
-      'header-bg': 'rgba(244, 248, 247, 0.92)', 'chip-bg': 'rgba(255, 255, 255, 0.86)',
-      'chip-line': 'rgba(31, 111, 120, 0.24)', 'link-bg-hover': 'rgba(255, 255, 255, 0.95)',
-      'hero-a': 'rgba(31, 111, 120, 0.18)', 'hero-b': 'rgba(31, 111, 120, 0.08)',
+      'sea-ink': '#182c29', 'sea-ink-soft': '#455c57', lagoon: '#245b56', 'lagoon-deep': '#32766f',
+      palm: '#245b56', sand: '#cdded8', foam: '#e8efec', surface: '#e8efec',
+      'surface-strong': 'rgba(232, 239, 236, 0.95)', line: '#cbd7d5',
+      'inset-glint': 'rgba(255, 255, 255, 0.85)', kicker: '#245b56', 'bg-base': '#dce6e3',
+      'header-bg': 'rgba(220, 230, 227, 0.92)', 'chip-bg': '#e8efec',
+      'chip-line': '#cbd7d5', 'link-bg-hover': '#cdded8',
+      'hero-a': 'rgba(36, 91, 86, 0.18)', 'hero-b': 'rgba(36, 91, 86, 0.08)',
+      'bg-app': '#dce6e3', 'bg-surface': '#e8efec', 'border-subtle': '#cbd7d5',
+      'text-primary': '#182c29', 'text-muted': '#455c57',
+      'accent-calm': '#245b56', 'accent-calm-hover': '#32766f', 'accent-calm-subtle': '#cdded8',
+      'accent-energize': '#245b56', 'accent-energize-hover': '#32766f', 'accent-subtle': '#cdded8',
+      'status-trained-text': '#285444', 'status-trained-bg': '#e2ede8', 'status-trained-border': '#b8d4c7',
     },
   },
   energize: {
     label: 'Energize',
     base: 'light',
     tokens: {
-      'sea-ink': '#2B1B10', 'sea-ink-soft': '#5C4330', lagoon: '#B64A00', 'lagoon-deep': '#8F3A00',
-      palm: '#9A4300', sand: '#F7EBDD', foam: '#FFFBF6', surface: 'rgba(255, 255, 255, 0.84)',
-      'surface-strong': 'rgba(255, 255, 255, 0.95)', line: 'rgba(43, 27, 16, 0.16)',
-      'inset-glint': 'rgba(255, 255, 255, 0.85)', kicker: '#8F3A00', 'bg-base': '#FFF8F0',
-      'header-bg': 'rgba(255, 248, 240, 0.92)', 'chip-bg': 'rgba(255, 255, 255, 0.88)',
-      'chip-line': 'rgba(182, 74, 0, 0.26)', 'link-bg-hover': 'rgba(255, 255, 255, 0.95)',
-      'hero-a': 'rgba(182, 74, 0, 0.14)', 'hero-b': 'rgba(182, 74, 0, 0.06)',
+      'sea-ink': '#2a1b16', 'sea-ink-soft': '#68544d', lagoon: '#914015', 'lagoon-deep': '#7f3510',
+      palm: '#914015', sand: '#e4d5c2', foam: '#efe8dd', surface: '#efe8dd',
+      'surface-strong': 'rgba(239, 232, 221, 0.95)', line: '#dbcfc2',
+      'inset-glint': 'rgba(255, 255, 255, 0.85)', kicker: '#914015', 'bg-base': '#e5ddd1',
+      'header-bg': 'rgba(229, 221, 209, 0.92)', 'chip-bg': '#efe8dd',
+      'chip-line': '#dbcfc2', 'link-bg-hover': '#e4d5c2',
+      'hero-a': 'rgba(200, 100, 40, 0.16)', 'hero-b': 'rgba(200, 100, 40, 0.08)',
+      'bg-app': '#e5ddd1', 'bg-surface': '#efe8dd', 'border-subtle': '#dbcfc2',
+      'text-primary': '#2a1b16', 'text-muted': '#68544d',
+      'accent-calm': '#914015', 'accent-calm-hover': '#7f3510', 'accent-calm-subtle': '#e4d5c2',
+      'accent-energize': '#914015', 'accent-energize-hover': '#7f3510', 'accent-subtle': '#e4d5c2',
+      'status-trained-text': '#2f6044', 'status-trained-bg': '#eaf3ed', 'status-trained-border': '#b8dac5',
     },
   },
   focus: {
@@ -80,6 +94,11 @@ export const PALETTES: Record<Palette, PaletteDefinition> = {
       'header-bg': 'rgba(27, 31, 42, 0.92)', 'chip-bg': 'rgba(37, 43, 59, 0.9)',
       'chip-line': 'rgba(143, 168, 255, 0.3)', 'link-bg-hover': 'rgba(47, 55, 74, 0.9)',
       'hero-a': 'rgba(143, 168, 255, 0.16)', 'hero-b': 'rgba(143, 168, 255, 0.08)',
+      'bg-app': '#1B1F2A', 'bg-surface': '#1E2433', 'border-subtle': 'rgba(143, 168, 255, 0.2)',
+      'text-primary': '#E8ECF4', 'text-muted': '#B5BDCF',
+      'accent-calm': '#8FA8FF', 'accent-calm-hover': '#A9BDFF', 'accent-calm-subtle': '#151A26',
+      'accent-energize': '#8FA8FF', 'accent-energize-hover': '#A9BDFF', 'accent-subtle': '#151A26',
+      'status-trained-text': '#6ec89a', 'status-trained-bg': 'rgba(110, 200, 154, 0.15)', 'status-trained-border': 'rgba(110, 200, 154, 0.3)',
     },
   },
   warm: {
@@ -93,6 +112,11 @@ export const PALETTES: Record<Palette, PaletteDefinition> = {
       'header-bg': 'rgba(42, 33, 27, 0.92)', 'chip-bg': 'rgba(56, 46, 38, 0.9)',
       'chip-line': 'rgba(224, 179, 107, 0.3)', 'link-bg-hover': 'rgba(70, 58, 48, 0.9)',
       'hero-a': 'rgba(224, 179, 107, 0.15)', 'hero-b': 'rgba(224, 179, 107, 0.07)',
+      'bg-app': '#2A211B', 'bg-surface': '#2F261F', 'border-subtle': 'rgba(224, 179, 107, 0.2)',
+      'text-primary': '#F5EBDD', 'text-muted': '#D2BFA8',
+      'accent-calm': '#E0B36B', 'accent-calm-hover': '#F0CC8C', 'accent-calm-subtle': '#241D18',
+      'accent-energize': '#E0B36B', 'accent-energize-hover': '#F0CC8C', 'accent-subtle': '#241D18',
+      'status-trained-text': '#6ec89a', 'status-trained-bg': 'rgba(110, 200, 154, 0.15)', 'status-trained-border': 'rgba(110, 200, 154, 0.3)',
     },
   },
 }

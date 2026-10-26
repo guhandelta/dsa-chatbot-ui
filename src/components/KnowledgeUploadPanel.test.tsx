@@ -62,6 +62,27 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('KnowledgeUploadPanel — teacher', () => {
+  it('keeps the drop zone above pasted text and switches to file mode on drop', async () => {
+    render(<KnowledgeUploadPanel isAdmin={false} />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Paste text' }))
+    const zone = screen.getByText('Drag and drop training data here, or choose a file').closest('label')!
+    const notes = screen.getByPlaceholderText(/paste markdown/i)
+    expect(zone.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const file = new File(['# Training'], 'training.md', { type: 'text/markdown' })
+    fireEvent.drop(zone, { dataTransfer: { files: [file] } })
+    expect(screen.getByRole('tab', { name: 'Upload a file' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByText('Selected: training.md')).toBeTruthy()
+    expect(screen.queryByPlaceholderText(/paste markdown/i)).toBeNull()
+  })
+
+  it('rejects multiple dropped files', () => {
+    render(<KnowledgeUploadPanel isAdmin={false} />)
+    const zone = screen.getByText('Drag and drop training data here, or choose a file').closest('label')!
+    fireEvent.drop(zone, { dataTransfer: { files: [new File(['a'], 'a.md'), new File(['b'], 'b.md')] } })
+    expect(screen.getByRole('alert').textContent).toMatch(/one document at a time/i)
+    expect(m.uploadKnowledge).not.toHaveBeenCalled()
+  })
+
   it('explains review and shows an empty list', async () => {
     render(<KnowledgeUploadPanel isAdmin={false} />)
     expect(screen.getByText(/admin reviews each upload/i)).toBeTruthy()
