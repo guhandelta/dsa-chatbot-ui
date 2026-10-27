@@ -2320,23 +2320,163 @@
       "lessons": [
         {
           "title": "Reproduction and hypotheses",
-          "focus": "Write reliable reproduction steps and isolate one likely cause at a time."
+          "focus": "Write reliable reproduction steps and isolate one likely cause at a time.",
+          "teaching": {
+            "objectives": [
+              "Write a deterministic reproduction with setup, actions, and observed versus expected results.",
+              "Reduce the problem and test one evidence-based hypothesis at a time."
+            ],
+            "explanation": [
+              "A useful bug report describes the environment and preconditions, exact steps, observed result, expected result, and frequency. Include a small input or project state that triggers the behavior. Remove unrelated files and actions until the smallest reliable reproduction remains.",
+              "Change one variable per experiment. Record what you expected before each test and what actually happened; a result that contradicts a hypothesis is valuable evidence. Avoid changing code while gathering the baseline, because that can destroy the original failure."
+            ],
+            "example": {
+              "code": "# Reproduction note\nEnvironment: supported browser, 390 CSS px viewport\nPreconditions: signed in; two tasks exist, one completed\nSteps:\n1. Open Tasks and choose “All”.\n2. Type “dom” in Search tasks.\n3. Choose “Incomplete”.\nObserved: no tasks appear.\nExpected: “Inspect the DOM tree” appears.\nFrequency: every attempt\n\n# Hypothesis\nSearch compares case-sensitive text; inspect the filter predicate before editing it.",
+              "walkthrough": [
+                "The report fixes browser width, app state, and exact interactions so another person can repeat it.",
+                "Observed and expected behavior are separate statements, which makes the gap testable.",
+                "The hypothesis predicts a specific defect. Inspect evidence or run a controlled test before changing code."
+              ]
+            },
+            "misconceptions": [
+              "“It is broken” is not a reproducible report; include exact steps, expected and observed behavior, and relevant state.",
+              "Do not make several unrelated changes at once; you will not know which change affected the result.",
+              "Report intermittent behavior with its frequency and timing details instead of dismissing it as random."
+            ],
+            "check": {
+              "prompt": "What makes a useful hypothesis, and why reproduce the initial failure before editing?",
+              "answer": "A useful hypothesis predicts an observable cause that can be confirmed or disproved with one controlled check. Reproduce and record the baseline first so later changes can be compared against the original behavior.",
+              "explanation": "Reliable debugging begins with a repeatable baseline. Each experiment should narrow the cause, including evidence that disproves the current guess."
+            }
+          }
         },
         {
           "title": "Console, network, and layout inspection",
-          "focus": "Use developer tools to inspect errors, requests, DOM state, and computed layout."
+          "focus": "Use developer tools to inspect errors, requests, DOM state, and computed layout.",
+          "teaching": {
+            "objectives": [
+              "Use browser developer tools to connect a visible symptom to runtime, network, DOM, or CSS evidence.",
+              "Inspect computed styles and request details while protecting credentials and private user data."
+            ],
+            "explanation": [
+              "The Console reveals exceptions and logs; read the first relevant error and its stack before changing code. The Network panel shows whether a request was sent, its method, status, timing, and response. A 4xx/5xx response differs from a network failure, and a successful status does not guarantee that the UI parsed or rendered the response correctly.",
+              "Inspect the actual DOM and computed styles rather than relying only on source rules. Check which declarations win, inherited values, dimensions, overflow, and the element box. Reproduce at the affected viewport. Redact tokens, cookies, and personal data from captured requests or issue reports."
+            ],
+            "example": {
+              "code": "// Console: inspect state at the point of failure\nconsole.table({\n  query: document.querySelector(\"#search\")?.value,\n  filter: document.querySelector(\"#filter\")?.value,\n  visibleTasks: document.querySelectorAll(\"#tasks li\").length,\n});\n\n// In DevTools, inspect one request:\n// URL and method → Status → Response → Timing\n// Then inspect the affected element's Computed styles and box model.",
+              "walkthrough": [
+                "The table records input and rendered state together, helping distinguish a filtering bug from a missing event or rendering issue.",
+                "In Network, compare status and response body with the UI data shape. Inspect console errors during parsing or rendering.",
+                "Computed styles explain the browser result after cascade and inheritance. Check responsive behavior at the viewport in the report."
+              ]
+            },
+            "misconceptions": [
+              "A 200 response does not prove that the frontend consumed the response correctly; parsing and rendering can still fail.",
+              "A source CSS declaration may be overridden; inspect computed styles and matched rules.",
+              "Never share access tokens, session cookies, personal data, or unredacted production payloads in reports or external tools."
+            ],
+            "check": {
+              "prompt": "A request shows status 200, but the page remains empty. Which evidence should you compare next?",
+              "answer": "Inspect the response body and shape, console errors during parsing/rendering, and the DOM after the request. A successful HTTP response alone does not prove the application rendered the data.",
+              "explanation": "Trace the data path from request to response parsing to DOM output. Inspect the layer where the failure appears."
+            }
+          }
         },
         {
           "title": "Behavior checks",
-          "focus": "Test expected interactions, edge cases, keyboard behavior, and responsive states."
+          "focus": "Test expected interactions, edge cases, keyboard behavior, and responsive states.",
+          "teaching": {
+            "objectives": [
+              "Turn requirements into observable checks covering expected use, boundaries, invalid input, and recovery.",
+              "Test keyboard operation and responsive behavior alongside pointer-based interaction."
+            ],
+            "explanation": [
+              "A behavior check states an initial condition, an action, and an observable outcome. Start with the normal path, then include boundaries such as empty values, one item, many items, duplicate input, and failure/retry. Verify that status and errors are understandable and focus remains predictable.",
+              "Use a small matrix to cover meaningful combinations instead of trying every possible value. Include keyboard-only use, visible focus, accessible names, zoom/reflow, and the viewport implicated by the bug. Manual checks help explore; repeatable assertions are stronger regression protection."
+            ],
+            "example": {
+              "code": "| Scenario | Action | Expected observable result |\n| --- | --- | --- |\n| Normal | Submit a valid name | One named profile appears |\n| Empty | Submit no name | Inline error appears; no profile is added |\n| Boundary | Submit a minimum-length name | Behavior matches the stated requirement |\n| Keyboard | Tab to Save; press Enter | Form submits once; focus remains understandable |\n| Narrow view | Use at 320 CSS px | Fields and actions remain operable without page-level horizontal scrolling |\n| Failure | Simulate unavailable service | Clear error appears and retry remains possible |",
+              "walkthrough": [
+                "Each row names a trigger and observable result.",
+                "Boundary expectations must come from product requirements; do not invent acceptance rules.",
+                "Keyboard and narrow-view cases test functionality, not only appearance."
+              ]
+            },
+            "misconceptions": [
+              "Test user-visible behavior and outcomes, not only that a function ran or a class exists.",
+              "Passing the happy path does not cover invalid values, empty states, or recovery.",
+              "One desktop viewport does not reveal keyboard or small-screen failures."
+            ],
+            "check": {
+              "prompt": "What three parts should every behavior check specify? Name two useful cases beyond the happy path.",
+              "answer": "Specify the starting condition, user action, and observable expected result. Beyond the happy path, test invalid/empty input, boundary values, keyboard-only operation, narrow viewports, and service failure/retry.",
+              "explanation": "Behavior checks turn requirements into repeatable observations. A concise matrix selects useful cases without pretending to cover every possible input."
+            }
+          }
         },
         {
           "title": "Validation and regression prevention",
-          "focus": "Confirm the fix against the original failure and nearby behavior."
+          "focus": "Confirm the fix against the original failure and nearby behavior.",
+          "teaching": {
+            "objectives": [
+              "Confirm a fix against the original reproduction and verify nearby behaviors that could be affected.",
+              "Separate evidence that a defect is fixed from evidence that the change is ready to merge."
+            ],
+            "explanation": [
+              "After changing code, rerun the exact original steps using the same preconditions and verify the expected result. Then check related paths and boundaries: alternate filters, empty results, keyboard operation, responsive layout, and failure recovery as relevant. If the bug does not reproduce afterward, repeat the setup rather than assuming it is solved.",
+              "A regression check protects previously working behavior. Run the narrow automated test first, then relevant suites and project checks. Review the diff for accidental edits and confirm the test would fail if the original defect returned. Document any manual verification that automation cannot reliably cover."
+            ],
+            "example": {
+              "code": "# Validation record\nOriginal reproduction: search “dom” + filter “Incomplete”\nBefore fix: 0 matching tasks (failed)\nAfter fix: “Inspect the DOM tree” appears (passed)\nNearby checks:\n- Search is case-insensitive (passed)\n- Completed filter still returns completed tasks (passed)\n- Empty query restores all tasks (passed)\n- Keyboard can operate both controls (passed)\n- Regression test detects removal of normalization (verified)",
+              "walkthrough": [
+                "The first line repeats the trigger and directly checks the reported defect.",
+                "Nearby checks protect related behavior that shares the changed code path. Choose cases based on the fix.",
+                "A regression test must detect the old failure; ensure its assertion is tied to the expected user-visible result."
+              ]
+            },
+            "misconceptions": [
+              "A passing build is not proof that a visible bug is fixed; rerun the original interaction.",
+              "A test of implementation details can pass while the defect remains. Assert the observable behavior.",
+              "Do not claim full verification if keyboard, browser, or responsive checks were not performed."
+            ],
+            "check": {
+              "prompt": "What must be rerun first after a bug fix, and how can you tell whether a regression test is useful?",
+              "answer": "Rerun the exact original reproduction with the same relevant state. A useful regression test fails when the original defect is present and passes with the fix while checking observable behavior.",
+              "explanation": "Validation combines direct confirmation of the reported issue with targeted regression checks. Record which checks were automated and which still need manual browser review."
+            }
+          }
         },
         {
           "title": "Automated behavior checks",
-          "focus": "Write small assertions in script.js that confirm the DOM state after an interaction, and show pass or fail results on the page."
+          "focus": "Write small assertions in script.js that confirm the DOM state after an interaction, and show pass or fail results on the page.",
+          "teaching": {
+            "objectives": [
+              "Write deterministic assertions against observable DOM state after an interaction.",
+              "Report pass/fail outcomes accessibly and isolate test setup so repeated runs are trustworthy."
+            ],
+            "explanation": [
+              "A lightweight browser check can capture initial state, perform an action, and compare the resulting DOM to the expected outcome. Prefer stable selectors and visible text or attributes over brittle implementation details. Keep test data local and deterministic; await explicit completion signals instead of guessing timing.",
+              "A result should include enough context to locate a failure, and the page should communicate pass/fail with text rather than color alone. Reset modified DOM and application state between runs. In-page exercises teach assertions, but production teams should run automated tests in isolated test tooling and CI rather than ship a self-test harness to end users."
+            ],
+            "example": {
+              "code": "<main>\n  <h1>Task behavior check</h1>\n  <button id=\"add-task\" type=\"button\">Add task</button>\n  <button id=\"run-checks\" type=\"button\">Run behavior checks</button>\n  <ul id=\"tasks\" aria-label=\"Tasks\"></ul>\n  <p id=\"test-status\" role=\"status\" aria-live=\"polite\"></p>\n  <ol id=\"test-results\" aria-label=\"Check results\"></ol>\n</main>\n<script>\nconst results = document.querySelector(\"#test-results\");\nconst status = document.querySelector(\"#test-status\");\nconst button = document.querySelector(\"#add-task\");\nconst list = document.querySelector(\"#tasks\");\n\nbutton.addEventListener(\"click\", () => {\n  const item = document.createElement(\"li\");\n  item.textContent = \"Review array loops\";\n  list.append(item);\n});\n\nfunction assertEqual(actual, expected, label) {\n  const passed = actual === expected;\n  const item = document.createElement(\"li\");\n  item.textContent = `${passed ? \"PASS\" : \"FAIL\"}: ${label}` +\n    (passed ? \"\" : ` (expected ${expected}; received ${actual})`);\n  item.dataset.result = passed ? \"pass\" : \"fail\";\n  results.append(item);\n  return passed;\n}\n\nfunction runChecks() {\n  results.replaceChildren();\n  const before = list.querySelectorAll(\"li\").length;\n  button.click();\n  const after = list.querySelectorAll(\"li\").length;\n  const passed = assertEqual(after, before + 1, \"Add task creates one visible row\");\n  status.textContent = passed ? \"All checks passed.\" : \"A check failed. Review the result details.\";\n}\n\ndocument.querySelector(\"#run-checks\").addEventListener(\"click\", runChecks);\n</script>",
+              "walkthrough": [
+                "The fixture supplies the controls, task list, result list, and polite status region used by the check. The Add task action updates the visible list using textContent.",
+                "The assertion measures row count before and after the action, then reports expected and actual values on failure. The results list is cleared before each run.",
+                "The status announces a concise summary while individual outcomes remain visible. A production test runner should isolate fixtures and test both the success and failure paths."
+              ]
+            },
+            "misconceptions": [
+              "A test may depend on leftover DOM from an earlier run; reset setup each time.",
+              "Do not assert only internal details when the requirement concerns what learners see.",
+              "Color-coded results alone exclude some users; include text and announce the summary without moving focus."
+            ],
+            "check": {
+              "prompt": "What does this check measure, why clear the results first, and how does it communicate without relying on color?",
+              "answer": "It checks whether clicking Add task increases visible task rows by exactly one. Clearing prevents stale results. Each result and the status summary have text; status is a live region.",
+              "explanation": "A useful check has controlled setup, a meaningful observable assertion, clear failure details, and repeatable cleanup. In-page checks are educational; run production tests in isolated tooling and CI."
+            }
+          }
         }
       ],
       "battery": [

@@ -272,6 +272,43 @@ it('provides detailed accessibility guidance with semantic, keyboard, and assist
   expect(section?.lessons[3].teaching?.example.code).toContain('role="alert"')
 })
 
+it('provides detailed testing and debugging instruction with reproducible, behavior-focused examples', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'testing-debugging')
+  expect(section?.lessons).toHaveLength(5)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+  }
+  const consoleExample = section?.lessons[1].teaching?.example.code ?? ''
+  expect(consoleExample).toContain('console.table')
+  expect(() => new Function(consoleExample), 'developer-tools console example syntax').not.toThrow()
+  expect(section?.lessons[2].teaching?.example.code).toContain('Expected observable result')
+  expect(section?.lessons[3].teaching?.example.code).toContain('Original reproduction')
+  const automation = section?.lessons[4].teaching?.example.code ?? ''
+  const script = automation.match(/<script>([\s\S]*?)<\/script>/)?.[1]
+  expect(automation).toContain('role="status" aria-live="polite"')
+  expect(script).toBeTruthy()
+  expect(() => new Function(script!), 'in-page behavior check script syntax').not.toThrow()
+
+  const originalBody = document.body.innerHTML
+  try {
+    document.body.innerHTML = automation.replace(/<script>[\s\S]*?<\/script>/, '')
+    new Function(script!)()
+    document.querySelector<HTMLButtonElement>('#run-checks')!.click()
+    expect(document.querySelector('#test-results')?.textContent).toContain('PASS: Add task creates one visible row')
+    expect(document.querySelector('#test-status')?.textContent).toBe('All checks passed.')
+  } finally {
+    document.body.innerHTML = originalBody
+  }
+})
+
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
   const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
   expect(forms?.battery).toHaveLength(3)
@@ -585,7 +622,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 50 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 55 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -629,6 +666,19 @@ it('renders accessibility lessons and keeps the explanation for the quick check 
   fireEvent.click(screen.getByText('Study Semantic controls and accessible names'))
   expect(screen.getByText(/A semantic element communicates purpose and behavior/)).toBeTruthy()
   const check = container.querySelector<HTMLDetailsElement>('[aria-label="Semantic controls and accessible names knowledge check"] details')!
+  expect(check.open).toBe(false)
+  fireEvent.click(check.querySelector('summary')!)
+  expect(check.open).toBe(true)
+})
+
+it('renders testing and debugging lessons and preserves the explicit quick-check reveal', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(11) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('5 of 5 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Reproduction and hypotheses'))
+  expect(screen.getByText(/A useful bug report describes the environment and preconditions/)).toBeTruthy()
+  const check = container.querySelector<HTMLDetailsElement>('[aria-label="Reproduction and hypotheses knowledge check"] details')!
   expect(check.open).toBe(false)
   fireEvent.click(check.querySelector('summary')!)
   expect(check.open).toBe(true)
