@@ -134,6 +134,30 @@ it('provides offline JavaScript workspaces for pure functions, state debugging, 
   expect(scripts['js-fundamentals-explain-the-closure']).toContain('const recordTrees = createCounter')
 })
 
+it('provides accessible DOM and event workspaces for filtering, delegation, and keyboard tabs', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'dom-events')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css', 'script.js'])
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    const script = challenge.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
+    expect(html, challenge.id).toContain('<main>')
+    expect(html, challenge.id).toContain('<script src="script.js"></script>')
+    expect(() => new Function(script), `${challenge.id} JavaScript syntax`).not.toThrow()
+  }
+
+  const workspaces = Object.fromEntries((section?.battery ?? []).map((challenge) => [
+    challenge.id,
+    Object.fromEntries((challenge.starterFiles ?? []).map((file) => [file.name, file.content])),
+  ]))
+  expect(workspaces['dom-events-search-and-filter-list']['index.html']).toContain('role="status"')
+  expect(workspaces['dom-events-search-and-filter-list']['script.js']).toContain('const matches = workshops')
+  expect(workspaces['dom-events-event-propagation-lab']['script.js']).toContain('attachRemoveHandler(button)')
+  expect(workspaces['dom-events-event-propagation-lab']['script.js']).toContain('event.target.closest')
+  expect(workspaces['dom-events-keyboard-interaction-check']['index.html']).toContain('role="tablist"')
+  expect(workspaces['dom-events-keyboard-interaction-check']['script.js']).toContain('tab.tabIndex = selected ? 0 : -1')
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true

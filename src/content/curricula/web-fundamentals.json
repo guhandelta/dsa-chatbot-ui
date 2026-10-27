@@ -587,19 +587,61 @@
           "id": "dom-events-search-and-filter-list",
           "title": "Search and filter list",
           "task": "Build a searchable list with empty, match, and no-result states.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Workshop directory</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">DOM interaction</p>\n    <h1>Workshop directory</h1>\n    <label for=\"search\">Find a workshop</label>\n    <input id=\"search\" type=\"search\" autocomplete=\"off\" aria-describedby=\"search-help\">\n    <p id=\"search-help\">Search by topic or level.</p>\n    <p id=\"result-status\" role=\"status\" aria-live=\"polite\"></p>\n    <ul id=\"workshops\" aria-label=\"Workshops\"></ul>\n    <p id=\"empty-state\" hidden>No workshops match. Try another search.</p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f5f7fb; color: #1f2937; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 42rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\nlabel { display: block; font-weight: 700; margin-block-end: 0.35rem; }\n\ninput { font: inherit; max-width: 100%; padding: 0.65rem; width: 100%; }\n\n#workshops { display: grid; gap: 0.75rem; list-style: none; padding: 0; }\n\n#workshops li { background: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.9rem; }\n\n#workshops h2 { font-size: 1.1rem; margin: 0; }\n\n#workshops p { margin-block: 0.35rem 0; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const workshops = [\n  { title: 'HTML landmarks', level: 'beginner', topic: 'semantics' },\n  { title: 'CSS grid studio', level: 'intermediate', topic: 'layout' },\n  { title: 'JavaScript events', level: 'beginner', topic: 'interaction' },\n  { title: 'Responsive patterns', level: 'intermediate', topic: 'layout' },\n];\nconst search = document.querySelector('#search');\nconst list = document.querySelector('#workshops');\nconst status = document.querySelector('#result-status');\nconst emptyState = document.querySelector('#empty-state');\n\nfunction render(query = '') {\n  // TODO: match title, level, or topic without changing the source array.\n  const matches = workshops;\n  list.replaceChildren(...matches.map((workshop) => {\n    const item = document.createElement('li');\n    const title = document.createElement('h2');\n    title.textContent = workshop.title;\n    const details = document.createElement('p');\n    details.textContent = `${workshop.level} · ${workshop.topic}`;\n    item.append(title, details);\n    return item;\n  }));\n  // TODO: announce the count and show the empty state only when there are no matches.\n  status.textContent = '';\n  emptyState.hidden = true;\n}\n\nsearch.addEventListener('input', () => render(search.value.trim().toLocaleLowerCase()));\nrender();\n"
+            }
+          ]
         },
         {
           "id": "dom-events-event-propagation-lab",
           "title": "Event propagation lab",
           "task": "Diagnose duplicate event handling and implement one delegated listener.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Reading queue</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Event propagation lab</p>\n    <h1>Reading queue</h1>\n    <p>Each remove action should update the count once. Add a row to test newly created controls too.</p>\n    <p id=\"queue-status\" role=\"status\" aria-live=\"polite\"></p>\n    <ul id=\"queue\" aria-label=\"Reading queue\">\n      <li><span>Event bubbling</span><button type=\"button\" data-remove>Remove</button></li>\n      <li><span>Event delegation</span><button type=\"button\" data-remove>Remove</button></li>\n    </ul>\n    <button id=\"add-item\" type=\"button\">Add a reading</button>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { color: #243244; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 42rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\n#queue { display: grid; gap: 0.65rem; list-style: none; padding: 0; }\n\n#queue li { align-items: center; border: 1px solid #cbd5e1; border-radius: 0.5rem; display: flex; gap: 1rem; justify-content: space-between; padding: 0.75rem; }\n\nbutton { font: inherit; padding: 0.45rem 0.65rem; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const queue = document.querySelector('#queue');\nconst status = document.querySelector('#queue-status');\nlet nextReading = 1;\n\nfunction updateCount(message) {\n  status.textContent = `${message} ${queue.children.length} reading${queue.children.length === 1 ? '' : 's'} remain.`;\n}\n\n// Bug: each remove button updates the status here...\nfunction attachRemoveHandler(button) {\n  button.addEventListener('click', () => updateCount('Removing a reading.'));\n}\n\nqueue.querySelectorAll('[data-remove]').forEach(attachRemoveHandler);\n\n// ...and the same click bubbles here, so the action is handled twice.\nqueue.addEventListener('click', (event) => {\n  const button = event.target.closest('[data-remove]');\n  if (!button || !queue.contains(button)) return;\n  button.closest('li').remove();\n  updateCount('Removed.');\n});\n\ndocument.querySelector('#add-item').addEventListener('click', () => {\n  const item = document.createElement('li');\n  const label = document.createElement('span');\n  label.textContent = `New reading ${nextReading++}`;\n  const button = document.createElement('button');\n  button.type = 'button';\n  button.dataset.remove = '';\n  button.textContent = 'Remove';\n  attachRemoveHandler(button);\n  item.append(label, button);\n  queue.append(item);\n  updateCount('Added.');\n});\n\nupdateCount('');\n"
+            }
+          ]
         },
         {
           "id": "dom-events-keyboard-interaction-check",
           "title": "Keyboard interaction check",
           "task": "Verify a tabs or disclosure pattern using keyboard only and repair focus behavior.",
-          "kind": "review"
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Learning notes</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Keyboard interaction check</p>\n    <h1>Learning notes</h1>\n    <p>Use Tab to enter the tab list, then use the arrow keys to move between tabs.</p>\n    <div class=\"tabs\" role=\"tablist\" aria-label=\"Learning topics\">\n      <button id=\"tab-dom\" type=\"button\" role=\"tab\" aria-selected=\"true\" aria-controls=\"panel-dom\" tabindex=\"0\">DOM</button>\n      <button id=\"tab-events\" type=\"button\" role=\"tab\" aria-selected=\"false\" aria-controls=\"panel-events\" tabindex=\"0\">Events</button>\n      <button id=\"tab-state\" type=\"button\" role=\"tab\" aria-selected=\"false\" aria-controls=\"panel-state\" tabindex=\"0\">State</button>\n    </div>\n    <section id=\"panel-dom\" role=\"tabpanel\" aria-labelledby=\"tab-dom\" tabindex=\"0\"><h2>DOM</h2><p>The DOM represents the document as objects you can inspect and update.</p></section>\n    <section id=\"panel-events\" role=\"tabpanel\" aria-labelledby=\"tab-events\" tabindex=\"0\" hidden><h2>Events</h2><p>Events communicate user actions through the document.</p></section>\n    <section id=\"panel-state\" role=\"tabpanel\" aria-labelledby=\"tab-state\" tabindex=\"0\" hidden><h2>State</h2><p>State is the information used to decide what the interface displays.</p></section>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f7f7f4; color: #25352d; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 44rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #176b50; font-weight: 700; }\n\n.tabs { border-bottom: 1px solid #aab8ad; display: flex; gap: 0.25rem; }\n\n[role=tab] { background: transparent; border: 0; border-radius: 0.35rem 0.35rem 0 0; color: inherit; cursor: pointer; font: inherit; padding: 0.65rem 0.9rem; }\n\n[role=tab][aria-selected=true] { background: #176b50; color: white; }\n\n[role=tabpanel] { background: white; border: 1px solid #cbd5e1; padding: 1rem; }\n\n[hidden] { display: none !important; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const tabs = [...document.querySelectorAll('[role=tab]')];\nconst panels = tabs.map((tab) => document.querySelector(`#${tab.getAttribute('aria-controls')}`));\n\nfunction activateTab(index, moveFocus = false) {\n  tabs.forEach((tab, tabIndex) => {\n    const selected = tabIndex === index;\n    tab.setAttribute('aria-selected', String(selected));\n    tab.tabIndex = selected ? 0 : -1;\n    panels[tabIndex].hidden = !selected;\n  });\n  if (moveFocus) tabs[index].focus();\n}\n\n// Bug: all tabs start in the Tab order, and arrow keys do not move selection.\n// Add roving tabindex and keep keyboard focus and the visible panel synchronized.\ntabs.forEach((tab, index) => {\n  tab.addEventListener('click', () => activateTab(index));\n});\n"
+            }
+          ]
         }
       ]
     },

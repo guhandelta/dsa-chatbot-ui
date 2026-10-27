@@ -25,6 +25,10 @@ export function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [exporting, setExporting] = useState(false)
+  // Keep the view resilient to older or partial API responses during schema upgrades.
+  const recurringErrors = Array.isArray(profile?.recurring_errors) ? profile.recurring_errors : []
+  const weakAlgorithms = Array.isArray(profile?.weak_algorithms) ? profile.weak_algorithms : []
+  const strongAlgorithms = Array.isArray(profile?.strong_algorithms) ? profile.strong_algorithms : []
 
   const load = () => {
     fetchLearningProfile().then(setProfile).catch((e) => setError(getApiErrorMessage(e)))
@@ -101,7 +105,7 @@ export function ProfilePage() {
         )}
       </section>
 
-      {profile && profile.recurring_errors.length > 0 && (
+      {recurringErrors.length > 0 && (
         <section className="island-shell mb-4 rounded-2xl p-5">
           <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-[var(--kicker)]">
             Worth practising
@@ -110,7 +114,7 @@ export function ProfilePage() {
             Things that have tripped you up more than once.
           </p>
           <ul className="lesson-list">
-            {profile.recurring_errors.map((e) => (
+            {recurringErrors.map((e) => (
               <li key={e.category}>
                 <span>{e.lesson}</span>
                 <span className="lesson-count">{e.count}×</span>
@@ -120,7 +124,7 @@ export function ProfilePage() {
         </section>
       )}
 
-      {profile && (profile.weak_algorithms.length > 0 || profile.strong_algorithms.length > 0) && (
+      {(weakAlgorithms.length > 0 || strongAlgorithms.length > 0) && (
         <section className="island-shell mb-4 rounded-2xl p-5">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--kicker)]">
             By technique
@@ -131,7 +135,7 @@ export function ProfilePage() {
                 Still landing
               </h3>
               <ul className="tag-list">
-                {profile.weak_algorithms.map((a) => (
+                {weakAlgorithms.map((a) => (
                   <li key={a.algorithm} className="tag-weak">{a.algorithm}</li>
                 ))}
               </ul>
@@ -141,7 +145,7 @@ export function ProfilePage() {
                 Solid
               </h3>
               <ul className="tag-list">
-                {profile.strong_algorithms.map((a) => (
+                {strongAlgorithms.map((a) => (
                   <li key={a.algorithm} className="tag-strong">{a.algorithm}</li>
                 ))}
               </ul>

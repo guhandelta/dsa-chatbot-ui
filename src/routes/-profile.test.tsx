@@ -41,3 +41,11 @@ it('shows an export failure without creating a download', async () => {
   expect(createUrl).not.toHaveBeenCalled()
   expect(screen.getByRole('button',{name:'Export'}).hasAttribute('disabled')).toBe(false)
 })
+
+it('renders an incomplete profile response without crashing', async () => {
+  vi.mocked(fetchLearningProfile).mockResolvedValue({ total_attempts: 0 } as never)
+  render(<ProfilePage />)
+  expect(await screen.findByRole('heading', { name: 'Patterns in your practice' })).toBeTruthy()
+  expect(screen.getByText('Solve a few problems and patterns will start showing up here.')).toBeTruthy()
+  expect(screen.queryByText('Export unavailable')).toBeNull()
+})
