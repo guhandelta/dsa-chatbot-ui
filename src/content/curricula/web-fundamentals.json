@@ -896,27 +896,201 @@
       "lessons": [
         {
           "title": "Normal flow and formatting contexts",
-          "focus": "Understand block and inline flow, containing blocks, stacking, and positioning."
+          "focus": "Understand block and inline flow, containing blocks, stacking, and positioning.",
+          "teaching": {
+            "objectives": [
+              "Explain how normal flow, block and inline formatting, and containing blocks affect element placement.",
+              "Choose positioning and formatting behavior intentionally instead of using layout hacks."
+            ],
+            "explanation": [
+              "Normal flow is the browser’s default layout model. Block-level boxes participate in block flow; inline content participates in line boxes and wraps around available space. Margin collapse can occur between certain block margins in normal flow, but flex and grid layouts establish different formatting contexts. A containing block provides the reference rectangle for sizing and positioning; its source depends on the element and positioning mode.",
+              "position: relative keeps an element in normal flow while allowing offsets and creating a reference for positioned descendants. Absolute positioning removes the element from normal flow and positions it against its containing block. Fixed positioning is usually viewport-relative; sticky positioning remains in flow until a scroll threshold is reached within its scroll container. Prefer flow, flex, or grid for primary layout, reserving offsets for overlays and small adjustments."
+            ],
+            "example": {
+              "code": "<main class=\"article-layout\">\n  <article>\n    <h1>Field notes</h1>\n    <p>Text wraps in normal flow as the available line width changes.</p>\n  </article>\n  <aside>Related reading</aside>\n</main>\n\n<style>\n.article-layout {\n  display: flow-root; /* contains floats and prevents margin escape */\n  max-width: 68rem;\n  margin-inline: auto;\n  padding: 1rem;\n}\n\n.article-layout article { max-width: 68ch; }\n.article-layout aside { margin-block-start: 2rem; }\n</style>",
+              "walkthrough": [
+                "The article and aside begin in normal flow, so content remains in document order and can grow naturally.",
+                "The max-width and auto inline margins center the layout without fixed positioning.",
+                "flow-root establishes a block formatting context, containing internal floats and preventing child margins from collapsing through the container.",
+                "A later responsive layout can change the relationship between article and aside with grid or flex without changing markup order."
+              ]
+            },
+            "misconceptions": [
+              "Block and inline describe layout behavior, not whether an element is semantically important.",
+              "position: relative does not remove an element from normal flow; absolute and fixed positioning do.",
+              "z-index cannot repair every overlap; containing blocks and stacking contexts determine which elements can be compared."
+            ],
+            "check": {
+              "prompt": "A sidebar is positioned with position:absolute, overlaps long article text, and leaves an empty area where it used to be. Why does this happen, and what layout should you consider?",
+              "answer": "Absolute positioning removes the sidebar from normal flow, so the article does not reserve space and may overlap it. Use grid or flex for the article/sidebar relationship, reserving absolute positioning for a true overlay.",
+              "explanation": "Primary page layout should normally remain in flow so content sizing and reading order work together."
+            }
+          }
         },
         {
           "title": "Flexbox",
-          "focus": "Use axes, alignment, wrapping, flexible sizing, gaps, and ordering for one-dimensional layouts."
+          "focus": "Use axes, alignment, wrapping, flexible sizing, gaps, and ordering for one-dimensional layouts.",
+          "teaching": {
+            "objectives": [
+              "Use the main and cross axes to predict Flexbox sizing and alignment.",
+              "Choose wrapping, gaps, and flexible sizing for one-dimensional layouts."
+            ],
+            "explanation": [
+              "Flexbox lays out items along one main axis and aligns them along a perpendicular cross axis. flex-direction chooses the main axis; justify-content distributes space along it, while align-items and align-self control cross-axis alignment. The axis changes when direction is row versus column and can be influenced by writing mode, so avoid treating “horizontal” and “vertical” as universal synonyms.",
+              "A flex container may wrap items with flex-wrap. gap sets spacing between items without margin edge cases. flex-grow shares positive free space, flex-shrink controls shrinking when space is constrained, and flex-basis supplies the starting main size; the flex shorthand combines these behaviors. Items have an automatic minimum size based on content in common cases, so min-width: 0 or min-height: 0 may be needed to allow shrinking. The order property changes visual order without changing source or keyboard order, so use it cautiously."
+            ],
+            "example": {
+              "code": "<nav class=\"toolbar\" aria-label=\"Workspace\">\n  <a class=\"brand\" href=\"/\">Studio</a>\n  <div class=\"toolbar__actions\">\n    <a href=\"/lessons\">Lessons</a>\n    <a href=\"/practice\">Practice</a>\n  </div>\n</nav>\n\n<style>\n.toolbar {\n  align-items: center;\n  display: flex;\n  flex-wrap: wrap;\n  gap: 1rem;\n  justify-content: space-between;\n}\n\n.toolbar__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }\n.brand { flex: 0 0 auto; }\n</style>",
+              "walkthrough": [
+                "The toolbar’s main axis is the inline direction by default in a horizontal writing mode.",
+                "align-items centers items on the cross axis; justify-content distributes the two groups along the main axis.",
+                "Wrapping lets controls move to another line when the available width is small.",
+                "Nested actions form their own flex container, with gap defining spacing without altering source order."
+              ]
+            },
+            "misconceptions": [
+              "justify-content follows the main axis, which is not always the horizontal axis.",
+              "flex: 1 can make items grow and shrink; it does not simply mean “equal width” in every context.",
+              "Visual reordering does not change screen-reader or keyboard order; keep source order meaningful."
+            ],
+            "check": {
+              "prompt": "A row of navigation actions should use remaining space between a logo and the actions, but wrap cleanly on a narrow screen. Which Flexbox properties help, and what must remain true of the markup?",
+              "answer": "Use display:flex, justify-content:space-between, flex-wrap:wrap, and a gap for spacing. Keep the DOM order meaningful because wrapping and visual alignment do not change reading or keyboard order.",
+              "explanation": "Flexbox handles one-dimensional alignment and wrapping, while accessible sequence comes from source order."
+            }
+          }
         },
         {
           "title": "CSS Grid",
-          "focus": "Define tracks, gaps, placement, repeat patterns, and responsive grids for two-dimensional layouts."
+          "focus": "Define tracks, gaps, placement, repeat patterns, and responsive grids for two-dimensional layouts.",
+          "teaching": {
+            "objectives": [
+              "Define explicit and implicit grid tracks and place items using lines or named areas.",
+              "Build responsive track patterns with repeat(), minmax(), and auto-fit/auto-fill."
+            ],
+            "explanation": [
+              "CSS Grid is a two-dimensional layout system with rows and columns. grid-template-columns and grid-template-rows define explicit tracks; items not placed into those tracks can create implicit tracks controlled by grid-auto-rows or grid-auto-columns. Gaps create space between tracks. Items can be positioned by line numbers, named lines, or named template areas. Grid placement changes visual arrangement, so source order should still make sense.",
+              "The fr unit distributes available space after fixed and intrinsic sizing contributions are considered. minmax() gives a track a minimum and maximum; repeat() repeats a pattern. auto-fit collapses empty repeated tracks so occupied tracks can expand, while auto-fill preserves empty track slots. For responsive cards, repeat(auto-fit, minmax(min(100%, 15rem), 1fr)) can create as many columns as fit without a breakpoint. Use minmax(0, 1fr) when a track must shrink below its min-content contribution."
+            ],
+            "example": {
+              "code": "<ul class=\"course-grid\">\n  <li><a href=\"/html\">HTML structure</a></li>\n  <li><a href=\"/css\">CSS layout</a></li>\n  <li><a href=\"/js\">JavaScript behavior</a></li>\n</ul>\n\n<style>\n.course-grid {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\n.course-grid > li { min-width: 0; }\n</style>",
+              "walkthrough": [
+                "The list remains in meaningful source order while CSS arranges its items in two dimensions.",
+                "auto-fit creates the number of columns that fit the available space and expands occupied tracks.",
+                "minmax() prevents a card from becoming narrower than the chosen minimum when room permits, while min(100%, 15rem) avoids overflow in a very narrow container.",
+                "The zero minimum on each item lets long content wrap instead of forcing a grid track wider than the container."
+              ]
+            },
+            "misconceptions": [
+              "1fr does not always mean a fixed equal fraction of the container before intrinsic content is considered.",
+              "auto-fit and auto-fill differ when the grid has room for empty tracks.",
+              "Grid can change visual placement without changing source order, so do not use it to create a confusing reading sequence."
+            ],
+            "check": {
+              "prompt": "A two-column grid overflows because one card contains a long unbreakable value. Which track definition and item sizing adjustment can allow the column to shrink?",
+              "answer": "Use a flexible track such as minmax(0, 1fr) and allow the item to shrink with min-width:0; also consider overflow-wrap:anywhere for the long value.",
+              "explanation": "The min-content automatic minimum can prevent a grid track or item from shrinking unless the minimum is relaxed."
+            }
+          }
         },
         {
           "title": "Responsive rules and queries",
-          "focus": "Use content-driven breakpoints, media features, container queries, and reduced-motion preferences."
+          "focus": "Use content-driven breakpoints, media features, container queries, and reduced-motion preferences.",
+          "teaching": {
+            "objectives": [
+              "Choose breakpoints based on content needs and use media queries for viewport or user preferences.",
+              "Use container queries when a component’s available size matters more than the whole viewport."
+            ],
+            "explanation": [
+              "Responsive design adapts to available space, input capability, and user preferences. Start with a layout that works for the narrowest realistic content, then add breakpoints when the content needs more room; avoid targeting named devices. Media queries can test viewport dimensions, orientation, hover and pointer capabilities, color scheme, and reduced-motion preference. A breakpoint should change a layout only when the current arrangement stops working.",
+              "Container queries let a component respond to its own container size rather than the viewport. Establish an inline-size query container with container-type: inline-size, then use @container with a condition and optionally a container name. Container queries work well for reusable cards and tool panels embedded in different layouts. They do not replace flexible intrinsic sizing; combine them with wrapping, minmax(), and max-width for resilience between thresholds."
+            ],
+            "example": {
+              "code": "<div class=\"workspace-shell\">\n  <section class=\"workspace\" aria-labelledby=\"workspace-title\">\n    <h2 id=\"workspace-title\">Current lesson</h2>\n    <p>Practice a small layout change, then compare it at different widths.</p>\n  </section>\n</div>\n\n<style>\n.workspace-shell {\n  container: workspace / inline-size;\n}\n\n.workspace { display: grid; gap: 1rem; }\n\n@container workspace (min-width: 42rem) {\n  .workspace { grid-template-columns: minmax(0, 2fr) minmax(14rem, 1fr); }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  html { scroll-behavior: auto; }\n}\n</style>",
+              "walkthrough": [
+                "The container name makes the query relationship explicit; the workspace-shell element must wrap the queried .workspace element in the DOM.",
+                "Below 42rem of container inline size, the workspace stays in one column and its content can wrap naturally.",
+                "Once the container has enough room, the layout places main material and supporting content in two columns with shrinkable tracks.",
+                "The media query responds to a user preference independently of the component’s container width."
+              ]
+            },
+            "misconceptions": [
+              "A container query tests the size of an ancestor query container, not the queried element’s own final width.",
+              "A viewport media query may be the wrong tool for a reusable component that appears in multiple sized regions.",
+              "Breakpoints should follow content pressure and be tested around the threshold, not selected from a device list."
+            ],
+            "check": {
+              "prompt": "A reusable lesson card appears in a wide page column and a narrow sidebar. It should become two columns only when its own space permits. Should you use a viewport media query or container query, and why?",
+              "answer": "Use a container query on an ancestor that establishes an inline-size query container, because the card’s local available width differs from the viewport width.",
+              "explanation": "Container queries make component layout respond to its embedding context."
+            }
+          }
         },
         {
           "title": "Images and intrinsic content",
-          "focus": "Use responsive image sources, object fitting, and min/max sizing for long or variable content."
+          "focus": "Use responsive image sources, object fitting, and min/max sizing for long or variable content.",
+          "teaching": {
+            "objectives": [
+              "Choose responsive image sources and sizes appropriate to the rendered slot and pixel density.",
+              "Prevent intrinsic media and long content from forcing page overflow."
+            ],
+            "explanation": [
+              "Images have intrinsic dimensions and aspect ratios. Set max-inline-size:100% and block-size:auto for fluid images that preserve ratio, or give a predictable aspect-ratio and use object-fit when cropping is intentional. The img element’s width and height attributes communicate intrinsic dimensions and help reserve layout space before loading. Use srcset with width descriptors and a sizes value that describes the rendered slot so the browser can choose an appropriate resource; use picture when art direction or format selection is needed.",
+              "Content can impose minimum sizes: long words, code, tables, and media may exceed their container. Apply overflow-wrap:anywhere to arbitrary text when breaking is acceptable; place wide code or data tables in a labeled horizontal scroll region when preserving line structure matters. For flex and grid children, set min-width:0 where their automatic minimum blocks shrinking. Do not indiscriminately hide overflow, because it can make content unreachable."
+            ],
+            "example": {
+              "code": "<figure class=\"feature\">\n  <img\n    src=\"garden-800.jpg\"\n    srcset=\"garden-480.jpg 480w, garden-800.jpg 800w, garden-1400.jpg 1400w\"\n    sizes=\"(min-width: 60rem) 50vw, 100vw\"\n    width=\"1400\"\n    height=\"900\"\n    alt=\"Raised beds with leafy vegetables beside a garden path\">\n  <figcaption>Three raised beds in the community garden.</figcaption>\n</figure>\n\n<style>\n.feature img {\n  aspect-ratio: 14 / 9;\n  block-size: auto;\n  max-inline-size: 100%;\n  object-fit: cover;\n}\n\n.long-value { min-width: 0; overflow-wrap: anywhere; }\n</style>",
+              "walkthrough": [
+                "Width descriptors identify each source’s intrinsic pixel width; sizes estimates the image’s CSS slot so the browser can select a resource.",
+                "The width and height attributes reserve the intrinsic ratio during loading, reducing layout shift.",
+                "The alt text conveys the informative image’s content; a decorative image would instead use alt=\"\".",
+                "The CSS caps the rendered image at its container and preserves ratio. object-fit:cover crops only if the box ratio differs from the source."
+              ]
+            },
+            "misconceptions": [
+              "srcset alone with width descriptors does not describe the rendered slot; sizes supplies that estimate.",
+              "object-fit changes how replaced content fills its box; it does not make the box responsive by itself.",
+              "overflow:hidden can conceal meaningful content and keyboard focus; choose wrapping or a deliberate scroll region instead."
+            ],
+            "check": {
+              "prompt": "A responsive article image shifts the page while loading and appears pixelated on high-density screens. What markup information and source-selection attributes address these problems?",
+              "answer": "Provide accurate width and height attributes to reserve the image’s intrinsic ratio, then provide srcset candidates and a sizes value that describes its rendered CSS slot.",
+              "explanation": "Dimensions stabilize layout, and responsive source selection lets the browser choose a suitable resource for slot size and density."
+            }
+          }
         },
         {
           "title": "Positioning and stacking",
-          "focus": "Use position values, z-index, and stacking contexts to layer overlays, badges, and menus without surprises."
+          "focus": "Use position values, z-index, and stacking contexts to layer overlays, badges, and menus without surprises.",
+          "teaching": {
+            "objectives": [
+              "Distinguish relative, absolute, fixed, and sticky positioning and identify their containing blocks.",
+              "Explain stacking contexts and use z-index within an intentional layering system."
+            ],
+            "explanation": [
+              "Relative positioning offsets an element from its normal position without removing its original space. Absolute positioning removes it from normal flow and positions it against its containing block, often established by a positioned ancestor. Fixed positioning is usually viewport-relative, though transforms and related properties on ancestors can establish a containing block. Sticky positioning participates in flow and sticks within a scroll container after its inset threshold is reached; it needs a non-auto inset on the relevant axis and room to move.",
+              "z-index orders positioned elements and certain flex/grid items, but values are compared within stacking contexts. Properties such as transform, opacity below 1, isolation:isolate, and some containment or positioned z-index cases can create a stacking context. A child with z-index:9999 cannot escape a lower parent stacking context to cover an element in a higher one. Define a small layer scale and inspect ancestor contexts when an overlay appears behind something unexpectedly."
+            ],
+            "example": {
+              "code": "<article class=\"lesson-card\">\n  <span class=\"lesson-card__badge\">New</span>\n  <h2>Grid placement</h2>\n  <p>Place items by lines or named areas.</p>\n</article>\n\n<style>\n.lesson-card { position: relative; isolation: isolate; }\n.lesson-card__badge {\n  position: absolute;\n  inset-block-start: 0.75rem;\n  inset-inline-end: 0.75rem;\n  z-index: 1;\n}\n\n.dialog-backdrop { position: fixed; inset: 0; z-index: 100; }\n.sticky-tools { position: sticky; inset-block-start: 0; }\n</style>",
+              "walkthrough": [
+                "The card establishes the containing block for its absolutely positioned badge while preserving the card’s place in normal flow.",
+                "Logical inset properties place the badge relative to writing direction and block flow.",
+                "isolation:isolate creates a local stacking context, so the badge’s z-index is compared inside that card context.",
+                "A dialog backdrop needs a deliberate application-level layer token; a large child z-index alone cannot escape an ancestor stacking context."
+              ]
+            },
+            "misconceptions": [
+              "position:sticky is constrained by its scroll container and containing block; it is not always attached to the viewport.",
+              "A high z-index number does not globally outrank every other element because stacking contexts are nested.",
+              "Absolute positioning is appropriate for overlays and badges, but using it for main content layout removes content from normal flow."
+            ],
+            "check": {
+              "prompt": "A tooltip has z-index:9999 but still appears behind a sibling panel. The tooltip lives inside a transformed card. What should you inspect and change?",
+              "answer": "Inspect the stacking contexts of the tooltip’s ancestors and the sibling panel. The transform creates a stacking context that contains the tooltip; adjust the parent-level layer order or move the overlay to an appropriate shared overlay root.",
+              "explanation": "A child’s z-index is compared only within its stacking context, so increasing its number cannot cross the ancestor context boundary."
+            }
+          }
         }
       ],
       "battery": [
