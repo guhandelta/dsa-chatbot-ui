@@ -1894,23 +1894,163 @@
       "lessons": [
         {
           "title": "Promises and async functions",
-          "focus": "Chain, await, and handle asynchronous results and errors."
+          "focus": "Chain, await, and handle asynchronous results and errors.",
+          "teaching": {
+            "objectives": [
+              "Describe how a promise moves from pending to fulfilled or rejected.",
+              "Use async/await with explicit error handling and explain the order of synchronous work, promise reactions, and timers."
+            ],
+            "explanation": [
+              "A Promise represents the eventual result of an operation. Its state changes once from pending to fulfilled with a value or rejected with a reason; attaching then/catch handlers schedules their callbacks as promise jobs (microtasks). An async function always returns a Promise, including when it returns a plain value, and a thrown error becomes a rejection.",
+              "await pauses the current async function until its operand settles; it does not block the browser main thread. Use try/catch around awaited operations when the interface needs recovery, and put cleanup that must always run in finally. Promise.all is useful for independent work that all must succeed, while Promise.allSettled collects every outcome; neither automatically cancels work that is still running."
+            ],
+            "example": {
+              "code": "console.log(\"sync: start\");\n\nasync function loadProfile() {\n  try {\n    const profile = await Promise.resolve({ name: \"Ari\" });\n    console.log(`promise: ${profile.name}`);\n  } catch (error) {\n    console.error(\"Could not load profile\", error);\n  } finally {\n    console.log(\"cleanup always runs\");\n  }\n}\n\nloadProfile();\nqueueMicrotask(() => console.log(\"microtask: queued directly\"));\nsetTimeout(() => console.log(\"timer: later task\"), 0);\nconsole.log(\"sync: end\");",
+              "walkthrough": [
+                "The two synchronous logs run in order before the async continuation, direct microtask, or timer callback.",
+                "Promise reactions and queueMicrotask callbacks run in the microtask checkpoint before the next timer task; do not rely on a timer firing at an exact wall-clock time.",
+                "If an awaited operation rejects, control enters catch. The finally block runs on either success or failure."
+              ]
+            },
+            "misconceptions": [
+              "async does not make CPU-heavy synchronous work non-blocking; move genuinely expensive work to a worker or split it into smaller tasks.",
+              "await does not turn a rejected promise into a value; without a catch at an appropriate boundary, the async function returns a rejected promise.",
+              "Promise.all does not cancel sibling requests when one rejects. Use cancellation signals when the underlying API supports them."
+            ],
+            "check": {
+              "prompt": "What sequence do the log statements follow, and which output is guaranteed to appear before the timer callback?",
+              "answer": "sync: start, sync: end, promise: Ari, cleanup always runs, microtask: queued directly, then timer: later task. The async continuation was queued at await before the explicit queueMicrotask call; both microtasks run before the timer task.",
+              "explanation": "JavaScript runs the current synchronous task to completion, then drains queued microtasks before starting another task such as a timer. A zero delay means eligible for a later task, not immediate execution."
+            }
+          }
         },
         {
           "title": "Fetching and cancellation",
-          "focus": "Request data, interpret responses, handle errors, and avoid stale updates."
+          "focus": "Request data, interpret responses, handle errors, and avoid stale updates.",
+          "teaching": {
+            "objectives": [
+              "Make a fetch request and distinguish transport failure from an HTTP error response.",
+              "Cancel obsolete requests and prevent stale results from replacing newer UI state."
+            ],
+            "explanation": [
+              "fetch resolves to a Response when an HTTP response arrives, including status codes such as 404 or 500. It rejects for failures such as network errors or an abort. Check response.ok (or status) before parsing the body, and handle invalid JSON or an unexpected response shape as separate failures.",
+              "Pass an AbortSignal to APIs that support cancellation. Aborting saves work when a search is superseded or a view unmounts, but cancellation alone is not a universal correctness guarantee: some operations may already have completed. A monotonically increasing request identifier is a useful final guard against stale UI updates."
+            ],
+            "example": {
+              "code": "let activeController;\nlet latestRequest = 0;\n\nasync function searchTopics(query) {\n  activeController?.abort();\n  const controller = new AbortController();\n  activeController = controller;\n  const requestId = ++latestRequest;\n  showStatus(\"Searching…\");\n\n  try {\n    const response = await fetch(`/api/topics?q=${encodeURIComponent(query)}`, {\n      signal: controller.signal,\n      headers: { Accept: \"application/json\" },\n    });\n    if (!response.ok) throw new Error(`Request failed (${response.status})`);\n    const payload = await response.json();\n    if (requestId !== latestRequest) return;\n    renderTopics(Array.isArray(payload.items) ? payload.items : []);\n  } catch (error) {\n    if (error.name === \"AbortError\") return;\n    if (requestId === latestRequest) showError(\"Topics could not be loaded. Try again.\");\n  }\n}",
+              "walkthrough": [
+                "The previous request is aborted before a new controller and request identifier are created. encodeURIComponent keeps user input within the query value.",
+                "An HTTP 404 still fulfills fetch with a Response, so response.ok must be checked before parsing as success. JSON parsing can itself fail and is handled by catch.",
+                "The request identifier is checked before mutating the UI, so a late older response cannot overwrite the newest query. AbortError is expected cancellation, not a user-facing failure."
+              ]
+            },
+            "misconceptions": [
+              "fetch does not reject merely because the server returned 4xx or 5xx; inspect response.ok.",
+              "Aborting a request does not mean every server-side operation was rolled back. Treat it as client-side cancellation.",
+              "Never insert untrusted response strings with innerHTML. Validate expected data and render text with textContent or safe DOM nodes."
+            ],
+            "check": {
+              "prompt": "Why can fetch enter its then/await success path for a 404, and what two safeguards keep search results correct?",
+              "answer": "HTTP error statuses still produce a Response, so code must check response.ok. Abort the superseded request and check a request sequence/token before applying results to the UI.",
+              "explanation": "The HTTP protocol response and network transport are separate. A valid HTTP response can report an error status; cancellation and request identity protect resource use and UI ordering respectively."
+            }
+          }
         },
         {
           "title": "Storage, URL, and history",
-          "focus": "Use browser persistence and navigation APIs with clear constraints."
+          "focus": "Use browser persistence and navigation APIs with clear constraints.",
+          "teaching": {
+            "objectives": [
+              "Choose between URL state, small synchronous Web Storage values, and asynchronous structured storage.",
+              "Keep navigation shareable and account for origin boundaries, privacy, and storage failure."
+            ],
+            "explanation": [
+              "The URL is appropriate for state that should survive refresh, support back/forward navigation, or be shareable, such as a selected tab or search query. URLSearchParams encodes query parameters; History API methods can update same-origin history entries, but applications should also render correctly when users navigate backward and forward.",
+              "localStorage stores string key/value pairs scoped to an origin and persists across browser sessions; sessionStorage is scoped to an origin and a tab session. Both APIs are synchronous and can throw when storage is blocked or unavailable, so keep values small and handle errors. IndexedDB is asynchronous and supports larger structured data. Browser storage is not a secure vault: do not store secrets or trust persisted values without validation."
+            ],
+            "example": {
+              "code": "const search = new URLSearchParams(location.search);\nconst initialQuery = search.get(\"q\") ?? \"\";\n\nfunction saveDraft(draft) {\n  try {\n    localStorage.setItem(\"practice-draft\", JSON.stringify(draft));\n  } catch {\n    showStatus(\"Draft could not be saved in this browser.\");\n  }\n}\n\nfunction setSearchQuery(query) {\n  const next = new URL(location.href);\n  next.searchParams.set(\"q\", query);\n  history.pushState({ query }, \"\", next);\n  renderSearch(query);\n}\n\nwindow.addEventListener(\"popstate\", () => {\n  renderSearch(new URLSearchParams(location.search).get(\"q\") ?? \"\");\n});",
+              "walkthrough": [
+                "The initial search value comes from the URL, so a refresh or shared link can restore the same query.",
+                "Storage writes are guarded because browser privacy settings, quota, or policy can make them unavailable. JSON serialization does not make stored data trustworthy.",
+                "pushState updates same-origin history without a full page navigation. popstate restores the view when the user moves through history; pushState itself does not emit popstate."
+              ]
+            },
+            "misconceptions": [
+              "localStorage is not available across every origin; scheme, host, and port are part of the origin boundary.",
+              "Storage APIs are synchronous; avoid frequent large reads or writes on interaction-critical paths. Use IndexedDB for larger asynchronous data needs.",
+              "A URL may be copied, logged, or exposed in history. Avoid placing credentials or sensitive personal data in query parameters."
+            ],
+            "check": {
+              "prompt": "Where should a shareable filter live, and what storage choice fits a larger structured offline dataset?",
+              "answer": "Put the shareable filter in the URL, commonly with URLSearchParams. Use IndexedDB for larger structured offline data; localStorage is synchronous and better for small string values.",
+              "explanation": "Use each browser facility according to its lifecycle and cost: URL for navigable/shareable state, Web Storage for small synchronous preferences, and IndexedDB for larger asynchronous records."
+            }
+          }
         },
         {
           "title": "Observers and platform APIs",
-          "focus": "Choose APIs such as ResizeObserver and MutationObserver for the job rather than polling."
+          "focus": "Choose APIs such as ResizeObserver and MutationObserver for the job rather than polling.",
+          "teaching": {
+            "objectives": [
+              "Select an observer based on the change being observed.",
+              "Disconnect observers when their target or owning view is no longer active."
+            ],
+            "explanation": [
+              "ResizeObserver reports element box-size changes, including changes caused by a parent layout rather than a viewport resize. MutationObserver reports selected changes to a DOM subtree. IntersectionObserver reports intersection changes relative to a root and is commonly used for visibility-triggered work such as lazy loading.",
+              "Prefer the API that observes the actual condition over polling or listening to an unrelated event. Observer callbacks can cause feedback loops if they repeatedly change the same layout they observe; batch reads before writes and make updates idempotent. Disconnect or unobserve targets during cleanup so removed UI does not retain unnecessary work."
+            ],
+            "example": {
+              "code": "const panel = document.querySelector(\".chart-panel\");\nconst chart = document.querySelector(\"canvas\");\n\nconst resizeObserver = new ResizeObserver(([entry]) => {\n  const { width, height } = entry.contentRect;\n  chart.style.width = `${width}px`;\n  chart.style.height = `${height}px`;\n  chart.width = Math.round(width * devicePixelRatio);\n  chart.height = Math.round(height * devicePixelRatio);\n  drawChart(chart, { width, height });\n});\nresizeObserver.observe(panel);\n\n// When this view is removed:\nfunction disposeChart() {\n  resizeObserver.disconnect();\n}",
+              "walkthrough": [
+                "ResizeObserver tracks the chart panel itself, so the chart can adapt when a sidebar opens even if the viewport did not change.",
+                "The callback sizes the canvas in CSS pixels while setting its backing bitmap to device pixels for sharp rendering. The drawing helper should scale its context by devicePixelRatio before drawing.",
+                "The owning component calls disconnect during teardown. MutationObserver and IntersectionObserver have analogous observe/unobserve/disconnect cleanup."
+              ]
+            },
+            "misconceptions": [
+              "ResizeObserver is not a replacement for every window resize handler; use it when an element’s size is the relevant signal.",
+              "MutationObserver should not be used to watch layout size; ResizeObserver is designed for that.",
+              "Observers are not automatically cleaned up when arbitrary application code removes a node; explicitly disconnect or unobserve."
+            ],
+            "check": {
+              "prompt": "A chart must resize when its container changes because a side panel opens. Which API observes the needed condition, and how is it cleaned up?",
+              "answer": "Use ResizeObserver on the chart container and call disconnect (or unobserve the target) when the chart view is disposed.",
+              "explanation": "Choose the observer according to the signal: element geometry, DOM mutations, or viewport intersection. Explicit cleanup keeps the lifetime of observation aligned with the UI that owns it."
+            }
+          }
         },
         {
           "title": "Timing control",
-          "focus": "Debounce search input and throttle scroll or resize handlers, and know when each is the right choice."
+          "focus": "Debounce search input and throttle scroll or resize handlers, and know when each is the right choice.",
+          "teaching": {
+            "objectives": [
+              "Implement debounce for bursty input and throttle for bounded-rate continuous events.",
+              "Cancel scheduled callbacks during cleanup and avoid assuming exact timer timing."
+            ],
+            "explanation": [
+              "Debouncing waits until activity has been quiet for a chosen interval before running work; it suits search-as-you-type when intermediate queries can be skipped. Throttling limits work to at most one run per interval (or a chosen schedule); it suits continuous events when periodic updates matter.",
+              "Timers schedule future tasks and may run later than their requested delay when the main thread is busy or the page is backgrounded. Clear pending timers when input changes or a component is removed. Use requestAnimationFrame for visual work synchronized with rendering, and prefer native observers when they directly expose the needed signal."
+            ],
+            "example": {
+              "code": "function debounce(callback, delay) {\n  let timerId;\n  const debounced = (...args) => {\n    clearTimeout(timerId);\n    timerId = setTimeout(() => callback(...args), delay);\n  };\n  debounced.cancel = () => clearTimeout(timerId);\n  return debounced;\n}\n\nconst searchLater = debounce((query) => searchTopics(query), 250);\nconst onInput = (event) => searchLater(event.target.value);\ninput.addEventListener(\"input\", onInput);\n\nfunction disposeSearch() {\n  input.removeEventListener(\"input\", onInput);\n  searchLater.cancel();\n}",
+              "walkthrough": [
+                "Each input event clears the prior scheduled search and starts a new 250 ms quiet period. Only the last value in a burst is sent.",
+                "The cancel method lets the owning view discard work when it is no longer relevant. The illustrative listener cleanup should use a stable named handler in production.",
+                "For a scroll-driven visual effect that must update periodically, use a throttle or requestAnimationFrame; a debounce might wait until scrolling stops and feel unresponsive."
+              ]
+            },
+            "misconceptions": [
+              "Debounce and throttle are not interchangeable: debounce waits for quiet, while throttle bounds frequency during ongoing activity.",
+              "A timer delay is a minimum eligibility delay, not a real-time guarantee.",
+              "Debouncing does not cancel a request that has already started; pair it with AbortController or request identity when stale results matter."
+            ],
+            "check": {
+              "prompt": "For search suggestions where only the final query after typing pauses matters, which timing strategy fits? What should happen to its pending timer on view teardown?",
+              "answer": "Debounce the input handler, then cancel the pending timer when the view is disposed. If a request has already begun, separately abort it or guard its result.",
+              "explanation": "Debounce reduces unnecessary work for bursty input by waiting for inactivity. Cleanup cancels scheduled work, while request cancellation and stale-result guards address work already in flight."
+            }
+          }
         }
       ],
       "battery": [

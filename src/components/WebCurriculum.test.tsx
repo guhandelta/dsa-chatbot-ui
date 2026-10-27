@@ -216,6 +216,31 @@ it('provides detailed study content for the complete DOM and events module', () 
   expect(section?.lessons[3].teaching?.example.code).toContain('dialog.showModal()')
 })
 
+it('provides detailed study content for asynchronous JavaScript and browser APIs', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'async-apis')
+  expect(section?.lessons).toHaveLength(5)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+    expect(() => new Function(lesson.teaching!.example.code), `${lesson.title} example syntax`).not.toThrow()
+  }
+  expect(section?.lessons[0].teaching?.example.code).toContain('queueMicrotask')
+  expect(section?.lessons[1].teaching?.example.code).toContain('response.ok')
+  expect(section?.lessons[1].teaching?.example.code).toContain('AbortController')
+  expect(section?.lessons[2].teaching?.explanation.join(' ')).toContain('scoped to an origin')
+  expect(section?.lessons[3].teaching?.example.code).toContain('resizeObserver.disconnect()')
+  expect(section?.lessons[3].teaching?.example.code).toContain('chart.style.width')
+  expect(section?.lessons[4].teaching?.example.code).toContain('clearTimeout')
+  expect(section?.lessons[4].teaching?.example.code).toContain('const onInput')
+})
+
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
   const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
   expect(forms?.battery).toHaveLength(3)
@@ -529,7 +554,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 41 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 46 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -547,6 +572,19 @@ it('renders HTML semantics lessons in the same accessible lesson format', () => 
   fireEvent.click(screen.getByText('Study Document skeleton and metadata'))
   expect(screen.getByText(/The doctype declaration tells the browser to use standards mode/)).toBeTruthy()
   const check = container.querySelector<HTMLDetailsElement>('[aria-label="Document skeleton and metadata knowledge check"] details')!
+  expect(check.open).toBe(false)
+  fireEvent.click(check.querySelector('summary')!)
+  expect(check.open).toBe(true)
+})
+
+it('renders async API lessons and keeps each answer behind an explicit disclosure', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(9) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('5 of 5 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Promises and async functions'))
+  expect(screen.getByText(/An async function always returns a Promise/)).toBeTruthy()
+  const check = container.querySelector<HTMLDetailsElement>('[aria-label="Promises and async functions knowledge check"] details')!
   expect(check.open).toBe(false)
   fireEvent.click(check.querySelector('summary')!)
   expect(check.open).toBe(true)
