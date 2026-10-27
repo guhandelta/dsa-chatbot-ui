@@ -20,6 +20,6 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           install: false
-          start: npm run dev -- --host 127.0.0.1
-          wait-on: http://127.0.0.1:3000
+          start: npm run dev -- --host 0.0.0.0 --strictPort
+          wait-on: tcp:127.0.0.1:3000
           browser: chrome
