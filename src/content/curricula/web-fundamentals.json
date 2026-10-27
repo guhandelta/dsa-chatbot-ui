@@ -621,27 +621,201 @@
       "lessons": [
         {
           "title": "Rules, selectors, and matching",
-          "focus": "Type, class, ID, attribute, pseudo-class, pseudo-element, combinator, and selector lists."
+          "focus": "Type, class, ID, attribute, pseudo-class, pseudo-element, combinator, and selector lists.",
+          "teaching": {
+            "objectives": [
+              "Read common selectors and predict which elements they match.",
+              "Choose selectors that express component intent without unnecessary specificity."
+            ],
+            "explanation": [
+              "A CSS rule has a selector and a declaration block. Type selectors match element names, class selectors match reusable class tokens, ID selectors match an id, and attribute selectors match attributes or values. Combinators express relationships: a space selects descendants, > direct children, + the next sibling, and ~ later siblings. Lists separated by commas share declarations; each selector in the list is evaluated independently.",
+              "Pseudo-classes select a state or structural condition, such as :hover, :focus-visible, :checked, or :first-child. Pseudo-elements target generated or specialized parts such as ::before and ::marker. Prefer classes for reusable component styling and state pseudo-classes for actual state; selectors should remain understandable as markup evolves."
+            ],
+            "example": {
+              "code": "<nav class=\"site-nav\" aria-label=\"Primary\">\n  <a href=\"/lessons\">Lessons</a>\n  <a href=\"/practice\" aria-current=\"page\">Practice</a>\n</nav>\n\n<style>\n.site-nav > a { padding: 0.5rem; }\n.site-nav a[aria-current=\"page\"] { font-weight: 700; }\n.site-nav a:focus-visible { outline: 3px solid currentColor; }\n.site-nav a + a { margin-inline-start: 0.5rem; }\n</style>",
+              "walkthrough": [
+                ".site-nav > a matches only links that are direct children of the navigation.",
+                "The attribute selector styles the link whose current-page state is exposed in markup.",
+                "The focus-visible pseudo-class adds a keyboard focus treatment without inventing a custom tabindex state.",
+                "The adjacent-sibling selector applies spacing only when a link follows another link."
+              ]
+            },
+            "misconceptions": [
+              "A descendant selector can match deeply nested elements; use > when the direct relationship matters.",
+              "A selector matching an element does not guarantee its declaration wins; the cascade still resolves competing declarations.",
+              "Pseudo-elements use double-colon notation in modern CSS and do not replace semantic content."
+            ],
+            "check": {
+              "prompt": "A card title should be styled only when it is a direct child of .card, and a warning should appear when .card has a descendant with class is-warning. Which selectors express those relationships?",
+              "answer": "Use .card > .title for the direct child. Use .card:has(.is-warning) for a card containing a matching descendant, when the supported browser target includes :has().",
+              "explanation": "The child combinator expresses direct parentage; :has() lets the subject match based on a relative descendant selector."
+            }
+          }
         },
         {
           "title": "Cascade, specificity, and inheritance",
-          "focus": "Resolve origin, importance, layers, specificity, source order, and inherited values."
+          "focus": "Resolve origin, importance, layers, specificity, source order, and inherited values.",
+          "teaching": {
+            "objectives": [
+              "Resolve competing declarations using cascade order, specificity, and source order.",
+              "Explain inheritance and avoid escalating specificity to patch styling conflicts."
+            ],
+            "explanation": [
+              "The cascade first considers relevance, origin and importance, and cascade-layer order; specificity and scoping proximity are considered later, with source order breaking remaining ties. For ordinary declarations, later layers outrank earlier layers, while unlayered normal author declarations outrank layered normal declarations. Important declarations reverse layer priority. User-important styles can outrank author styles, which is useful for accessibility preferences.",
+              "Specificity is compared as a tuple of ID, class/attribute/pseudo-class, and type/pseudo-element counts, not as a decimal score. :where() contributes zero specificity; :is(), :not(), and :has() take specificity from their most specific argument. Inheritance applies only to properties defined as inherited (for example color); layout properties such as margin generally do not inherit. A declared, non-inherited property still participates in the cascade and may use its initial or other default value."
+            ],
+            "example": {
+              "code": "@layer reset, components, overrides;\n\n@layer components {\n  .notice { color: #18324a; padding: 1rem; }\n  .notice a { color: #075e9a; }\n}\n\n@layer overrides {\n  .notice a { color: #713b8f; }\n}\n\n.notice { color: #18324a; }\n.notice a { color: inherit; }",
+              "walkthrough": [
+                "The layer order is declared once; for normal declarations, overrides comes after components and therefore wins when specificity otherwise ties.",
+                "The unlayered normal .notice rules outrank normal layered declarations in the same origin, which is why layer strategy should be consistent.",
+                "color is inherited, but the explicit color: inherit on the link asks it to use the parent color.",
+                "If an important declaration appears, layer priority reverses; investigate the cascade before adding another important rule."
+              ]
+            },
+            "misconceptions": [
+              "Specificity alone does not determine the winner; origin, importance, and layer order are resolved earlier.",
+              "CSS specificity is not a base-10 number that can be added or carried between columns.",
+              "Most properties do not inherit; inheritance is a property-level behavior, not a general tree rule."
+            ],
+            "check": {
+              "prompt": "Two normal author declarations target the same link: a layered selector has greater specificity than an unlayered selector. Which wins, assuming both are relevant and in the same origin?",
+              "answer": "The unlayered normal declaration wins over declarations in author cascade layers, regardless of selector specificity.",
+              "explanation": "Layer precedence is considered before specificity. Importance changes layer ordering, so the answer depends on declarations being normal."
+            }
+          }
         },
         {
           "title": "Values, units, and custom properties",
-          "focus": "Use lengths, percentages, viewport and font-relative units, functions, and design tokens."
+          "focus": "Use lengths, percentages, viewport and font-relative units, functions, and design tokens.",
+          "teaching": {
+            "objectives": [
+              "Choose units and value functions appropriate to content, context, and viewport.",
+              "Define and consume custom properties as scoped design tokens."
+            ],
+            "explanation": [
+              "CSS values include keywords, numbers, dimensions, percentages, functions, and combinations. px is a CSS reference pixel, not necessarily one hardware pixel. em is relative to the computed font size of the element for most properties; rem is relative to the root element font size. Percentages take their reference from the property and layout context. Viewport units relate to the viewport; newer small, large, and dynamic variants can help account for browser chrome on mobile. Prefer content-driven sizing where possible.",
+              "Functions such as calc(), min(), max(), and clamp() combine compatible values and express bounds. Custom properties declared with --name participate in inheritance and the cascade, and are substituted with var(). Give tokens meaningful names, provide fallbacks when useful, and scope theme overrides intentionally. A custom property used in a value is generally validated at computed-value time; a bad substitution can make that declaration invalid rather than falling back to another earlier declaration."
+            ],
+            "example": {
+              "code": ":root {\n  --content-max: 68rem;\n  --space-page: clamp(1rem, 4vw, 2.5rem);\n  --text-measure: 65ch;\n}\n\n.page {\n  box-sizing: border-box;\n  margin-inline: auto;\n  max-width: var(--content-max);\n  padding-inline: var(--space-page);\n}\n\n.article {\n  max-width: min(100%, var(--text-measure));\n}\n\n.card-title { font-size: clamp(1.25rem, 1rem + 1vw, 2rem); }",
+              "walkthrough": [
+                "The page token provides one shared maximum width and can be overridden for a theme or component subtree.",
+                "clamp() keeps spacing and type between a minimum and maximum while allowing a fluid middle value.",
+                "The article is constrained by both its available width and a readable measure.",
+                "The custom properties inherit from :root unless a nearer element overrides them."
+              ]
+            },
+            "misconceptions": [
+              "A percentage does not always mean a percentage of the parent width; its reference depends on the property and containing block.",
+              "em is not universally relative to the parent font size; for font-size it is based on the parent, while many other uses relate to the element’s computed font size.",
+              "A CSS custom property is not a compile-time constant; it participates in runtime cascade and inheritance."
+            ],
+            "check": {
+              "prompt": "A page needs a maximum readable width and gutters that grow on wide screens but stay usable on small ones. Which CSS value tools can express those constraints without media-query breakpoints?",
+              "answer": "Use max-width to cap the content measure and clamp() for gutters, for example padding-inline: clamp(1rem, 4vw, 2.5rem).",
+              "explanation": "A maximum bounds the line length while clamp provides a fluid value with explicit minimum and maximum."
+            }
+          }
         },
         {
           "title": "Box model and sizing",
-          "focus": "Reason about content, padding, border, margin, box-sizing, overflow, and intrinsic sizing."
+          "focus": "Reason about content, padding, border, margin, box-sizing, overflow, and intrinsic sizing.",
+          "teaching": {
+            "objectives": [
+              "Calculate an element’s rendered size under content-box and border-box sizing.",
+              "Use intrinsic sizing and overflow rules to prevent clipping and unwanted horizontal scrolling."
+            ],
+            "explanation": [
+              "With content-box, width and height size the content box; padding and border add to the outside dimensions. With border-box, declared width and height include content, padding, and border. Margins remain outside both models. A common project rule is box-sizing: border-box, often applied to all elements and inherited by pseudo-elements. Width, min-width, max-width, and their block-size counterparts constrain sizing, while auto and intrinsic keywords let layout respond to content.",
+              "Overflow controls what happens when content does not fit. visible allows painting outside the box; hidden clips; clip clips without creating a scroll container; auto adds scrolling when needed; scroll reserves a scrolling mechanism. Use min-width: 0 or min-height: 0 on flex and grid items when their automatic minimum size prevents shrinking. Prefer wrapping or responsive layout to clipping meaningful text."
+            ],
+            "example": {
+              "code": "*, *::before, *::after { box-sizing: border-box; }\n\n.card {\n  inline-size: min(100%, 38rem);\n  margin-inline: auto;\n  padding: 1.25rem;\n  border: 1px solid #b7c4d0;\n}\n\n.card__body {\n  min-inline-size: 0;\n  overflow-wrap: anywhere;\n}\n\n.code-sample {\n  max-inline-size: 100%;\n  overflow-x: auto;\n}",
+              "walkthrough": [
+                "The global box-sizing rule includes padding and border in the card’s declared size.",
+                "min(100%, 38rem) keeps the card within its containing block and caps its width.",
+                "min-inline-size: 0 allows a flex or grid child to shrink below its min-content width when needed.",
+                "The code sample has an explicit horizontal scroll region so long code remains available instead of being clipped."
+              ]
+            },
+            "misconceptions": [
+              "Margins are not included in border-box sizing.",
+              "overflow: hidden is not a general layout fix; it can clip focus rings, content, or positioned descendants.",
+              "A long unbreakable string can impose an automatic minimum size on grid or flex children unless the layout permits shrinking or wrapping."
+            ],
+            "check": {
+              "prompt": "A grid card has width: 300px, 24px padding, and a 2px border under the default content-box model. What is its outer width, and how would border-box change it?",
+              "answer": "Its outer width is 352px (300 + 48 + 4). With box-sizing: border-box, the outer width stays 300px and the content area becomes 248px.",
+              "explanation": "Content-box adds padding and borders outside width; border-box includes them within the declared width."
+            }
+          }
         },
         {
           "title": "Typography, color, backgrounds, and borders",
-          "focus": "Set readable type, contrast, decoration, surfaces, and robust visual states."
+          "focus": "Set readable type, contrast, decoration, surfaces, and robust visual states.",
+          "teaching": {
+            "objectives": [
+              "Set readable type and robust color treatments with appropriate fallbacks.",
+              "Style backgrounds and borders without obscuring content or reducing contrast."
+            ],
+            "explanation": [
+              "Typography affects readability and layout. Use a system or loaded font stack with a fallback, allow text to resize, choose a comfortable line-height, and constrain long-form line length. Relative font sizing supports user preferences. Text decoration and font weight should reinforce meaning without being the only cue. Measure contrast for text and meaningful graphical boundaries against their actual adjacent colors; WCAG contrast thresholds depend on text size and role.",
+              "color sets the foreground and background-color sets the element’s background; background shorthand can combine color, images, positions, sizes, and repeat behavior. A background image is decorative unless equivalent meaning is conveyed in content. Borders contribute to visual grouping but can change box size unless sizing rules account for them. Use currentColor or design tokens when a border should follow text color, and keep focus and error states distinguishable."
+            ],
+            "example": {
+              "code": ":root {\n  color: #172b3a;\n  background-color: #f5f8fa;\n  font-family: system-ui, -apple-system, \"Segoe UI\", sans-serif;\n}\n\n.article {\n  max-width: 68ch;\n  font-size: 1rem;\n  line-height: 1.65;\n}\n\n.notice {\n  border-inline-start: 0.3rem solid currentColor;\n  padding: 1rem;\n  background: #e8f1f6;\n}\n\n.link { color: #075e9a; text-decoration-thickness: 0.1em; }",
+              "walkthrough": [
+                "The font stack ends with a generic fallback, so text remains readable if a preferred font is unavailable.",
+                "The article measure and line-height support comfortable long-form reading without fixed-height text boxes.",
+                "The notice border uses currentColor so it tracks the foreground; color contrast still needs to be checked against the notice background.",
+                "The link has an underline treatment, preserving a non-color cue that it is interactive."
+              ]
+            },
+            "misconceptions": [
+              "A visually pleasing color pair is not necessarily accessible; verify contrast in the actual rendered states.",
+              "A background image does not provide alternative text; meaningful information needs an equivalent in the document content.",
+              "Fixed pixel font sizes and fixed-height text containers can fail when users zoom or enlarge text."
+            ],
+            "check": {
+              "prompt": "A link is blue on a pale background and becomes identifiable only by its color. What should you change and verify?",
+              "answer": "Add a persistent non-color cue such as an underline, preserve a visible focus state, and verify text contrast against the rendered background for normal and interactive states.",
+              "explanation": "Color alone may not distinguish links, and contrast should be evaluated for the actual text and state."
+            }
+          }
         },
         {
           "title": "Transitions, animation, and motion",
-          "focus": "Animate state changes with transitions and keyframes, and respect the reduced-motion preference."
+          "focus": "Animate state changes with transitions and keyframes, and respect the reduced-motion preference.",
+          "teaching": {
+            "objectives": [
+              "Choose transitions for state changes and keyframes for multi-step or repeating motion.",
+              "Respect reduced-motion preferences and keep motion from carrying essential information alone."
+            ],
+            "explanation": [
+              "A transition interpolates a property when its computed value changes. Set the property, duration, timing function, and optionally delay; avoid transition: all because it can animate unexpected properties. Keyframes define named points in an animation timeline and can describe multi-step motion. Motion should clarify feedback, remain brief, and avoid large or repeated movement unless essential.",
+              "Some people prefer reduced motion because animation can cause discomfort or distraction. Use prefers-reduced-motion to reduce or remove nonessential movement while preserving state and meaning. Do not rely on motion alone to communicate status, and ensure controls remain operable during animation. Prefer transform and opacity for many animated effects, but profile real interactions rather than assuming every animation is free."
+            ],
+            "example": {
+              "code": ".button {\n  background: #075e9a;\n  color: white;\n  transition: background-color 160ms ease, transform 160ms ease;\n}\n\n.button:hover { background: #064b79; }\n.button:active { transform: translateY(1px); }\n\n.success-icon { animation: appear 180ms ease-out both; }\n\n@keyframes appear {\n  from { opacity: 0; transform: scale(0.9); }\n  to { opacity: 1; transform: scale(1); }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  html { scroll-behavior: auto; }\n  .button, .success-icon { animation: none; transition: none; }\n}",
+              "walkthrough": [
+                "The transition names only the properties expected to change and completes quickly.",
+                "The background color communicates hover feedback even if motion is reduced.",
+                "The active transform is a small enhancement rather than the only indication that the button was activated.",
+                "The reduced-motion rule removes the entrance animation and smooth scrolling while leaving the success icon and its meaning visible."
+              ]
+            },
+            "misconceptions": [
+              "A transition does not run unless a property value changes between states.",
+              "prefers-reduced-motion should remove or reduce nonessential motion, not remove information or functionality.",
+              "Transform and opacity are often efficient choices, but their performance still depends on context and should be tested."
+            ],
+            "check": {
+              "prompt": "A decorative card entrance animation repeats indefinitely and the only success cue is a pulsing green glow. How should the design change?",
+              "answer": "Make the entrance brief or remove it, respect prefers-reduced-motion, and communicate success with persistent text or another non-motion cue that does not rely on color alone.",
+              "explanation": "Motion should be optional and nonessential; state needs a clear, persistent alternative."
+            }
+          }
         }
       ],
       "battery": [

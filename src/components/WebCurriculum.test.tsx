@@ -105,6 +105,27 @@ it('provides detailed study content for the complete forms module', () => {
   expect(section?.lessons[4].teaching?.example.code).toContain('autocomplete="email"')
 })
 
+it('provides detailed study content for the complete CSS foundations module', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'css-foundations')
+  expect(section?.lessons).toHaveLength(6)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+  }
+  expect(section?.lessons[0].teaching?.example.code).toContain(':focus-visible')
+  expect(section?.lessons[1].teaching?.explanation.join(' ')).toContain('cascade-layer order')
+  expect(section?.lessons[2].teaching?.example.code).toContain('clamp(')
+  expect(section?.lessons[3].teaching?.example.code).toContain('box-sizing: border-box')
+  expect(section?.lessons[5].teaching?.example.code).toContain('prefers-reduced-motion')
+})
+
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
   const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
   expect(forms?.battery).toHaveLength(3)
@@ -418,7 +439,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 13 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 19 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -448,6 +469,15 @@ it('renders browser-native form lessons in the accessible lesson format', () => 
   expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('5 of 5 lesson topics have detailed study material.')
   fireEvent.click(screen.getByText('Study Labels and control types'))
   expect(screen.getByText(/A label gives a control its accessible name/)).toBeTruthy()
+})
+
+it('renders CSS foundations lessons in the accessible lesson format', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(4) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('6 of 6 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Rules, selectors, and matching'))
+  expect(screen.getByText(/A CSS rule has a selector and a declaration block/)).toBeTruthy()
 })
 
 it('loads a known challenge brief in the editor and ignores malformed challenge identifiers', () => {
