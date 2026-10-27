@@ -502,19 +502,61 @@
           "id": "js-fundamentals-function-fluency-set",
           "title": "Function fluency set",
           "task": "Implement small pure functions for validation, formatting, and deriving display data.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Workshop signup</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Function practice</p>\n    <h1>Join a workshop</h1>\n    <p>Enter a name and email to see a local signup summary.</p>\n    <form id=\"signup-form\" novalidate>\n      <label for=\"name\">Name</label>\n      <input id=\"name\" name=\"name\" autocomplete=\"name\" required minlength=\"2\" maxlength=\"40\" aria-describedby=\"name-hint\">\n      <p id=\"name-hint\" class=\"hint\">Use at least two characters.</p>\n      <label for=\"email\">Email</label>\n      <input id=\"email\" name=\"email\" type=\"email\" autocomplete=\"email\" required aria-describedby=\"email-hint\">\n      <p id=\"email-hint\" class=\"hint\">We only use this for the local preview.</p>\n      <button type=\"submit\">Preview signup</button>\n    </form>\n    <p id=\"feedback\" role=\"status\" aria-live=\"polite\"></p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody {\n  background: #f5f7fb;\n  color: #1f2937;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  background: white;\n  border: 1px solid #cbd5e1;\n  border-radius: 0.75rem;\n  margin: 2rem auto;\n  max-width: 34rem;\n  padding: 1.5rem;\n  width: calc(100% - 2rem);\n}\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\nform { display: grid; gap: 0.65rem; }\n\ninput, button { font: inherit; padding: 0.65rem; }\n\nbutton { background: #164f9c; border: 0; border-radius: 0.35rem; color: white; margin-block-start: 0.5rem; }\n\n.hint { color: #475569; font-size: 0.9rem; margin: 0; }\n\n#feedback { min-height: 1.5em; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#signup-form');\nconst feedback = document.querySelector('#feedback');\n\n// Keep these helpers pure: each should return a value without changing the DOM.\nfunction normalizeName(value) {\n  // TODO: trim extra whitespace and capitalize the first character.\n}\n\nfunction validateSignup(name, email) {\n  // TODO: return a useful message when either value is missing or malformed.\n}\n\nfunction formatSignup(name, email) {\n  // TODO: return a one-line confirmation using the normalized name and email.\n}\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  const values = new FormData(form);\n  const name = String(values.get('name') ?? '');\n  const email = String(values.get('email') ?? '');\n  const problem = validateSignup(name, email);\n  const message = problem ?? formatSignup(name, email);\n  feedback.textContent = message || 'Complete the helper functions to preview a signup.';\n});\n"
+            }
+          ]
         },
         {
           "id": "js-fundamentals-repair-a-state-bug",
           "title": "Repair a state bug",
           "task": "Trace mutation and stale-value bugs in a small interface data transformation.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Reading list</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">State debugging</p>\n    <h1>Reading list</h1>\n    <p>Mark an item finished. The summary and list should stay in sync.</p>\n    <p id=\"summary\" role=\"status\" aria-live=\"polite\"></p>\n    <ul id=\"reading-list\" aria-label=\"Reading list\"></ul>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { color: #243244; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 42rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\n#reading-list { display: grid; gap: 0.75rem; list-style: none; padding: 0; }\n\n.reading-item { align-items: center; border: 1px solid #cbd5e1; border-radius: 0.5rem; display: flex; gap: 0.75rem; padding: 0.9rem; }\n\n.reading-item label { flex: 1; }\n\n.is-complete label { color: #475569; text-decoration: line-through; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const items = [\n  { id: 'dom', title: 'Review the DOM guide', done: false },\n  { id: 'events', title: 'Read about event bubbling', done: true },\n  { id: 'state', title: 'Practise immutable updates', done: false },\n];\nconst list = document.querySelector('#reading-list');\nconst summary = document.querySelector('#summary');\n\n// The number is captured once, so it becomes stale after a checkbox changes.\nconst completedCount = items.filter((item) => item.done).length;\n\nfunction render() {\n  summary.textContent = `${completedCount} of ${items.length} readings complete`;\n  list.replaceChildren(...items.map((item) => {\n    const row = document.createElement('li');\n    row.className = `reading-item${item.done ? ' is-complete' : ''}`;\n    const checkbox = document.createElement('input');\n    checkbox.type = 'checkbox';\n    checkbox.id = `reading-${item.id}`;\n    checkbox.checked = item.done;\n    const label = document.createElement('label');\n    label.htmlFor = checkbox.id;\n    label.textContent = item.title;\n    checkbox.addEventListener('change', () => {\n      // This mutates the source object. Replace it with an immutable update.\n      item.done = checkbox.checked;\n      render();\n    });\n    row.append(checkbox, label);\n    return row;\n  }));\n}\n\nrender();\n"
+            }
+          ]
         },
         {
           "id": "js-fundamentals-explain-the-closure",
           "title": "Explain the closure",
           "task": "Predict callback output and explain which bindings remain available and why.",
-          "kind": "learn"
+          "kind": "learn",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Closure counter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Predict, run, explain</p>\n    <h1>Independent counters</h1>\n    <p>Before clicking, predict what each counter will display. Explain which variables each callback can still access.</p>\n    <section class=\"counter-list\" aria-label=\"Independent counters\">\n      <article class=\"counter-card\">\n        <h2>Array practice</h2>\n        <button type=\"button\" data-counter=\"arrays\">Record a practice</button>\n        <p id=\"arrays-output\" role=\"status\" aria-live=\"polite\">No practice recorded.</p>\n      </article>\n      <article class=\"counter-card\">\n        <h2>Tree practice</h2>\n        <button type=\"button\" data-counter=\"trees\">Record a practice</button>\n        <p id=\"trees-output\" role=\"status\" aria-live=\"polite\">No practice recorded.</p>\n      </article>\n    </section>\n    <label for=\"prediction\">Write your prediction and explanation</label>\n    <textarea id=\"prediction\" rows=\"5\" placeholder=\"What will the first click on each button show? What changes after another click?\"></textarea>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f6f7f3; color: #25352d; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 54rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #176b50; font-weight: 700; }\n\n.counter-list { display: grid; gap: 1rem; grid-template-columns: 1fr; }\n\n.counter-card { background: white; border: 1px solid #c6d4c8; border-radius: 0.75rem; padding: 1rem; }\n\nbutton, textarea { font: inherit; }\n\nbutton { background: #176b50; border: 0; border-radius: 0.4rem; color: white; padding: 0.65rem 0.85rem; }\n\ntextarea { display: block; margin-block-start: 0.5rem; max-width: 100%; padding: 0.65rem; width: 100%; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n\n@media (min-width: 38rem) { .counter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "function createCounter(label) {\n  let practices = 0;\n  return function recordPractice() {\n    practices += 1;\n    return `${label}: ${practices} practice${practices === 1 ? '' : 's'}`;\n  };\n}\n\nconst recordArrays = createCounter('Arrays');\nconst recordTrees = createCounter('Trees');\n\ndocument.querySelector('[data-counter=\"arrays\"]').addEventListener('click', () => {\n  document.querySelector('#arrays-output').textContent = recordArrays();\n});\n\ndocument.querySelector('[data-counter=\"trees\"]').addEventListener('click', () => {\n  document.querySelector('#trees-output').textContent = recordTrees();\n});\n"
+            }
+          ]
         }
       ]
     },

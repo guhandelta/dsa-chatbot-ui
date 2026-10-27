@@ -110,6 +110,30 @@ it('provides offline styling-systems workspaces for tokens, framework comparison
   expect(workspaces['styling-systems-specificity-cleanup']['styles.css']).toContain('#app main p.notice')
 })
 
+it('provides offline JavaScript workspaces for pure functions, state debugging, and closures', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'js-fundamentals')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css', 'script.js'])
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    const script = challenge.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
+    expect(html, challenge.id).toContain('<main>')
+    expect(html, challenge.id).toContain('<script src="script.js"></script>')
+    expect(() => new Function(script), `${challenge.id} JavaScript syntax`).not.toThrow()
+  }
+
+  const scripts = Object.fromEntries((section?.battery ?? []).map((challenge) => [
+    challenge.id,
+    challenge.starterFiles?.find((file) => file.name === 'script.js')?.content ?? '',
+  ]))
+  expect(scripts['js-fundamentals-function-fluency-set']).toContain('function normalizeName(value)')
+  expect(scripts['js-fundamentals-function-fluency-set']).toContain('Complete the helper functions')
+  expect(scripts['js-fundamentals-repair-a-state-bug']).toContain('const completedCount = items.filter')
+  expect(scripts['js-fundamentals-repair-a-state-bug']).toContain('item.done = checkbox.checked')
+  expect(scripts['js-fundamentals-explain-the-closure']).toContain('function createCounter(label)')
+  expect(scripts['js-fundamentals-explain-the-closure']).toContain('const recordTrees = createCounter')
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true
