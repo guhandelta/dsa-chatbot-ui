@@ -10,6 +10,8 @@ Edit `web-fundamentals.json` to change the web-fundamentals lessons, section out
 - Sections, lessons, challenges, and electives render in JSON array order.
 - Challenge `kind` must be one of `learn`, `build`, `debug`, or `review`.
 - Keep the required text fields non-empty. Lesson objects need `title` and `focus`; challenges need `id`, `title`, `task`, and `kind`.
+- Challenges may include `starterFiles` with unique file names, non-empty content, and an `index.html`. New challenge projects use those files; saved projects keep the learner's draft. Challenges without `starterFiles` use the regular playground template.
+- Starter files are practice scaffolds, not answer keys or grading tests. Add them only when they give the learner a useful place to begin.
 
 ## Verify an edit
 

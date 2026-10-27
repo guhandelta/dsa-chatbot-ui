@@ -34,13 +34,15 @@ const MONACO: Record<string, string> = { html: 'html', css: 'css', js: 'javascri
 
 function PlaygroundPage() {
   const { project, template, section, challenge } = Route.useSearch()
+  const challengeStarter = WEB_FUNDAMENTALS.find((item) => item.id === section)?.battery
+    .find((item) => item.id === challenge)?.starterFiles
   return (
     <main className="page-wrap px-4 py-8">
       <div className="practice-chrome">
         <Link to="/learn">← Learning home</Link>
         <h1 className="display-title my-4 text-3xl font-bold">Web playground</h1>
       </div>
-      {project ? <PlaygroundEditor key={project} slug={project} template={template} section={section} challenge={challenge} /> : <ProjectList />}
+      {project ? <PlaygroundEditor key={project} slug={project} template={template} section={section} challenge={challenge} starterFiles={challengeStarter} /> : <ProjectList />}
     </main>
   )
 }
@@ -102,7 +104,13 @@ function ProjectList() {
 
 interface ConsoleLine { level: 'log' | 'info' | 'warn' | 'error'; text: string }
 
-function PlaygroundEditor({ slug, template: requested, section, challenge }: { slug: string; template?: string; section?: string; challenge?: string }) {
+function PlaygroundEditor({ slug, template: requested, section, challenge, starterFiles }: {
+  slug: string
+  template?: string
+  section?: string
+  challenge?: string
+  starterFiles?: WorkspaceFile[]
+}) {
   const [files, setFiles] = useState<WorkspaceFile[]>([])
   const [active, setActive] = useState('index.html')
   const [template, setTemplate] = useState(requested ?? 'html-css-js')
@@ -158,15 +166,18 @@ function PlaygroundEditor({ slug, template: requested, section, challenge }: { s
     let alive = true
     openPlayground(slug, requested).then((project) => {
       if (!alive) return
-      setFiles(project.files)
+      const initialFiles = project.revision === null && starterFiles?.length
+        ? starterFiles.map((file) => ({ ...file }))
+        : project.files
+      setFiles(initialFiles)
       setTemplate(project.template)
       setActive('index.html')
       autosave.adopt(project.revision, project.updated_at)
       setReady(true)
-      void run(project.files)
+      void run(initialFiles)
     }).catch((e) => { if (alive) setError(getApiErrorMessage(e)) })
     return () => { alive = false }
-  }, [slug])
+  }, [slug, requested, starterFiles])
 
   // Console output from the preview, accepted only from this iframe and render.
   useEffect(() => {
@@ -187,6 +198,13 @@ function PlaygroundEditor({ slug, template: requested, section, challenge }: { s
       if (refreshTimer.current) clearTimeout(refreshTimer.current)
       refreshTimer.current = setTimeout(() => render(next), 600)
     }
+  }
+  const resetToStarter = () => {
+    if (!starterFiles?.length || !window.confirm('Replace this challenge project with its starter files?')) return
+    const next = starterFiles.map((file) => ({ ...file }))
+    setActive('index.html')
+    update(next)
+    void run(next)
   }
   useEffect(() => () => { if (refreshTimer.current) clearTimeout(refreshTimer.current) }, [])
 
@@ -218,7 +236,7 @@ function PlaygroundEditor({ slug, template: requested, section, challenge }: { s
       }
     }}>
       <section className="island-shell rounded-2xl p-5" aria-label="Project files">
-        <ChallengeBrief sectionId={section} challengeId={challenge} />
+        <ChallengeBrief sectionId={section} challengeId={challenge} onResetStarter={resetToStarter} />
         <div className="ws-toolbar">
           <strong>{slug}</strong>
           <Link to="/playground" className="lang-tab">All projects</Link>

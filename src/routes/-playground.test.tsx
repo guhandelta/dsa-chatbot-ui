@@ -28,13 +28,13 @@ const files = [
   { name: 'script.ts', content: 'let n: number = "x"' },
 ]
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.restoreAllMocks() })
 beforeEach(() => {
   vi.clearAllMocks()
   state.search = {}
   vi.mocked(listPlayground).mockResolvedValue({ projects: [{ slug: 'demo', template: 'html-css-ts', updated_at: null }],
     templates: [{ id: 'html-css-js', title: 'HTML, CSS and JavaScript' }, { id: 'html-css-ts', title: 'HTML, CSS and TypeScript' }],
-    limits: { max_files: 12, max_total_chars: 60000, max_projects: 30 } })
+    limits: { max_files: 12, max_total_chars: 60000, max_projects: 100 } })
   vi.mocked(openPlayground).mockResolvedValue({ slug: 'demo', template: 'html-css-ts', entry: 'index.html', revision: 2, updated_at: null, files })
   vi.mocked(transpileTypeScript).mockResolvedValue({ outputs: { 'script.ts': 'let n = "x";' },
     diagnostics: [{ file: 'script.ts', line: 1, column: 5, code: 'TS2322', message: "Type 'string' is not assignable to type 'number'." }] })
@@ -74,6 +74,41 @@ it('shows the selected curriculum challenge beside the code editor', async () =>
   expect(screen.getByText(/validation, formatting, and deriving display data/)).toBeTruthy()
   expect(screen.getByText(/not yet automatically evaluated/)).toBeTruthy()
   expect(openPlayground).toHaveBeenCalledWith(project, 'html-css-js')
+})
+
+it('seeds a new browser challenge from its curriculum starter files', async () => {
+  const project = webChallengeProjectSlug('browser', 'browser-trace-a-page-load')
+  state.search = { project, template: 'html-css-js', section: 'browser', challenge: 'browser-trace-a-page-load' }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: 'Trace a page load' })).toBeTruthy()
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain('Page load trace')
+  expect(html.value).toContain('href="styles.css"')
+  expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
+})
+
+it('confirms and autosaves a challenge reset to its starter files', async () => {
+  const challenge = 'browser-trace-a-page-load'
+  const project = webChallengeProjectSlug('browser', challenge)
+  state.search = { project, template: 'html-css-js', section: 'browser', challenge }
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: 2, updated_at: null,
+    files: files.map((file) => file.name === 'index.html' ? { ...file, content: '<html>my edited work</html>' } : file) })
+  render(<Page />)
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain('my edited work')
+  const reset = await screen.findByRole('button', { name: 'Reset to starter project' })
+  confirm.mockReturnValueOnce(false)
+  fireEvent.click(reset)
+  expect(html.value).toContain('my edited work')
+  expect(savePlayground).not.toHaveBeenCalled()
+  fireEvent.click(reset)
+  expect(confirm).toHaveBeenCalledWith('Replace this challenge project with its starter files?')
+  await waitFor(() => expect((screen.getByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement).value).toContain('Page load trace'))
+  await waitFor(() => expect(savePlayground).toHaveBeenCalledWith(project, expect.objectContaining({
+    revision: 2, template: 'html-css-js', files: expect.arrayContaining([expect.objectContaining({ name: 'index.html', content: expect.stringContaining('Page load trace') })]),
+  })), { timeout: 2500 })
 })
 
 it('restores the matching challenge brief when opening its saved project from the project list', async () => {

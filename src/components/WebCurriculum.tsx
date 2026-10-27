@@ -38,7 +38,11 @@ export function WebCurriculum() {
   </section>
 }
 
-export function ChallengeBrief({ sectionId, challengeId }: { sectionId?: string; challengeId?: string }) {
+export function ChallengeBrief({ sectionId, challengeId, onResetStarter }: {
+  sectionId?: string
+  challengeId?: string
+  onResetStarter?: () => void
+}) {
   if (!sectionId || !challengeId) return null
   const section = WEB_FUNDAMENTALS.find((item) => item.id === sectionId)
   const challenge = section?.battery.find((item) => item.id === challengeId)
@@ -47,6 +51,9 @@ export function ChallengeBrief({ sectionId, challengeId }: { sectionId?: string;
     <p className="island-kicker mb-1">{section.title} · {KIND_LABEL[challenge.kind]}</p>
     <h2 className="ws-heading">{challenge.title}</h2>
     <p className="mb-2 text-sm">{challenge.task}</p>
+    {challenge.starterFiles && onResetStarter && (
+      <button type="button" className="mini-btn my-2" onClick={onResetStarter}>Reset to starter project</button>
+    )}
     <p className="ws-hint">Use the preview and console to explore your work. Challenge criteria and progression are not yet automatically evaluated.</p>
   </section>
 }

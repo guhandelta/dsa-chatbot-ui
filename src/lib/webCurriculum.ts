@@ -7,6 +7,7 @@ export interface WebCurriculumChallenge {
   title: string
   task: string
   kind: ChallengeKind
+  starterFiles?: { name: string; content: string }[]
 }
 
 export interface WebCurriculumSection {

@@ -25,6 +25,12 @@ it('defines an ordered, substantial common web fundamentals spine with a battery
       expect(challenge.title.trim()).not.toBe('')
       expect(challenge.task.trim()).not.toBe('')
       expect(['learn', 'build', 'debug', 'review']).toContain(challenge.kind)
+      if (challenge.starterFiles) {
+        const names = challenge.starterFiles.map((file) => file.name)
+        expect(names).toContain('index.html')
+        expect(new Set(names).size).toBe(names.length)
+        expect(challenge.starterFiles.every((file) => file.content.trim().length > 0)).toBe(true)
+      }
     }
     expect(new Set(section.battery.map((challenge) => challenge.kind)).size, `${section.id} challenge variety`).toBeGreaterThan(1)
   }

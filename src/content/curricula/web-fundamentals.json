@@ -24,19 +24,61 @@
           "id": "browser-trace-a-page-load",
           "title": "Trace a page load",
           "task": "Given a starter project, identify the entry document and trace each linked stylesheet and script.",
-          "kind": "learn"
+          "kind": "learn",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Page load trace</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Page load trace</h1>\n    <p id=\"status\">The script has not run yet.</p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 2rem;\n}\n\nmain {\n  max-width: 42rem;\n  margin-inline: auto;\n}\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const status = document.querySelector('#status');\nstatus.textContent = 'The linked script ran after the document was parsed.';\n"
+            }
+          ]
         },
         {
           "id": "browser-find-the-visual-cause",
           "title": "Find the visual cause",
           "task": "Inspect a page with a missing style and determine whether the cause is markup, selector matching, or loading.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Find the visual cause</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Account status</h1>\n    <p class=\"status status-ready\">Your profile is ready.</p>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  font-family: system-ui, sans-serif;\n  margin: 2rem;\n}\n\n.status--ready {\n  border-inline-start: 0.35rem solid #147d64;\n  background: #e8f5f0;\n  padding: 1rem;\n}\n"
+            },
+            {
+              "name": "script.js",
+              "content": "// The page has no script. Inspect the HTML, CSS link, and selector match.\n"
+            }
+          ]
         },
         {
           "id": "browser-explain-a-browser-change",
           "title": "Explain a browser change",
           "task": "Change one element and describe which part of the rendered page updates and why.",
-          "kind": "review"
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Explain a browser change</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1 id=\"heading\">A page is ready</h1>\n    <p>Use the button, then explain what changed in the DOM and on screen.</p>\n    <button id=\"change-heading\" type=\"button\">Change heading</button>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  color: #17324d;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 2rem;\n}\n\nbutton {\n  font: inherit;\n  padding: 0.5rem 0.8rem;\n}\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const heading = document.querySelector('#heading');\nconst button = document.querySelector('#change-heading');\n\nbutton.addEventListener('click', () => {\n  heading.textContent = 'The DOM update was rendered';\n});\n"
+            }
+          ]
         }
       ]
     },
