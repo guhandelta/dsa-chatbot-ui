@@ -117,6 +117,19 @@ it('seeds the accessible profile form challenge with its HTML, CSS, and JavaScri
   expect(await screen.findByRole('tab', { name: 'script.js' })).toBeTruthy()
 })
 
+it('seeds the clipped-card CSS challenge with the overflowing layout to inspect', async () => {
+  const challenge = 'css-foundations-fix-a-clipped-card'
+  const project = webChallengeProjectSlug('css-foundations', challenge)
+  state.search = { project, template: 'html-css-js', section: 'css-foundations', challenge }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: 'Fix a clipped card' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('tab', { name: 'styles.css' }))
+  const css = await screen.findByRole('textbox', { name: 'styles.css editor' }) as HTMLTextAreaElement
+  expect(css.value).toContain('overflow: hidden')
+  expect(css.value).toContain('box-sizing: content-box')
+})
+
 it('confirms and autosaves a challenge reset to its starter files', async () => {
   const challenge = 'browser-trace-a-page-load'
   const project = webChallengeProjectSlug('browser', challenge)

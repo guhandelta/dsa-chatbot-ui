@@ -271,19 +271,49 @@
           "id": "css-foundations-cascade-prediction-set",
           "title": "Cascade prediction set",
           "task": "Predict the winning declaration for several selector and source-order combinations.",
-          "kind": "learn"
+          "kind": "learn",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Cascade prediction lab</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Cascade prediction lab</h1>\n    <p>Before changing the CSS, predict each notice’s text color. Explain which matching declaration wins by specificity and source order.</p>\n    <section class=\"card\">\n      <h2>Notice one</h2>\n      <p id=\"notice-one\" class=\"notice\">Which color wins when an ID and class both match?</p>\n    </section>\n    <section class=\"card\">\n      <h2>Notice two</h2>\n      <p class=\"notice\">Which color wins between a class selector and a class-plus-element selector?</p>\n    </section>\n    <section class=\"card\">\n      <h2>Notice three</h2>\n      <p id=\"notice-three\" class=\"notice\" data-state=\"featured\">Which color wins between the ID and attribute selector?</p>\n    </section>\n    <section class=\"card\">\n      <h2>Notice four</h2>\n      <p class=\"card-label\">Which declaration wins when specificity is equal?</p>\n    </section>\n    <label for=\"predictions\">Record your predictions and reasons</label>\n    <textarea id=\"predictions\" rows=\"6\"></textarea>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  color: #253347;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 48rem;\n  padding: 1.5rem;\n}\n\n.card {\n  border: 1px solid #9aa8b7;\n  margin-block: 1rem;\n  padding: 1rem;\n}\n\np { color: #36526b; }\n.notice { color: #176b4a; }\nmain .notice { color: #8a4b08; }\n#notice-one { color: #9b2435; }\n.notice { color: #5542a4; }\np[data-state=\"featured\"] { color: #087e8b; }\n.card .card-label { color: #245b8f; }\n.card .card-label { color: #873f76; }\n\ntextarea {\n  box-sizing: border-box;\n  display: block;\n  font: inherit;\n  max-width: 100%;\n  width: 100%;\n}\n"
+            }
+          ]
         },
         {
           "id": "css-foundations-fix-a-clipped-card",
           "title": "Fix a clipped card",
           "task": "Find and repair a box-sizing, width, and overflow combination that clips content.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Clipped card debugging</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Clipped card debugging</h1>\n    <p>Inspect the card at different widths. Find why its content is cut off, then fix its sizing and overflow without hiding useful information.</p>\n    <article class=\"card\">\n      <div class=\"card__content\">\n        <p class=\"eyebrow\">Weekend workshop</p>\n        <h2>Build a small balcony garden</h2>\n        <p>Learn how to choose containers, prepare soil, and care for herbs in a sunny space.</p>\n        <a href=\"#workshop-details\">Read workshop details</a>\n      </div>\n    </article>\n    <p id=\"workshop-details\">The workshop is suitable for first-time gardeners.</p>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* {\n  box-sizing: content-box;\n}\n\nbody {\n  color: #203044;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 42rem;\n  padding: 1.5rem;\n}\n\n.card {\n  background: #eef4f7;\n  border: 3px solid #34566d;\n  height: 9rem;\n  overflow: hidden;\n  padding: 1.25rem;\n  width: 19rem;\n}\n\n.card__content {\n  padding: 1rem;\n  width: 100%;\n}\n\n.eyebrow {\n  font-size: 0.8rem;\n  font-weight: 700;\n  text-transform: uppercase;\n}\n\n:focus-visible {\n  outline: 3px solid #a34b00;\n  outline-offset: 3px;\n}\n"
+            }
+          ]
         },
         {
           "id": "css-foundations-style-from-constraints",
           "title": "Style from constraints",
           "task": "Create a readable content card using spacing, type, color, and focus-state requirements.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Community repair notice</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <article class=\"notice-card\">\n      <p class=\"notice-card__category\">Community notice</p>\n      <h1 class=\"notice-card__title\">Repair cafe this Saturday</h1>\n      <p class=\"notice-card__description\">Bring a small household item and learn how to repair it with a volunteer. Tools are available on site.</p>\n      <p class=\"notice-card__meta\">Saturday, 10:00–13:00 · Northside Library</p>\n      <a class=\"notice-card__link\" href=\"#visit-details\">Plan your visit</a>\n    </article>\n    <p id=\"visit-details\">The entrance is step-free. Contact the library if you need another accommodation.</p>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "/* Style the card to meet the challenge constraints. */\n:root {\n  color-scheme: light;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n}\n\nbody {\n  margin: 0;\n  padding: 1.5rem;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 42rem;\n}\n\n/* TODO: Make the card readable, responsive, and visually organized. */\n/* Requirements: clear type hierarchy, comfortable spacing, sufficient contrast, and a visible keyboard-focus state. */\n"
+            }
+          ]
         }
       ]
     },

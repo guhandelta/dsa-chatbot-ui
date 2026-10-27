@@ -54,6 +54,20 @@ it('provides complete offline starter workspaces for each browser-native forms e
   }
 })
 
+it('provides a CSS file and page scaffold for each CSS foundations challenge', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'css-foundations')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    const css = challenge.starterFiles?.find((file) => file.name === 'styles.css')?.content ?? ''
+    expect(html, challenge.id).toContain('<main>')
+    expect(css, challenge.id).toContain('font-family')
+  }
+  const repair = section?.battery.find((challenge) => challenge.id === 'css-foundations-fix-a-clipped-card')
+  expect(repair?.starterFiles?.find((file) => file.name === 'styles.css')?.content).toContain('overflow: hidden')
+  expect(repair?.starterFiles?.find((file) => file.name === 'styles.css')?.content).toContain('box-sizing: content-box')
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true
