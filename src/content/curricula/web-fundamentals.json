@@ -2123,19 +2123,131 @@
       "lessons": [
         {
           "title": "Semantic controls and accessible names",
-          "focus": "Prefer native controls and ensure interactive elements have clear names and roles."
+          "focus": "Prefer native controls and ensure interactive elements have clear names and roles.",
+          "teaching": {
+            "objectives": [
+              "Choose native HTML elements whose built-in role and keyboard behavior match the task.",
+              "Give controls an accessible name and connect help and validation text programmatically."
+            ],
+            "explanation": [
+              "A semantic element communicates purpose and behavior to browsers, assistive technologies, and other developers. Use a button for an action and an anchor with a real href for navigation; a clickable div does not acquire keyboard interaction, role, or state behavior just because it has a click handler. Native form controls also provide expected keyboard and validation behavior.",
+              "An accessible name identifies a control in its context. A visible label associated with a form control is usually the clearest choice; a button’s text commonly supplies its name. Use aria-labelledby or aria-label only when a visible label cannot be used, and prefer aria-labelledby when visible text already exists. Use aria-describedby for supporting instructions and errors. Group related controls with fieldset and legend."
+            ],
+            "example": {
+              "code": "<form id=\"profile-form\">\n  <label for=\"display-name\">Display name</label>\n  <input id=\"display-name\" name=\"displayName\" required\n         aria-describedby=\"name-help name-error\" aria-invalid=\"false\">\n  <p id=\"name-help\">This name appears on your study profile.</p>\n  <p id=\"name-error\" hidden>Please enter a display name.</p>\n\n  <fieldset>\n    <legend>Preferred reminder time</legend>\n    <label><input type=\"radio\" name=\"reminder\" value=\"morning\"> Morning</label>\n    <label><input type=\"radio\" name=\"reminder\" value=\"evening\"> Evening</label>\n  </fieldset>\n\n  <button type=\"submit\">Save profile</button>\n  <a href=\"/profile\">Cancel and return to profile</a>\n</form>",
+              "walkthrough": [
+                "The label for/id pair provides a visible name for the input; aria-describedby references the help and error text that provide context.",
+                "fieldset and legend expose the radio options as one named group, while each label names one option.",
+                "Save performs an action and is a button. Cancel navigates, so it is a link with a destination. The form still needs to reveal and update its error state when validation fails."
+              ]
+            },
+            "misconceptions": [
+              "A placeholder is not a durable replacement for a visible label; it disappears during entry and may have weak contrast.",
+              "Adding role=\"button\" to a div does not implement Enter/Space activation, focusability, disabled behavior, or other native button semantics.",
+              "aria-label can override visible text as the accessible name. Keep the visible label and accessible name aligned so speech-input users can activate controls by their visible words."
+            ],
+            "check": {
+              "prompt": "For “Save profile” and “Cancel and return to profile,” which should be a button and which a link, and how does the text input receive its name?",
+              "answer": "Save profile is a button because it submits an action. Cancel and return is an anchor because it navigates. The input is named by the associated label whose for value matches its id.",
+              "explanation": "Native elements provide a dependable baseline of role, name, keyboard support, and behavior. Add ARIA only for information that native semantics do not already express."
+            }
+          }
         },
         {
           "title": "Keyboard and focus",
-          "focus": "Support logical order, visible focus, managed focus, and no keyboard traps."
+          "focus": "Support logical order, visible focus, managed focus, and no keyboard traps.",
+          "teaching": {
+            "objectives": [
+              "Keep keyboard navigation in a logical order and provide a clearly visible focus indicator.",
+              "Move focus intentionally after navigation or dialog transitions without creating keyboard traps."
+            ],
+            "explanation": [
+              "Keyboard users need to reach every interactive control, understand where focus is, and operate it without relying on a pointer. Preserve a meaningful DOM order, use native controls, and style :focus-visible with a clear indicator that is not clipped or hidden by sticky content. Avoid positive tabindex values; they create a second, fragile ordering system.",
+              "When an action changes context, move focus only when needed to orient the user, such as focusing the main heading or newly opened dialog. Native modal dialog opened with showModal supplies modal behavior and focus handling; provide an obvious close control and let users dismiss it as appropriate. A custom widget must implement its documented keyboard interaction and must always provide a way to move focus away."
+            ],
+            "example": {
+              "code": "<a class=\"skip-link\" href=\"#main-content\">Skip to main content</a>\n<header><nav aria-label=\"Primary\">…</nav></header>\n<main id=\"main-content\" tabindex=\"-1\">\n  <h1>Practice workspace</h1>\n  <button id=\"open-help\" type=\"button\">Open help</button>\n</main>\n<dialog id=\"help-dialog\" aria-labelledby=\"help-title\">\n  <h2 id=\"help-title\">Workspace help</h2>\n  <p>Use the editor and run your work when ready.</p>\n  <form method=\"dialog\"><button>Close help</button></form>\n</dialog>\n<style>\n  .skip-link { position: absolute; inset-inline-start: 0; inset-block-start: -5rem; }\n  .skip-link:focus { inset-block-start: 0; }\n  :focus-visible { outline: 3px solid #7c2d12; outline-offset: 3px; }\n</style>\n<script>\n  const dialog = document.querySelector(\"#help-dialog\");\n  document.querySelector(\"#open-help\").addEventListener(\"click\", () => dialog.showModal());\n</script>",
+              "walkthrough": [
+                "The skip link becomes visible on focus and targets main content. tabindex=\"-1\" permits programmatic focus without adding main to the normal Tab sequence.",
+                "The visible focus outline applies to keyboard-focused controls and should be checked against the actual adjacent colors and clipping/overlap.",
+                "showModal opens a native modal dialog. The dialog has a programmatic title, a close button, and native dialog form dismissal; test the resulting focus behavior with keyboard and assistive technology."
+              ]
+            },
+            "misconceptions": [
+              "A visible outline is not optional decoration; removing it without an equally clear replacement makes keyboard position hard to track.",
+              "tabindex=\"0\" is not needed on every element; native controls already enter the sequential focus order. Avoid positive tabindex values.",
+              "A modal dialog should not trap users indefinitely. Native dialog behavior helps, but test focus entry, dismissal, and return to the trigger in supported browsers."
+            ],
+            "check": {
+              "prompt": "Why does the main element use tabindex=\"-1\" in this pattern, and which built-in API opens the dialog modally?",
+              "answer": "tabindex=\"-1\" permits the main region to receive programmatic focus without placing it in normal sequential Tab order. dialog.showModal() opens a native modal dialog.",
+              "explanation": "Preserve native tab order and visible focus. Programmatic focus is useful for deliberate context changes, but it should support navigation rather than create an unexpected jump or trap."
+            }
+          }
         },
         {
           "title": "Contrast, motion, and content alternatives",
-          "focus": "Respect text alternatives, contrast, reduced motion, zoom, and reflow."
+          "focus": "Respect text alternatives, contrast, reduced motion, zoom, and reflow.",
+          "teaching": {
+            "objectives": [
+              "Check text and essential non-text contrast rather than judging color by appearance alone.",
+              "Provide text alternatives and respect zoom, reflow, and reduced-motion preferences."
+            ],
+            "explanation": [
+              "For WCAG 2.2 AA, normal text generally needs a contrast ratio of at least 4.5:1 against its background; large text generally needs 3:1; WCAG defines large text as at least 18 point regular or 14 point bold (approximately 24 CSS pixels regular or 18.67 CSS pixels bold). WCAG 2.2 SC 1.4.11 separately requires 3:1 contrast for visual information needed to identify UI components and states, and for graphical objects needed to understand content. These are measurable thresholds; color alone must not communicate status or meaning.",
+              "Write alternative text for informative images based on the information they convey; use empty alt text for decorative images so they can be ignored. A complex chart needs a concise summary plus its underlying data in text or a table. Provide captions for prerecorded synchronized media when the use case requires them. Let text resize to 200% without loss, and let ordinary content reflow at a width equivalent to 320 CSS pixels without two-dimensional scrolling. Honor prefers-reduced-motion by removing or reducing nonessential movement while preserving useful state feedback."
+            ],
+            "example": {
+              "code": "<figure>\n  <img src=\"progress-chart.png\" alt=\"Weekly practice rose from 2 to 5 sessions over four weeks\">\n  <figcaption>Exact counts: week 1, 2; week 2, 3; week 3, 4; week 4, 5.</figcaption>\n</figure>\n<img src=\"decorative-sparkle.svg\" alt=\"\">\n<p><span class=\"status-dot status-dot--complete\"></span>Completed</p>\n<style>\n  :root { --text: #243244; --surface: #fff; }\n  body { color: var(--text); background: var(--surface); font-size: 1rem; }\n  .status-dot--complete { background: #176b50; }\n  .status-dot--complete + * { font-weight: 700; }\n  .motion-card { transition: transform 180ms ease; }\n  html { scroll-behavior: smooth; }\n  @media (prefers-reduced-motion: reduce) {\n    html { scroll-behavior: auto; }\n    .motion-card { transition: none; }\n  }\n</style>",
+              "walkthrough": [
+                "The figure provides a concise text summary and exact values alongside the chart. For a large or complex visualization, also provide a structured table or equivalent detailed data.",
+                "Completed is written as text so color is not the only signal. Check the actual text/background and control boundaries with a contrast tool; the CSS tokens alone do not prove a passing ratio.",
+                "The reduced-motion media query removes the example card’s nonessential transition and smooth scrolling. Test text resizing and narrow reflow separately; a snippet alone cannot prove full accessibility conformance."
+              ]
+            },
+            "misconceptions": [
+              "A contrast ratio is not a subjective “looks readable” judgment. Measure the rendered foreground and background colors and verify the applicable WCAG criterion.",
+              "Adding alt text to every image is not correct; decorative images should generally have an empty alt attribute, while informative images need a concise contextual equivalent.",
+              "prefers-reduced-motion is a preference signal, not permission to hide content or remove feedback needed to understand a state change."
+            ],
+            "check": {
+              "prompt": "Which contrast thresholds apply to normal and large text at WCAG 2.2 AA, and why does the completion label include text as well as color?",
+              "answer": "Normal text generally needs 4.5:1 and large text 3:1 under Contrast Minimum. The text communicates completion to people who cannot distinguish the color and ensures color is not the only means of conveying meaning.",
+              "explanation": "Use measured contrast and redundant cues; provide context-appropriate text alternatives; and test content at zoom and narrow reflow. A single CSS snippet cannot establish conformance for the entire interface."
+            }
+          }
         },
         {
           "title": "ARIA and live updates",
-          "focus": "Use ARIA only to fill semantic gaps and announce meaningful dynamic changes."
+          "focus": "Use ARIA only to fill semantic gaps and announce meaningful dynamic changes.",
+          "teaching": {
+            "objectives": [
+              "Use native semantics first and add ARIA only when it supplies missing name, role, state, or relationship information.",
+              "Announce meaningful asynchronous status and errors without creating noisy or misleading updates."
+            ],
+            "explanation": [
+              "ARIA changes what assistive technology is told about an element; it does not add visual presentation, keyboard behavior, validation, or application logic. A role=\"button\" needs button behavior, focus support, and states implemented by the author. Prefer native HTML whenever it expresses the control or relationship correctly, and keep ARIA state synchronized with the visible interface.",
+              "A polite status message is appropriate for nonurgent updates such as “3 results loaded”; role=\"status\" has a polite live-region behavior. role=\"alert\" is assertive and should be reserved for important, time-sensitive information that warrants interruption. Put the live-region container in the DOM before changing its text, announce concise changes rather than whole page regions, and avoid sending a new announcement on every keystroke."
+            ],
+            "example": {
+              "code": "<form id=\"search-form\">\n  <label for=\"topic-query\">Search topics</label>\n  <input id=\"topic-query\" name=\"q\" aria-describedby=\"search-help\">\n  <p id=\"search-help\">Results update after you submit.</p>\n  <button type=\"submit\">Search</button>\n</form>\n<p id=\"search-status\" role=\"status\" aria-live=\"polite\"></p>\n<p id=\"search-error\" role=\"alert\"></p>\n<script>\n  function showResults(count) {\n    document.querySelector(\"#search-status\").textContent =\n      `${count} ${count === 1 ? \"result\" : \"results\"} loaded.`;\n    document.querySelector(\"#search-error\").textContent = \"\";\n  }\n  function showSearchError() {\n    document.querySelector(\"#search-error\").textContent =\n      \"Search failed. Check your connection and try again.\";\n\n  }\n</script>",
+              "walkthrough": [
+                "Both live regions are present before script updates them, which helps assistive technologies detect subsequent text changes.",
+                "The polite status announces a concise result count without moving keyboard focus. The assertive alert is reserved for the actionable failure.",
+                "On success, the old error text is cleared. Production code should update the regions consistently for loading, empty, success, and retry outcomes."
+              ]
+            },
+            "misconceptions": [
+              "ARIA does not provide behavior: role=\"button\" on a div still needs focus and keyboard activation logic, so use a button instead.",
+              "Do not apply role=\"alert\" to routine progress or every keystroke; assertive announcements can interrupt current speech and overwhelm users.",
+              "aria-live should not replace visible feedback, and a status message should not steal focus from the control the user is operating."
+            ],
+            "check": {
+              "prompt": "For a nonurgent “3 results loaded” update and an important request failure, which live-region patterns fit, and should either move keyboard focus?",
+              "answer": "Use a polite status region for the result count and reserve role=\"alert\" for the important failure. Neither update normally needs to move keyboard focus.",
+              "explanation": "Native markup supplies the behavior. ARIA communicates accessible names, states, and live updates when needed, while visible UI and application logic still implement the user-facing result."
+            }
+          }
         }
       ],
       "battery": [

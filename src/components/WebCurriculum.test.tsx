@@ -241,6 +241,37 @@ it('provides detailed study content for asynchronous JavaScript and browser APIs
   expect(section?.lessons[4].teaching?.example.code).toContain('const onInput')
 })
 
+it('provides detailed accessibility guidance with semantic, keyboard, and assistive-technology examples', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'accessibility')
+  expect(section?.lessons).toHaveLength(4)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+  }
+  expect(section?.lessons[0].teaching?.example.code).toContain('<label for="display-name">')
+  expect(section?.lessons[0].teaching?.example.code).toContain('<fieldset>')
+  expect(section?.lessons[1].teaching?.example.code).toContain('dialog.showModal()')
+  expect(section?.lessons[1].teaching?.example.code).toContain(':focus-visible')
+  for (const index of [1, 3]) {
+    const script = section?.lessons[index].teaching?.example.code.match(/<script>([\s\S]*?)<\/script>/)?.[1]
+    expect(script, section?.lessons[index].title).toBeTruthy()
+    expect(() => new Function(script!), `${section?.lessons[index].title} script syntax`).not.toThrow()
+  }
+  expect(section?.lessons[2].teaching?.explanation.join(' ')).toContain('4.5:1')
+  expect(section?.lessons[2].teaching?.explanation.join(' ')).toContain('18 point regular or 14 point bold')
+  expect(section?.lessons[2].teaching?.explanation.join(' ')).toContain('320 CSS pixels')
+  expect(section?.lessons[2].teaching?.example.code).toContain('prefers-reduced-motion')
+  expect(section?.lessons[3].teaching?.example.code).toContain('role="status"')
+  expect(section?.lessons[3].teaching?.example.code).toContain('role="alert"')
+})
+
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
   const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
   expect(forms?.battery).toHaveLength(3)
@@ -554,7 +585,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 46 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 50 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -585,6 +616,19 @@ it('renders async API lessons and keeps each answer behind an explicit disclosur
   fireEvent.click(screen.getByText('Study Promises and async functions'))
   expect(screen.getByText(/An async function always returns a Promise/)).toBeTruthy()
   const check = container.querySelector<HTMLDetailsElement>('[aria-label="Promises and async functions knowledge check"] details')!
+  expect(check.open).toBe(false)
+  fireEvent.click(check.querySelector('summary')!)
+  expect(check.open).toBe(true)
+})
+
+it('renders accessibility lessons and keeps the explanation for the quick check hidden until requested', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(10) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('4 of 4 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Semantic controls and accessible names'))
+  expect(screen.getByText(/A semantic element communicates purpose and behavior/)).toBeTruthy()
+  const check = container.querySelector<HTMLDetailsElement>('[aria-label="Semantic controls and accessible names knowledge check"] details')!
   expect(check.open).toBe(false)
   fireEvent.click(check.querySelector('summary')!)
   expect(check.open).toBe(true)
