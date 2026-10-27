@@ -30,6 +30,8 @@ it('defines an ordered, substantial common web fundamentals spine with a battery
         expect(names).toContain('index.html')
         expect(new Set(names).size).toBe(names.length)
         expect(challenge.starterFiles.every((file) => file.content.trim().length > 0)).toBe(true)
+        const script = challenge.starterFiles.find((file) => file.name === 'script.js')?.content
+        if (script) expect(() => new Function(script), `${challenge.id} JavaScript syntax`).not.toThrow()
       }
     }
     expect(new Set(section.battery.map((challenge) => challenge.kind)).size, `${section.id} challenge variety`).toBeGreaterThan(1)
@@ -40,6 +42,9 @@ it('defines an ordered, substantial common web fundamentals spine with a battery
   ))
   expect(new Set(challengeProjects).size).toBe(challengeProjects.length)
   expect(challengeProjects.every((slug) => slug.length <= 40 && /^[a-z0-9][a-z0-9-]*$/.test(slug))).toBe(true)
+  expect(WEB_FUNDAMENTALS.reduce((total, section) => total + section.lessons.length, 0)).toBe(65)
+  expect(challengeProjects).toHaveLength(41)
+  expect(WEB_FUNDAMENTALS.flatMap((section) => section.battery).filter((challenge) => challenge.starterFiles).length).toBe(41)
 })
 
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
@@ -56,7 +61,7 @@ it('provides complete offline starter workspaces for each browser-native forms e
 
 it('provides a CSS file and page scaffold for each CSS foundations challenge', () => {
   const section = WEB_FUNDAMENTALS.find((item) => item.id === 'css-foundations')
-  expect(section?.battery).toHaveLength(3)
+  expect(section?.battery).toHaveLength(4)
   for (const challenge of section?.battery ?? []) {
     const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
     const css = challenge.starterFiles?.find((file) => file.name === 'styles.css')?.content ?? ''
@@ -136,7 +141,7 @@ it('provides offline JavaScript workspaces for pure functions, state debugging, 
 
 it('provides accessible DOM and event workspaces for filtering, delegation, and keyboard tabs', () => {
   const section = WEB_FUNDAMENTALS.find((item) => item.id === 'dom-events')
-  expect(section?.battery).toHaveLength(3)
+  expect(section?.battery).toHaveLength(4)
   for (const challenge of section?.battery ?? []) {
     expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css', 'script.js'])
     const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
@@ -156,6 +161,9 @@ it('provides accessible DOM and event workspaces for filtering, delegation, and 
   expect(workspaces['dom-events-event-propagation-lab']['script.js']).toContain('event.target.closest')
   expect(workspaces['dom-events-keyboard-interaction-check']['index.html']).toContain('role="tablist"')
   expect(workspaces['dom-events-keyboard-interaction-check']['script.js']).toContain('tab.tabIndex = selected ? 0 : -1')
+  expect(workspaces['dom-events-accessible-dialog']['index.html']).toContain('<dialog id="workshop-dialog"')
+  expect(workspaces['dom-events-accessible-dialog']['script.js']).toContain('dialog.showModal()')
+  expect(workspaces['dom-events-accessible-dialog']['index.html']).toContain('method="dialog"')
 })
 
 it('provides offline async and browser API workspaces with explicit states and race conditions', () => {
@@ -250,7 +258,7 @@ it('provides testing and debugging workspaces with reproducible defects and a ch
 
 it('provides performance workspaces for measurement, resilient enhancement, and evidence-based review', () => {
   const section = WEB_FUNDAMENTALS.find((item) => item.id === 'performance')
-  expect(section?.battery).toHaveLength(3)
+  expect(section?.battery).toHaveLength(4)
   for (const challenge of section?.battery ?? []) {
     expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css', 'script.js'])
     const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
@@ -273,6 +281,56 @@ it('provides performance workspaces for measurement, resilient enhancement, and 
   expect(workspaces['performance-resilient-enhancement']['index.html']).toContain('<section aria-labelledby=')
   expect(workspaces['performance-before-and-after-review']['script.js']).toContain('Repeat measurements under similar conditions')
   expect(workspaces['performance-before-and-after-review']['index.html']).toContain('type="number" min="0" step="any" required')
+  expect(workspaces['performance-safe-rendering-review']['script.js']).toContain('item.innerHTML')
+  expect(workspaces['performance-safe-rendering-review']['index.html']).toContain('target="_blank"')
+  expect(workspaces['performance-safe-rendering-review']['index.html']).not.toContain('rel="noopener')
+})
+
+it('provides the revised motion challenge with a functioning disclosure and reduced-motion support', () => {
+  const challenge = WEB_FUNDAMENTALS.find((item) => item.id === 'css-foundations')?.battery
+    .find((item) => item.id === 'css-foundations-motion-with-restraint')
+  const html = challenge?.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+  const css = challenge?.starterFiles?.find((file) => file.name === 'styles.css')?.content ?? ''
+  const script = challenge?.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
+  expect(html).toContain('aria-controls="details-panel"')
+  expect(css).toContain('prefers-reduced-motion: reduce')
+  expect(script).toContain("panel.classList.toggle('is-open',!open)")
+
+  const originalBody = document.body.innerHTML
+  try {
+    document.body.innerHTML = '<button id="details-toggle" aria-expanded="false">Show details</button><div id="details-panel" aria-hidden="true"></div><p id="motion-status"></p>'
+    new Function(script)()
+    document.querySelector<HTMLButtonElement>('#details-toggle')!.click()
+    expect(document.querySelector('#details-toggle')?.getAttribute('aria-expanded')).toBe('true')
+    expect(document.querySelector('#details-panel')?.getAttribute('aria-hidden')).toBe('false')
+    expect(document.querySelector('#motion-status')?.textContent).toBe('The panel is open.')
+  } finally {
+    document.body.innerHTML = originalBody
+  }
+})
+
+it('provides complete capstone build and review workspaces with a working rubric counter', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'capstone')
+  expect(section?.battery).toHaveLength(2)
+  const build = section?.battery.find((challenge) => challenge.id === 'capstone-build-a-small-multi-state-interface')
+  const review = section?.battery.find((challenge) => challenge.id === 'capstone-capstone-review')
+  expect(build?.starterFiles?.map((file) => file.name)).toEqual(['index.html', 'styles.css', 'script.js'])
+  expect(build?.starterFiles?.find((file) => file.name === 'index.html')?.content).toContain('aria-live="polite"')
+  expect(build?.starterFiles?.find((file) => file.name === 'script.js')?.content).toContain('reportValidity()')
+  expect(review?.title).toBe('Capstone review')
+  expect(review?.starterFiles?.find((file) => file.name === 'index.html')?.content).toContain('320px without horizontal scrolling')
+  const script = review?.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
+  expect(script).toContain('checks.filter')
+
+  const originalBody = document.body.innerHTML
+  try {
+    document.body.innerHTML = '<ul id="rubric-list"><li><input type="checkbox"></li><li><input type="checkbox"></li></ul><p id="rubric-progress"></p>'
+    new Function(script)()
+    document.querySelector<HTMLInputElement>('#rubric-list input')!.click()
+    expect(document.querySelector('#rubric-progress')?.textContent).toBe('1 of 2 checks complete.')
+  } finally {
+    document.body.innerHTML = originalBody
+  }
 })
 
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {

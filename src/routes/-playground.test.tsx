@@ -130,6 +130,23 @@ it('seeds the clipped-card CSS challenge with the overflowing layout to inspect'
   expect(css.value).toContain('box-sizing: content-box')
 })
 
+it.each([
+  ['css-foundations', 'css-foundations-motion-with-restraint', 'Motion with restraint', 'aria-controls="details-panel"'],
+  ['dom-events', 'dom-events-accessible-dialog', 'Accessible dialog', '<dialog id="workshop-dialog"'],
+  ['performance', 'performance-safe-rendering-review', 'Safe rendering review', 'target="_blank"'],
+  ['capstone', 'capstone-build-a-small-multi-state-interface', 'Build a small multi-state interface', 'id="reservation-form"'],
+  ['capstone', 'capstone-capstone-review', 'Capstone review', 'id="rubric-list"'],
+])('seeds the revised %s challenge workspace from curriculum data', async (section, challenge, title, expectedMarkup) => {
+  const project = webChallengeProjectSlug(section, challenge)
+  state.search = { project, template: 'html-css-js', section, challenge }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: title })).toBeTruthy()
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain(expectedMarkup)
+  expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
+})
+
 it('seeds the responsive navigation challenge as an editable multi-file project', async () => {
   const challenge = 'layout-responsive-responsive-navigation'
   const project = webChallengeProjectSlug('layout-responsive', challenge)

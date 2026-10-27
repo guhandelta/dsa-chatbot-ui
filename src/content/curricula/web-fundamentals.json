@@ -17,6 +17,10 @@
         {
           "title": "Inspecting a running page",
           "focus": "Use the Elements, Styles, Console, and Network panels to form and test a debugging hypothesis."
+        },
+        {
+          "title": "Project structure and version control",
+          "focus": "Name files and folders clearly, and save a working history with Git so each change can be reviewed or reverted."
         }
       ],
       "battery": [
@@ -175,6 +179,10 @@
         {
           "title": "Focus and keyboard behavior",
           "focus": "Keep a logical tab order, visible focus, and predictable submission behavior."
+        },
+        {
+          "title": "Autocomplete and input assistance",
+          "focus": "Use autocomplete tokens and input modes so people can fill forms faster on any device."
         }
       ],
       "battery": [
@@ -264,6 +272,10 @@
         {
           "title": "Typography, color, backgrounds, and borders",
           "focus": "Set readable type, contrast, decoration, surfaces, and robust visual states."
+        },
+        {
+          "title": "Transitions, animation, and motion",
+          "focus": "Animate state changes with transitions and keyframes, and respect the reduced-motion preference."
         }
       ],
       "battery": [
@@ -314,6 +326,26 @@
               "content": "/* Style the card to meet the challenge constraints. */\n:root {\n  color-scheme: light;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n}\n\nbody {\n  margin: 0;\n  padding: 1.5rem;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 42rem;\n}\n\n/* TODO: Make the card readable, responsive, and visually organized. */\n/* Requirements: clear type hierarchy, comfortable spacing, sufficient contrast, and a visible keyboard-focus state. */\n"
             }
           ]
+        },
+        {
+          "id": "css-foundations-motion-with-restraint",
+          "title": "Motion with restraint",
+          "task": "Add a hover and open/close transition to a disclosure panel that turns motion off when the user prefers reduced motion.",
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Motion with restraint</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>\n<main><p class=\"eyebrow\">CSS foundations · motion</p><h1>Motion with restraint</h1><p>Open the disclosure, add subtle state transitions, then test the reduced-motion preference.</p><section class=\"card\"><h2>Workshop details</h2><button id=\"details-toggle\" aria-expanded=\"false\" aria-controls=\"details-panel\">Show details</button><div id=\"details-panel\" class=\"panel\" aria-hidden=\"true\"><p>The session includes a demonstration, guided practice, and questions.</p></div></section><p id=\"motion-status\" role=\"status\" aria-live=\"polite\">The panel is closed.</p></main>\n<script src=\"script.js\"></script></body></html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n:root { color-scheme: light; font-family: system-ui, sans-serif; line-height: 1.5; }\nbody { background: #f5f7fb; color: #202d3b; margin: 0; }\nmain { margin-inline: auto; max-width: 44rem; padding: 2rem 1rem; }\n.eyebrow { color: #3156a3; font-weight: 700; }\nbutton { background: #244e9a; border: 0; border-radius: .4rem; color: white; cursor: pointer; font: inherit; padding: .65rem .9rem; }\n:focus-visible { outline: 3px solid #a24b00; outline-offset: 3px; }\n.card { background: white; border: 1px solid #cbd5e1; border-radius: .75rem; padding: 1.25rem; }\n.panel { max-height: 0; opacity: 0; overflow: hidden; }\n.panel.is-open { max-height: 12rem; opacity: 1; }\nbutton:hover { background: #18386f; }\n@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const toggle=document.querySelector('#details-toggle'), panel=document.querySelector('#details-panel'), status=document.querySelector('#motion-status');\ntoggle.addEventListener('click',()=>{const open=toggle.getAttribute('aria-expanded')==='true'; toggle.setAttribute('aria-expanded',String(!open)); toggle.textContent=open?'Show details':'Hide details'; panel.classList.toggle('is-open',!open); panel.setAttribute('aria-hidden',String(open)); status.textContent=open?'The panel is closed.':'The panel is open.';});\n"
+            }
+          ]
         }
       ]
     },
@@ -341,6 +373,10 @@
         {
           "title": "Images and intrinsic content",
           "focus": "Use responsive image sources, object fitting, and min/max sizing for long or variable content."
+        },
+        {
+          "title": "Positioning and stacking",
+          "focus": "Use position values, z-index, and stacking contexts to layer overlays, badges, and menus without surprises."
         }
       ],
       "battery": [
@@ -348,49 +384,49 @@
           "id": "layout-responsive-responsive-navigation",
           "title": "Responsive navigation",
           "task": "Make a navigation layout work for narrow screens, long labels, and keyboard focus.",
-        "kind": "build",
-        "starterFiles": [
-          {
-            "name": "index.html",
-            "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Neighborhood library</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <header class=\"site-header\">\n    <a class=\"brand\" href=\"#home\">Northside Library</a>\n    <nav aria-label=\"Main navigation\">\n      <ul class=\"nav-list\">\n        <li><a href=\"#events\">Events and community workshops</a></li>\n        <li><a href=\"#services\">Borrowing and digital services</a></li>\n        <li><a href=\"#visit\">Plan an accessible visit</a></li>\n      </ul>\n    </nav>\n  </header>\n  <main id=\"home\">\n    <h1>Welcome to Northside Library</h1>\n    <p>Find a quiet place to read, learn, and meet your neighbors.</p>\n    <section id=\"events\"><h2>Events</h2><p>Free workshops run throughout the month.</p></section>\n    <section id=\"services\"><h2>Services</h2><p>Borrow books, use a computer, or explore the digital collection.</p></section>\n    <section id=\"visit\"><h2>Plan your visit</h2><p>The entrance is step-free and a quiet room is available.</p></section>\n  </main>\n</body>\n</html>\n"
-          },
-          {
-            "name": "styles.css",
-            "content": "* {\n  box-sizing: border-box;\n}\n\nbody {\n  color: #203044;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\n.site-header {\n  align-items: center;\n  background: #edf4f7;\n  display: flex;\n  gap: 2rem;\n  justify-content: space-between;\n  padding: 1rem 1.5rem;\n}\n\n.brand {\n  color: #173e56;\n  font-weight: 750;\n  text-decoration: none;\n}\n\n.nav-list {\n  display: flex;\n  gap: 1.5rem;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\na {\n  color: #075e46;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 52rem;\n  padding: 1.5rem;\n}\n\nsection {\n  border-block-start: 1px solid #b7c7cf;\n  margin-block-start: 2rem;\n  padding-block-start: 1rem;\n}\n\n/* Test at 320px and 200% zoom. Let content drive the breakpoint. */\n"
-          }
-        ]
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Neighborhood library</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <header class=\"site-header\">\n    <a class=\"brand\" href=\"#home\">Northside Library</a>\n    <nav aria-label=\"Main navigation\">\n      <ul class=\"nav-list\">\n        <li><a href=\"#events\">Events and community workshops</a></li>\n        <li><a href=\"#services\">Borrowing and digital services</a></li>\n        <li><a href=\"#visit\">Plan an accessible visit</a></li>\n      </ul>\n    </nav>\n  </header>\n  <main id=\"home\">\n    <h1>Welcome to Northside Library</h1>\n    <p>Find a quiet place to read, learn, and meet your neighbors.</p>\n    <section id=\"events\"><h2>Events</h2><p>Free workshops run throughout the month.</p></section>\n    <section id=\"services\"><h2>Services</h2><p>Borrow books, use a computer, or explore the digital collection.</p></section>\n    <section id=\"visit\"><h2>Plan your visit</h2><p>The entrance is step-free and a quiet room is available.</p></section>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* {\n  box-sizing: border-box;\n}\n\nbody {\n  color: #203044;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\n.site-header {\n  align-items: center;\n  background: #edf4f7;\n  display: flex;\n  gap: 2rem;\n  justify-content: space-between;\n  padding: 1rem 1.5rem;\n}\n\n.brand {\n  color: #173e56;\n  font-weight: 750;\n  text-decoration: none;\n}\n\n.nav-list {\n  display: flex;\n  gap: 1.5rem;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\na {\n  color: #075e46;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 52rem;\n  padding: 1.5rem;\n}\n\nsection {\n  border-block-start: 1px solid #b7c7cf;\n  margin-block-start: 2rem;\n  padding-block-start: 1rem;\n}\n\n/* Test at 320px and 200% zoom. Let content drive the breakpoint. */\n"
+            }
+          ]
         },
         {
           "id": "layout-responsive-grid-under-pressure",
           "title": "Grid under pressure",
           "task": "Repair a card grid that overflows with narrow viewports and uneven card content.",
-        "kind": "debug",
-        "starterFiles": [
-          {
-            "name": "index.html",
-            "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Community tool library</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Tools you can borrow</h1>\n    <p>Browse the collection. Check the layout on a narrow screen and with unusually long content.</p>\n    <ul class=\"tool-grid\">\n      <li class=\"tool-card\"><h2>Hand tools</h2><p>Hammers, screwdrivers, and measuring tools for small home repairs.</p><a href=\"#hand-tools\">View hand tools</a></li>\n      <li class=\"tool-card\"><h2>Garden tools</h2><p>Borrow a spade, pruning shears, or a watering can.</p><a href=\"#garden-tools\">View garden tools</a></li>\n      <li class=\"tool-card\"><h2>Special order item</h2><p>Reference: COMMUNITY-TOOL-LIBRARY-RESERVATION-2026-10-27-EXTRA-LONG-CODE</p><a href=\"#special-order\">Check availability</a></li>\n    </ul>\n  </main>\n</body>\n</html>\n"
-          },
-          {
-            "name": "styles.css",
-            "content": "* {\n  box-sizing: border-box;\n}\n\nbody {\n  color: #253347;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 68rem;\n  padding: 1.5rem;\n}\n\n.tool-grid {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: repeat(3, 1fr);\n  list-style: none;\n  margin: 1.5rem 0;\n  padding: 0;\n}\n\n.tool-card {\n  border: 1px solid #98a8b5;\n  min-width: 18rem;\n  padding: 1rem;\n}\n\n.tool-card p {\n  white-space: nowrap;\n}\n\n.tool-card a {\n  color: #075e46;\n}\n\n:focus-visible {\n  outline: 3px solid #a34b00;\n  outline-offset: 3px;\n}\n"
-          }
-        ]
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Community tool library</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Tools you can borrow</h1>\n    <p>Browse the collection. Check the layout on a narrow screen and with unusually long content.</p>\n    <ul class=\"tool-grid\">\n      <li class=\"tool-card\"><h2>Hand tools</h2><p>Hammers, screwdrivers, and measuring tools for small home repairs.</p><a href=\"#hand-tools\">View hand tools</a></li>\n      <li class=\"tool-card\"><h2>Garden tools</h2><p>Borrow a spade, pruning shears, or a watering can.</p><a href=\"#garden-tools\">View garden tools</a></li>\n      <li class=\"tool-card\"><h2>Special order item</h2><p>Reference: COMMUNITY-TOOL-LIBRARY-RESERVATION-2026-10-27-EXTRA-LONG-CODE</p><a href=\"#special-order\">Check availability</a></li>\n    </ul>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* {\n  box-sizing: border-box;\n}\n\nbody {\n  color: #253347;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 68rem;\n  padding: 1.5rem;\n}\n\n.tool-grid {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: repeat(3, 1fr);\n  list-style: none;\n  margin: 1.5rem 0;\n  padding: 0;\n}\n\n.tool-card {\n  border: 1px solid #98a8b5;\n  min-width: 18rem;\n  padding: 1rem;\n}\n\n.tool-card p {\n  white-space: nowrap;\n}\n\n.tool-card a {\n  color: #075e46;\n}\n\n:focus-visible {\n  outline: 3px solid #a34b00;\n  outline-offset: 3px;\n}\n"
+            }
+          ]
         },
         {
           "id": "layout-responsive-viewport-variation-set",
           "title": "Viewport variation set",
           "task": "Check a page at narrow, medium, and wide widths and justify each layout transition.",
-        "kind": "review",
-        "starterFiles": [
-          {
-            "name": "index.html",
-            "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>City garden guide</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <header class=\"page-header\"><p class=\"eyebrow\">A neighborhood growing guide</p><h1>Make room for something green</h1><p>Ideas for growing food and flowers in small city spaces.</p></header>\n  <main>\n    <section class=\"guide-grid\" aria-label=\"Garden guides\">\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--sun\" aria-hidden=\"true\"></div><h2>Find the light</h2><p>Observe your space at different times of day before choosing plants.</p><a href=\"#light\">Read the light guide</a></article>\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--soil\" aria-hidden=\"true\"></div><h2>Choose a container</h2><p>Match container depth and drainage to the roots you plan to grow.</p><a href=\"#containers\">Compare containers</a></article>\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--water\" aria-hidden=\"true\"></div><h2>Water with care</h2><p>Check the soil and weather so your watering routine responds to the conditions.</p><a href=\"#watering\">Learn about watering</a></article>\n    </section>\n    <section class=\"observations\" aria-labelledby=\"observations-title\">\n      <h2 id=\"observations-title\">Viewport observations</h2>\n      <p>Resize the preview to a narrow phone, a medium tablet, and a wide desktop. Record what changes and why.</p>\n      <label for=\"notes\">What content or layout constraint justified each transition?</label>\n      <textarea id=\"notes\" rows=\"5\"></textarea>\n    </section>\n  </main>\n</body>\n</html>\n"
-          },
-          {
-            "name": "styles.css",
-            "content": ":root {\n  color-scheme: light;\n  font-family: system-ui, sans-serif;\n  line-height: 1.55;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nbody {\n  background: #f7f8f3;\n  color: #23352c;\n  margin: 0;\n}\n\n.page-header {\n  background: #e7f0e4;\n  padding: 2rem max(1rem, calc((100vw - 68rem) / 2));\n}\n\n.page-header h1 {\n  font-size: clamp(2rem, 5vw, 3.5rem);\n  line-height: 1.1;\n  max-width: 16ch;\n}\n\n.eyebrow {\n  font-size: 0.8rem;\n  font-weight: 700;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 68rem;\n  padding: 1.5rem;\n}\n\n.guide-grid {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: 1fr;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\n.guide-card {\n  background: white;\n  border: 1px solid #c6d1c4;\n  border-radius: 0.75rem;\n  padding: 1rem;\n}\n\n.guide-art {\n  aspect-ratio: 16 / 7;\n  border-radius: 0.5rem;\n}\n\n.guide-art--sun { background: linear-gradient(120deg, #e6b458, #f6e7be); }\n.guide-art--soil { background: linear-gradient(120deg, #9b6b4b, #e6c39d); }\n.guide-art--water { background: linear-gradient(120deg, #5c9a9a, #d0e7df); }\n\n.guide-card a {\n  color: #075e46;\n}\n\n.observations {\n  margin-block: 2rem;\n}\n\ntextarea {\n  box-sizing: border-box;\n  display: block;\n  font: inherit;\n  max-width: 100%;\n  width: 100%;\n}\n\n@media (min-width: 42rem) {\n  .guide-grid {\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n  }\n}\n\n@media (min-width: 68rem) {\n  .guide-grid {\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n  }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after {\n    scroll-behavior: auto !important;\n    animation-duration: 0.01ms !important;\n    transition-duration: 0.01ms !important;\n  }\n}\n"
-          }
-        ]
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>City garden guide</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <header class=\"page-header\"><p class=\"eyebrow\">A neighborhood growing guide</p><h1>Make room for something green</h1><p>Ideas for growing food and flowers in small city spaces.</p></header>\n  <main>\n    <section class=\"guide-grid\" aria-label=\"Garden guides\">\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--sun\" aria-hidden=\"true\"></div><h2>Find the light</h2><p>Observe your space at different times of day before choosing plants.</p><a href=\"#light\">Read the light guide</a></article>\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--soil\" aria-hidden=\"true\"></div><h2>Choose a container</h2><p>Match container depth and drainage to the roots you plan to grow.</p><a href=\"#containers\">Compare containers</a></article>\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--water\" aria-hidden=\"true\"></div><h2>Water with care</h2><p>Check the soil and weather so your watering routine responds to the conditions.</p><a href=\"#watering\">Learn about watering</a></article>\n    </section>\n    <section class=\"observations\" aria-labelledby=\"observations-title\">\n      <h2 id=\"observations-title\">Viewport observations</h2>\n      <p>Resize the preview to a narrow phone, a medium tablet, and a wide desktop. Record what changes and why.</p>\n      <label for=\"notes\">What content or layout constraint justified each transition?</label>\n      <textarea id=\"notes\" rows=\"5\"></textarea>\n    </section>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": ":root {\n  color-scheme: light;\n  font-family: system-ui, sans-serif;\n  line-height: 1.55;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nbody {\n  background: #f7f8f3;\n  color: #23352c;\n  margin: 0;\n}\n\n.page-header {\n  background: #e7f0e4;\n  padding: 2rem max(1rem, calc((100vw - 68rem) / 2));\n}\n\n.page-header h1 {\n  font-size: clamp(2rem, 5vw, 3.5rem);\n  line-height: 1.1;\n  max-width: 16ch;\n}\n\n.eyebrow {\n  font-size: 0.8rem;\n  font-weight: 700;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 68rem;\n  padding: 1.5rem;\n}\n\n.guide-grid {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: 1fr;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\n.guide-card {\n  background: white;\n  border: 1px solid #c6d1c4;\n  border-radius: 0.75rem;\n  padding: 1rem;\n}\n\n.guide-art {\n  aspect-ratio: 16 / 7;\n  border-radius: 0.5rem;\n}\n\n.guide-art--sun { background: linear-gradient(120deg, #e6b458, #f6e7be); }\n.guide-art--soil { background: linear-gradient(120deg, #9b6b4b, #e6c39d); }\n.guide-art--water { background: linear-gradient(120deg, #5c9a9a, #d0e7df); }\n\n.guide-card a {\n  color: #075e46;\n}\n\n.observations {\n  margin-block: 2rem;\n}\n\ntextarea {\n  box-sizing: border-box;\n  display: block;\n  font: inherit;\n  max-width: 100%;\n  width: 100%;\n}\n\n@media (min-width: 42rem) {\n  .guide-grid {\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n  }\n}\n\n@media (min-width: 68rem) {\n  .guide-grid {\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n  }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after {\n    scroll-behavior: auto !important;\n    animation-duration: 0.01ms !important;\n    transition-duration: 0.01ms !important;\n  }\n}\n"
+            }
+          ]
         }
       ]
     },
@@ -414,6 +450,10 @@
         {
           "title": "Utility and component frameworks",
           "focus": "Compare Bootstrap, Bulma, and Tailwind patterns, configuration, and generated styles."
+        },
+        {
+          "title": "Theming and color schemes",
+          "focus": "Build light and dark palettes from the same tokens, and follow the user's prefers-color-scheme setting."
         }
       ],
       "battery": [
@@ -495,6 +535,10 @@
         {
           "title": "Language-specific behavior",
           "focus": "Understand this, prototypes, destructuring, optional chaining, and other JavaScript idioms."
+        },
+        {
+          "title": "Internationalization basics",
+          "focus": "Format numbers, currency, dates, and plural forms with Intl so the interface reads correctly for every locale."
         }
       ],
       "battery": [
@@ -642,6 +686,26 @@
               "content": "const tabs = [...document.querySelectorAll('[role=tab]')];\nconst panels = tabs.map((tab) => document.querySelector(`#${tab.getAttribute('aria-controls')}`));\n\nfunction activateTab(index, moveFocus = false) {\n  tabs.forEach((tab, tabIndex) => {\n    const selected = tabIndex === index;\n    tab.setAttribute('aria-selected', String(selected));\n    tab.tabIndex = selected ? 0 : -1;\n    panels[tabIndex].hidden = !selected;\n  });\n  if (moveFocus) tabs[index].focus();\n}\n\n// Bug: all tabs start in the Tab order, and arrow keys do not move selection.\n// Add roving tabindex and keep keyboard focus and the visible panel synchronized.\ntabs.forEach((tab, index) => {\n  tab.addEventListener('click', () => activateTab(index));\n});\n"
             }
           ]
+        },
+        {
+          "id": "dom-events-accessible-dialog",
+          "title": "Accessible dialog",
+          "task": "Build a modal dialog that moves focus in when it opens, keeps focus inside while open, closes with Escape, and returns focus to the trigger.",
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Accessible dialog</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>\n<main><p class=\"eyebrow\">DOM, events, and interaction</p><h1>Accessible dialog</h1><p>Use native dialog behavior. Test open, keyboard navigation, Escape, close, and returned focus.</p><button id=\"open-dialog\">View workshop details</button><dialog id=\"workshop-dialog\" aria-labelledby=\"dialog-title\" aria-describedby=\"dialog-description\"><h2 id=\"dialog-title\">Community repair workshop</h2><p id=\"dialog-description\">Bring a small household item. Volunteers will help you inspect and repair it.</p><a href=\"#info\">Read accessibility information</a><form method=\"dialog\"><button>Close dialog</button></form></dialog><section id=\"info\"><h2>Before you visit</h2><p>The entrance is step-free. Ask the library team about other accommodations.</p></section><p id=\"dialog-status\" role=\"status\" aria-live=\"polite\">Dialog is closed.</p></main>\n<script src=\"script.js\"></script></body></html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n:root { color-scheme: light; font-family: system-ui, sans-serif; line-height: 1.5; }\nbody { background: #f5f7fb; color: #202d3b; margin: 0; }\nmain { margin-inline: auto; max-width: 44rem; padding: 2rem 1rem; }\n.eyebrow { color: #3156a3; font-weight: 700; }\nbutton { background: #244e9a; border: 0; border-radius: .4rem; color: white; cursor: pointer; font: inherit; padding: .65rem .9rem; }\n:focus-visible { outline: 3px solid #a24b00; outline-offset: 3px; }\ndialog { border: 2px solid #345b48; border-radius: .75rem; max-width: min(34rem,calc(100% - 2rem)); padding: 1.25rem; }\ndialog::backdrop { background: rgb(15 25 20 / 65%); }\ndialog form { margin-block-start: 1rem; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const openButton=document.querySelector('#open-dialog'), dialog=document.querySelector('#workshop-dialog'), status=document.querySelector('#dialog-status');\nopenButton.addEventListener('click',()=>{dialog.showModal(); status.textContent='Dialog is open.';});\ndialog.addEventListener('close',()=>{status.textContent='Dialog is closed. Focus should return to the trigger.';});\n"
+            }
+          ]
         }
       ]
     },
@@ -665,6 +729,10 @@
         {
           "title": "Observers and platform APIs",
           "focus": "Choose APIs such as ResizeObserver and MutationObserver for the job rather than polling."
+        },
+        {
+          "title": "Timing control",
+          "focus": "Debounce search input and throttle scroll or resize handlers, and know when each is the right choice."
         }
       ],
       "battery": [
@@ -835,6 +903,10 @@
         {
           "title": "Validation and regression prevention",
           "focus": "Confirm the fix against the original failure and nearby behavior."
+        },
+        {
+          "title": "Automated behavior checks",
+          "focus": "Write small assertions in script.js that confirm the DOM state after an interaction, and show pass or fail results on the page."
         }
       ],
       "battery": [
@@ -920,6 +992,14 @@
         {
           "title": "Progressive enhancement",
           "focus": "Keep core content useful when scripts, APIs, or network resources are unavailable."
+        },
+        {
+          "title": "Core Web Vitals",
+          "focus": "Understand what LCP, INP, and CLS measure, and which page changes can move each metric."
+        },
+        {
+          "title": "Front-end security basics",
+          "focus": "Escape untrusted text, avoid unsafe HTML insertion, use safe external links, and understand Content Security Policy."
         }
       ],
       "battery": [
@@ -982,6 +1062,26 @@
               "content": "const form = document.querySelector('#review-form');\nconst result = document.querySelector('#result');\nconst history = document.querySelector('#history');\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  const symptom = form.querySelector('#symptom').value.trim();\n  const before = Number(form.querySelector('#before').value);\n  const after = Number(form.querySelector('#after').value);\n  const change = form.querySelector('#change').value.trim();\n  if (!symptom || !change || !Number.isFinite(before) || !Number.isFinite(after) || before <= 0 || after < 0) {\n    result.textContent = 'Enter a symptom, a change, a positive before duration, and a non-negative after duration.';\n    return;\n  }\n\n  const improvement = ((before - after) / before) * 100;\n  const direction = improvement >= 0 ? 'faster' : 'slower';\n  const item = document.createElement('li');\n  item.textContent = `${symptom}: ${before} ms → ${after} ms (${Math.abs(improvement).toFixed(1)}% ${direction}); change: ${change}`;\n  history.prepend(item);\n  result.textContent = `Recorded ${Math.abs(improvement).toFixed(1)}% ${direction}. Repeat measurements under similar conditions before drawing a conclusion.`;\n});\n"
             }
           ]
+        },
+        {
+          "id": "performance-safe-rendering-review",
+          "title": "Safe rendering review",
+          "task": "Find an unsafe HTML insertion and an unsafe external link in a supplied page, then repair both without breaking the content.",
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Safe rendering review</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>\n<main><p class=\"eyebrow\">Production readiness · security</p><h1>Safe rendering review</h1><p>Enter a note and inspect how it is rendered. Review the insertion and external link.</p><form id=\"note-form\"><label for=\"note-input\">Your note</label><textarea id=\"note-input\" rows=\"3\" required></textarea><button>Add note</button></form><section aria-labelledby=\"notes-heading\"><h2 id=\"notes-heading\">Notes</h2><ul id=\"notes-list\"></ul></section><p><a href=\"https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent\" target=\"_blank\">Read about safe text rendering</a></p><p id=\"render-status\" role=\"status\" aria-live=\"polite\"></p></main>\n<script src=\"script.js\"></script></body></html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n:root { color-scheme: light; font-family: system-ui, sans-serif; line-height: 1.5; }\nbody { background: #f5f7fb; color: #202d3b; margin: 0; }\nmain { margin-inline: auto; max-width: 44rem; padding: 2rem 1rem; }\n.eyebrow { color: #3156a3; font-weight: 700; }\nbutton { background: #244e9a; border: 0; border-radius: .4rem; color: white; cursor: pointer; font: inherit; padding: .65rem .9rem; }\n:focus-visible { outline: 3px solid #a24b00; outline-offset: 3px; }\nform { display: grid; gap: .65rem; }\ntextarea { font: inherit; max-width: 100%; padding: .65rem; width: 100%; }\nli { overflow-wrap: anywhere; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form=document.querySelector('#note-form'), input=document.querySelector('#note-input'), list=document.querySelector('#notes-list'), status=document.querySelector('#render-status');\nform.addEventListener('submit',(event)=>{event.preventDefault(); const note=input.value.trim(); if(!note)return; const item=document.createElement('li');\n// Debug exercise: user input is interpreted as markup.\nitem.innerHTML='<p>'+note+'</p>'; list.append(item); input.value=''; status.textContent='Note added.';});\n"
+            }
+          ]
         }
       ]
     },
@@ -1001,6 +1101,10 @@
         {
           "title": "Verify and reflect",
           "focus": "Check functionality, accessibility, responsiveness, and performance; explain tradeoffs."
+        },
+        {
+          "title": "Handoff",
+          "focus": "Prepare a README, screenshots, and a list of known limitations so others can run and judge the work."
         }
       ],
       "battery": [
@@ -1008,13 +1112,41 @@
           "id": "capstone-build-a-small-multi-state-interface",
           "title": "Build a small multi-state interface",
           "task": "Create a responsive, accessible interface with at least one form or dynamic interaction.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Capstone · Workshop reservation</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <header><p class=\"eyebrow\">Web fundamentals capstone</p><h1>Reserve a workshop seat</h1><p>Build a responsive reservation experience for a neighborhood learning studio.</p></header>\n    <div class=\"layout\">\n      <section class=\"card\" aria-labelledby=\"reservation-heading\"><h2 id=\"reservation-heading\">Your reservation</h2>\n        <form id=\"reservation-form\">\n          <div class=\"field\"><label for=\"full-name\">Name</label><input id=\"full-name\" name=\"name\" autocomplete=\"name\" required></div>\n          <div class=\"field\"><label for=\"email\">Email</label><input id=\"email\" name=\"email\" type=\"email\" autocomplete=\"email\" required></div>\n          <div class=\"field\"><label for=\"session\">Choose a session</label><select id=\"session\" name=\"session\" required><option value=\"\">Select a workshop</option><option value=\"web\">Build your first web page · Saturday, 10:00</option><option value=\"accessibility\">Accessible design basics · Sunday, 13:00</option></select></div>\n          <button type=\"submit\">Reserve a seat</button>\n        </form><p id=\"reservation-status\" role=\"status\" aria-live=\"polite\"></p>\n      </section>\n      <aside class=\"card\" aria-labelledby=\"requirements\"><h2 id=\"requirements\">Project requirements</h2><ul><li>Labels and visible keyboard focus</li><li>Validation and confirmation states</li><li>Narrow and wide layouts</li><li>Readable contrast and reduced motion</li></ul><p>This local demo has no backend; document that limitation.</p></aside>\n    </div>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n:root { color-scheme: light; font: 1rem/1.5 system-ui, sans-serif; }\nbody { background: #f2f5f3; color: #1f3028; margin: 0; }\nmain { margin-inline: auto; max-width: 68rem; padding: 2rem 1rem; }\n.eyebrow { color: #176b50; font-weight: 700; }\n.layout { display: grid; gap: 1rem; }\n.card { background: white; border: 1px solid #c6d4c8; border-radius: .8rem; padding: 1.25rem; }\nform,.field { display: grid; gap: .7rem; }\nform { margin-block: 1rem; }\ninput,select,button { font: inherit; max-width: 100%; padding: .65rem; }\nbutton { background: #176b50; border: 0; border-radius: .4rem; color: white; cursor: pointer; justify-self: start; }\n:focus-visible { outline: 3px solid #a24b00; outline-offset: 3px; }\n@media (min-width: 48rem) { .layout { align-items: start; grid-template-columns: minmax(0,1.4fr) minmax(16rem,.8fr); } }\n@media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#reservation-form');\nconst status = document.querySelector('#reservation-status');\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  if (!form.reportValidity()) return;\n  const data = new FormData(form);\n  const session = form.querySelector('#session').selectedOptions[0].textContent;\n  status.textContent = 'Thanks, ' + data.get('name') + '. Your request for ' + session + ' is recorded in this local demo; nothing was sent to a server.';\n  form.reset();\n});\n"
+            }
+          ]
         },
         {
           "id": "capstone-capstone-review",
           "title": "Capstone review",
-          "task": "Use a provided rubric to test behavior, keyboard access, narrow layouts, and error states.",
-          "kind": "review"
+          "task": "Use the provided rubric to test behavior, keyboard access, narrow layouts, and error states; record limitations and handoff notes.",
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Capstone · Review and handoff</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Web fundamentals capstone</p><h1>Review and handoff</h1>\n    <p>Review the running project with a keyboard and at a narrow viewport, then record what a reviewer should know.</p>\n    <section class=\"card\"><h2>Review rubric</h2><ul id=\"rubric-list\">\n      <li><label><input type=\"checkbox\"> Main task works from start to finish</label></li>\n      <li><label><input type=\"checkbox\"> Empty, invalid, and success states are understandable</label></li>\n      <li><label><input type=\"checkbox\"> Every action is usable by keyboard</label></li>\n      <li><label><input type=\"checkbox\"> Focus is visible and sensibly ordered</label></li>\n      <li><label><input type=\"checkbox\"> Layout works at 320px without horizontal scrolling</label></li>\n      <li><label><input type=\"checkbox\"> Text and controls have contrast and clear labels</label></li>\n      <li><label><input type=\"checkbox\"> Console is clear and limitations are documented</label></li>\n    </ul><p id=\"rubric-progress\" role=\"status\" aria-live=\"polite\">0 of 7 checks complete.</p></section>\n    <section class=\"card\"><h2>Handoff notes</h2><label for=\"handoff-notes\">What should a reviewer know?</label><textarea id=\"handoff-notes\" rows=\"5\" placeholder=\"How to run it, decisions, and known limitations…\"></textarea><p>Include a README and screenshots with your finished project.</p></section>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n:root { color-scheme: light; font: 1rem/1.5 system-ui, sans-serif; }\nbody { background: #f2f5f3; color: #1f3028; margin: 0; }\nmain { margin-inline: auto; max-width: 68rem; padding: 2rem 1rem; }\n.eyebrow { color: #176b50; font-weight: 700; }\n.layout { display: grid; gap: 1rem; }\n.card { background: white; border: 1px solid #c6d4c8; border-radius: .8rem; padding: 1.25rem; }\nform,.field { display: grid; gap: .7rem; }\nform { margin-block: 1rem; }\ninput,select,button { font: inherit; max-width: 100%; padding: .65rem; }\nbutton { background: #176b50; border: 0; border-radius: .4rem; color: white; cursor: pointer; justify-self: start; }\n:focus-visible { outline: 3px solid #a24b00; outline-offset: 3px; }\n@media (min-width: 48rem) { .layout { align-items: start; grid-template-columns: minmax(0,1.4fr) minmax(16rem,.8fr); } }\n@media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }\n.card { margin-block: 1rem; }\n#rubric-list { list-style: none; padding: 0; }\n#rubric-list li { margin-block: .7rem; }\n#rubric-list label { align-items: start; display: flex; gap: .6rem; }\n#rubric-list input { min-height: 1.2rem; min-width: 1.2rem; }\ntextarea { display: block; font: inherit; max-width: 100%; padding: .65rem; width: 100%; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const checks = [...document.querySelectorAll('#rubric-list input[type=\"checkbox\"]')];\nconst progress = document.querySelector('#rubric-progress');\nfunction updateProgress() {\n  const complete = checks.filter((check) => check.checked).length;\n  progress.textContent = complete + ' of ' + checks.length + ' checks complete.';\n}\nchecks.forEach((check) => check.addEventListener('change', updateProgress));\n"
+            }
+          ]
         }
       ]
     }
