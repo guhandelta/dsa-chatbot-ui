@@ -348,19 +348,49 @@
           "id": "layout-responsive-responsive-navigation",
           "title": "Responsive navigation",
           "task": "Make a navigation layout work for narrow screens, long labels, and keyboard focus.",
-          "kind": "build"
+        "kind": "build",
+        "starterFiles": [
+          {
+            "name": "index.html",
+            "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Neighborhood library</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <header class=\"site-header\">\n    <a class=\"brand\" href=\"#home\">Northside Library</a>\n    <nav aria-label=\"Main navigation\">\n      <ul class=\"nav-list\">\n        <li><a href=\"#events\">Events and community workshops</a></li>\n        <li><a href=\"#services\">Borrowing and digital services</a></li>\n        <li><a href=\"#visit\">Plan an accessible visit</a></li>\n      </ul>\n    </nav>\n  </header>\n  <main id=\"home\">\n    <h1>Welcome to Northside Library</h1>\n    <p>Find a quiet place to read, learn, and meet your neighbors.</p>\n    <section id=\"events\"><h2>Events</h2><p>Free workshops run throughout the month.</p></section>\n    <section id=\"services\"><h2>Services</h2><p>Borrow books, use a computer, or explore the digital collection.</p></section>\n    <section id=\"visit\"><h2>Plan your visit</h2><p>The entrance is step-free and a quiet room is available.</p></section>\n  </main>\n</body>\n</html>\n"
+          },
+          {
+            "name": "styles.css",
+            "content": "* {\n  box-sizing: border-box;\n}\n\nbody {\n  color: #203044;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\n.site-header {\n  align-items: center;\n  background: #edf4f7;\n  display: flex;\n  gap: 2rem;\n  justify-content: space-between;\n  padding: 1rem 1.5rem;\n}\n\n.brand {\n  color: #173e56;\n  font-weight: 750;\n  text-decoration: none;\n}\n\n.nav-list {\n  display: flex;\n  gap: 1.5rem;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\na {\n  color: #075e46;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 52rem;\n  padding: 1.5rem;\n}\n\nsection {\n  border-block-start: 1px solid #b7c7cf;\n  margin-block-start: 2rem;\n  padding-block-start: 1rem;\n}\n\n/* Test at 320px and 200% zoom. Let content drive the breakpoint. */\n"
+          }
+        ]
         },
         {
           "id": "layout-responsive-grid-under-pressure",
           "title": "Grid under pressure",
           "task": "Repair a card grid that overflows with narrow viewports and uneven card content.",
-          "kind": "debug"
+        "kind": "debug",
+        "starterFiles": [
+          {
+            "name": "index.html",
+            "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Community tool library</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Tools you can borrow</h1>\n    <p>Browse the collection. Check the layout on a narrow screen and with unusually long content.</p>\n    <ul class=\"tool-grid\">\n      <li class=\"tool-card\"><h2>Hand tools</h2><p>Hammers, screwdrivers, and measuring tools for small home repairs.</p><a href=\"#hand-tools\">View hand tools</a></li>\n      <li class=\"tool-card\"><h2>Garden tools</h2><p>Borrow a spade, pruning shears, or a watering can.</p><a href=\"#garden-tools\">View garden tools</a></li>\n      <li class=\"tool-card\"><h2>Special order item</h2><p>Reference: COMMUNITY-TOOL-LIBRARY-RESERVATION-2026-10-27-EXTRA-LONG-CODE</p><a href=\"#special-order\">Check availability</a></li>\n    </ul>\n  </main>\n</body>\n</html>\n"
+          },
+          {
+            "name": "styles.css",
+            "content": "* {\n  box-sizing: border-box;\n}\n\nbody {\n  color: #253347;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 68rem;\n  padding: 1.5rem;\n}\n\n.tool-grid {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: repeat(3, 1fr);\n  list-style: none;\n  margin: 1.5rem 0;\n  padding: 0;\n}\n\n.tool-card {\n  border: 1px solid #98a8b5;\n  min-width: 18rem;\n  padding: 1rem;\n}\n\n.tool-card p {\n  white-space: nowrap;\n}\n\n.tool-card a {\n  color: #075e46;\n}\n\n:focus-visible {\n  outline: 3px solid #a34b00;\n  outline-offset: 3px;\n}\n"
+          }
+        ]
         },
         {
           "id": "layout-responsive-viewport-variation-set",
           "title": "Viewport variation set",
           "task": "Check a page at narrow, medium, and wide widths and justify each layout transition.",
-          "kind": "review"
+        "kind": "review",
+        "starterFiles": [
+          {
+            "name": "index.html",
+            "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>City garden guide</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <header class=\"page-header\"><p class=\"eyebrow\">A neighborhood growing guide</p><h1>Make room for something green</h1><p>Ideas for growing food and flowers in small city spaces.</p></header>\n  <main>\n    <section class=\"guide-grid\" aria-label=\"Garden guides\">\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--sun\" aria-hidden=\"true\"></div><h2>Find the light</h2><p>Observe your space at different times of day before choosing plants.</p><a href=\"#light\">Read the light guide</a></article>\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--soil\" aria-hidden=\"true\"></div><h2>Choose a container</h2><p>Match container depth and drainage to the roots you plan to grow.</p><a href=\"#containers\">Compare containers</a></article>\n      <article class=\"guide-card\"><div class=\"guide-art guide-art--water\" aria-hidden=\"true\"></div><h2>Water with care</h2><p>Check the soil and weather so your watering routine responds to the conditions.</p><a href=\"#watering\">Learn about watering</a></article>\n    </section>\n    <section class=\"observations\" aria-labelledby=\"observations-title\">\n      <h2 id=\"observations-title\">Viewport observations</h2>\n      <p>Resize the preview to a narrow phone, a medium tablet, and a wide desktop. Record what changes and why.</p>\n      <label for=\"notes\">What content or layout constraint justified each transition?</label>\n      <textarea id=\"notes\" rows=\"5\"></textarea>\n    </section>\n  </main>\n</body>\n</html>\n"
+          },
+          {
+            "name": "styles.css",
+            "content": ":root {\n  color-scheme: light;\n  font-family: system-ui, sans-serif;\n  line-height: 1.55;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nbody {\n  background: #f7f8f3;\n  color: #23352c;\n  margin: 0;\n}\n\n.page-header {\n  background: #e7f0e4;\n  padding: 2rem max(1rem, calc((100vw - 68rem) / 2));\n}\n\n.page-header h1 {\n  font-size: clamp(2rem, 5vw, 3.5rem);\n  line-height: 1.1;\n  max-width: 16ch;\n}\n\n.eyebrow {\n  font-size: 0.8rem;\n  font-weight: 700;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 68rem;\n  padding: 1.5rem;\n}\n\n.guide-grid {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: 1fr;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n\n.guide-card {\n  background: white;\n  border: 1px solid #c6d1c4;\n  border-radius: 0.75rem;\n  padding: 1rem;\n}\n\n.guide-art {\n  aspect-ratio: 16 / 7;\n  border-radius: 0.5rem;\n}\n\n.guide-art--sun { background: linear-gradient(120deg, #e6b458, #f6e7be); }\n.guide-art--soil { background: linear-gradient(120deg, #9b6b4b, #e6c39d); }\n.guide-art--water { background: linear-gradient(120deg, #5c9a9a, #d0e7df); }\n\n.guide-card a {\n  color: #075e46;\n}\n\n.observations {\n  margin-block: 2rem;\n}\n\ntextarea {\n  box-sizing: border-box;\n  display: block;\n  font: inherit;\n  max-width: 100%;\n  width: 100%;\n}\n\n@media (min-width: 42rem) {\n  .guide-grid {\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n  }\n}\n\n@media (min-width: 68rem) {\n  .guide-grid {\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n  }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after {\n    scroll-behavior: auto !important;\n    animation-duration: 0.01ms !important;\n    transition-duration: 0.01ms !important;\n  }\n}\n"
+          }
+        ]
         }
       ]
     },

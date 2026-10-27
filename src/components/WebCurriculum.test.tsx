@@ -68,6 +68,25 @@ it('provides a CSS file and page scaffold for each CSS foundations challenge', (
   expect(repair?.starterFiles?.find((file) => file.name === 'styles.css')?.content).toContain('box-sizing: content-box')
 })
 
+it('provides a complete responsive-layout workspace for every core challenge', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'layout-responsive')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css'])
+  }
+
+  const workspaces = Object.fromEntries((section?.battery ?? []).map((challenge) => [
+    challenge.id,
+    Object.fromEntries((challenge.starterFiles ?? []).map((file) => [file.name, file.content])),
+  ]))
+  expect(workspaces['layout-responsive-responsive-navigation']['index.html']).toContain('<nav aria-label="Main navigation">')
+  expect(workspaces['layout-responsive-responsive-navigation']['styles.css']).toContain('display: flex')
+  expect(workspaces['layout-responsive-grid-under-pressure']['styles.css']).toContain('grid-template-columns: repeat(3, 1fr)')
+  expect(workspaces['layout-responsive-grid-under-pressure']['styles.css']).toContain('white-space: nowrap')
+  expect(workspaces['layout-responsive-viewport-variation-set']['index.html']).toContain('Viewport observations')
+  expect(workspaces['layout-responsive-viewport-variation-set']['styles.css']).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true

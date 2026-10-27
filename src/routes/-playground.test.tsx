@@ -130,6 +130,51 @@ it('seeds the clipped-card CSS challenge with the overflowing layout to inspect'
   expect(css.value).toContain('box-sizing: content-box')
 })
 
+it('seeds the responsive navigation challenge as an editable multi-file project', async () => {
+  const challenge = 'layout-responsive-responsive-navigation'
+  const project = webChallengeProjectSlug('layout-responsive', challenge)
+  state.search = { project, template: 'html-css-js', section: 'layout-responsive', challenge }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: 'Responsive navigation' })).toBeTruthy()
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain('<nav aria-label="Main navigation">')
+  fireEvent.click(screen.getByRole('tab', { name: 'styles.css' }))
+  const css = await screen.findByRole('textbox', { name: 'styles.css editor' }) as HTMLTextAreaElement
+  expect(css.value).toContain('.nav-list')
+  expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
+})
+
+it('seeds the grid-under-pressure challenge with its intentional overflow bug', async () => {
+  const challenge = 'layout-responsive-grid-under-pressure'
+  const project = webChallengeProjectSlug('layout-responsive', challenge)
+  state.search = { project, template: 'html-css-js', section: 'layout-responsive', challenge }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: 'Grid under pressure' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('tab', { name: 'styles.css' }))
+  const css = await screen.findByRole('textbox', { name: 'styles.css editor' }) as HTMLTextAreaElement
+  expect(css.value).toContain('grid-template-columns: repeat(3, 1fr)')
+  expect(css.value).toContain('min-width: 18rem')
+  expect(css.value).toContain('white-space: nowrap')
+})
+
+it('seeds the viewport review challenge with observations and real responsive breakpoints', async () => {
+  const challenge = 'layout-responsive-viewport-variation-set'
+  const project = webChallengeProjectSlug('layout-responsive', challenge)
+  state.search = { project, template: 'html-css-js', section: 'layout-responsive', challenge }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: 'Viewport variation set' })).toBeTruthy()
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain('Viewport observations')
+  fireEvent.click(screen.getByRole('tab', { name: 'styles.css' }))
+  const css = await screen.findByRole('textbox', { name: 'styles.css editor' }) as HTMLTextAreaElement
+  expect(css.value).toContain('min-width: 42rem')
+  expect(css.value).toContain('min-width: 68rem')
+  expect(css.value).toContain('prefers-reduced-motion: reduce')
+})
+
 it('confirms and autosaves a challenge reset to its starter files', async () => {
   const challenge = 'browser-trace-a-page-load'
   const project = webChallengeProjectSlug('browser', challenge)
