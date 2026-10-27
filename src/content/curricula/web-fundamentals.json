@@ -1151,23 +1151,168 @@
       "lessons": [
         {
           "title": "Custom properties and design tokens",
-          "focus": "Create scoped tokens, theme variants, and meaningful fallbacks."
+          "focus": "Create scoped tokens, theme variants, and meaningful fallbacks.",
+          "teaching": {
+            "objectives": [
+              "Define CSS custom properties as reusable design tokens and explain their cascade and inheritance.",
+              "Provide intentional fallbacks and scope token changes to components or themes."
+            ],
+            "explanation": [
+              "A custom property uses a name beginning with two hyphens and is consumed with var(). Unlike a preprocessor variable, it remains in the stylesheet at runtime, inherits by default, and participates in the cascade. This lets a theme or component subtree override a value without generating a separate selector for every component. Use tokens for decisions that recur, such as spacing, colors, radii, and typography, and name them for their role rather than their current literal value.",
+              "The second argument to var() is a fallback used when the custom property is missing or invalid at substitution time. It does not generally recover from a value that exists but is invalid for the consuming property. The @property rule can declare a syntax, initial value, and inheritance behavior for a custom property where supported. Keep token scopes understandable: global foundation tokens can feed semantic aliases, which then feed component styles."
+            ],
+            "example": {
+              "code": ":root {\n  --color-brand: #075e9a;\n  --color-surface: #fff;\n  --color-text: #172b3a;\n  --space-control: 0.75rem;\n}\n\n:root[data-theme=\"dark\"] {\n  --color-surface: #172b3a;\n  --color-text: #f5f8fa;\n}\n\n.button {\n  background: var(--button-bg, var(--color-brand, #075e9a));\n  color: var(--button-text, #fff);\n  padding: var(--space-control, 0.75rem);\n}\n\n@supports (color: color-mix(in srgb, black, white)) {\n  .button:hover { background: color-mix(in srgb, var(--color-brand), black 12%); }\n}",
+              "walkthrough": [
+                "Root properties provide defaults inherited by descendants.",
+                "The data-theme selector changes only the dark surface and text tokens, so the brand token remains shared.",
+                "A component-specific token can override a semantic theme token, with a final literal fallback for missing values.",
+                "The feature query applies color-mix only when the browser supports the syntax."
+              ]
+            },
+            "misconceptions": [
+              "Custom properties are runtime values and can vary by element; they are not simple text-replacement constants.",
+              "The var() fallback is used for a missing or invalid custom property, not every invalid computed declaration that consumes it.",
+              "Tokens do not guarantee accessible color combinations; test each foreground and surface pairing in every theme."
+            ],
+            "check": {
+              "prompt": "A component reads var(--panel-gap, 1rem), but an ancestor defines --panel-gap: nonsense. Will the consuming declaration reliably use 1rem as its fallback?",
+              "answer": "No. Because --panel-gap is defined, the var() fallback is not a general fallback for a value that is invalid for the consuming property; that declaration may become invalid at computed-value time. Fix the token at its source or validate it with an appropriate @property registration.",
+              "explanation": "The fallback argument handles a missing or invalid custom property value during substitution, not all invalid values in the final property context."
+            }
+          }
         },
         {
           "title": "Architecture and component styling",
-          "focus": "Name classes, control scope, reduce accidental coupling, and organize responsive states."
+          "focus": "Name classes, control scope, reduce accidental coupling, and organize responsive states.",
+          "teaching": {
+            "objectives": [
+              "Choose class names and component boundaries that communicate purpose and limit style leakage.",
+              "Organize CSS around predictable layers, responsive states, and reusable variants."
+            ],
+            "explanation": [
+              "Component CSS should make its intended scope easy to see. A naming convention such as block__element--modifier can communicate the component relationship without requiring a framework. Use classes for reusable styling, keep selectors shallow, and prefer a component root or explicit variant class over selectors that depend on deep markup. Avoid styling based on incidental DOM structure when the structure may change.",
+              "A maintainable stylesheet has an order that readers can predict: reset or base rules, tokens, layout, components, utilities, and narrowly scoped overrides. Cascade layers can make these priorities explicit. Put responsive rules near the component they change or organize them consistently, and keep state styles such as hover, focus-visible, disabled, and invalid complete. Reuse a component when its behavior and meaning repeat; do not abstract one-off differences into an unbounded set of modifiers."
+            ],
+            "example": {
+              "code": "@layer reset, tokens, base, components, utilities;\n\n@layer components {\n  .notice {\n    border-inline-start: 0.25rem solid var(--notice-accent, #075e9a);\n    padding: 1rem;\n  }\n\n  .notice__title { margin: 0; }\n  .notice__body { margin-block: 0.5rem 0; }\n  .notice--warning { --notice-accent: #8a4b08; }\n\n  @media (min-width: 48rem) {\n    .notice { padding: 1.25rem; }\n  }\n}",
+              "walkthrough": [
+                "The layer declaration establishes a predictable priority order for normal declarations.",
+                "The notice component owns its root, title, body, and warning variant styles.",
+                "The modifier changes one local token, allowing the base component rule to remain shared.",
+                "The media query stays with the component rule whose spacing it changes."
+              ]
+            },
+            "misconceptions": [
+              "A naming convention helps humans understand scope but does not create CSS encapsulation by itself.",
+              "More selectors and modifiers do not automatically mean better reuse; abstractions should reflect repeated intent.",
+              "Cascade layers affect precedence; they do not prevent selectors from matching elements outside a component."
+            ],
+            "check": {
+              "prompt": "A card style depends on main > section:nth-child(2) .card h2 and breaks when an introductory section is added. How would you make the styling more resilient?",
+              "answer": "Give the relevant component and heading explicit classes, such as .lesson-card and .lesson-card__title, and keep selectors scoped to those names. Use a variant class or token for meaningful differences.",
+              "explanation": "Purposeful class hooks reduce coupling to incidental document position and nesting."
+            }
+          }
         },
         {
           "title": "Sass and SCSS",
-          "focus": "Variables, nesting, mixins, functions, modules, loops, and the CSS they compile to."
+          "focus": "Variables, nesting, mixins, functions, modules, loops, and the CSS they compile to.",
+          "teaching": {
+            "objectives": [
+              "Distinguish Sass variables from runtime CSS custom properties and use module-oriented Sass syntax.",
+              "Use nesting, mixins, functions, extension, and control directives without obscuring generated CSS."
+            ],
+            "explanation": [
+              "Sass is a stylesheet preprocessor with SCSS syntax that is mostly CSS-compatible. Sass variables such as $space are resolved at compile time; CSS custom properties remain dynamic in the browser. Modern Sass uses @use to load modules with namespaces and @forward to expose a deliberate public API. Partials conventionally begin with an underscore and are imported through modules without the underscore or extension. Prefer modules over the legacy global @import mechanism.",
+              "Nesting groups related selectors, but deep nesting can create high-specificity selectors and tightly couple styles to markup; keep nesting shallow. Mixins emit reusable declaration or rule blocks and can accept arguments. Functions return values. @extend shares selector rules and can unexpectedly group selectors, so use it sparingly; a mixin or shared class is often clearer. @if, @for, @each, and @while generate conditional or repeated output at build time. Inspect compiled CSS: abstraction is useful only when the result remains predictable and reasonably small. A Sass function can perform a calculation and return a value; @each iterates a map or list to generate related rules. @for is useful for a bounded numeric range, @while repeats until a condition changes, and @if selects output at compile time. Use these directives only when they reduce repetition without hiding the resulting CSS."
+            ],
+            "example": {
+              "code": "// _tokens.scss\n$space: 1rem;\n$weights: (regular: 400, bold: 700);\n\n// _mixins.scss\n@mixin focus-ring($color: #075e9a) {\n  outline: 3px solid $color;\n  outline-offset: 3px;\n}\n\n// _button.scss\n@use \"sass:math\";\n@use \"tokens\" as t;\n@use \"mixins\" as m;\n\n@function px-to-rem($value) {\n  @return math.div($value, 16px) * 1rem;\n}\n\n.button {\n  padding: px-to-rem(16px);\n\n  &:focus-visible {\n    @include m.focus-ring();\n  }\n\n  @media (min-width: 48rem) {\n    padding-inline: t.$space * 1.5;\n  }\n}\n\n@each $name, $weight in t.$weights {\n  .font-#{$name} { font-weight: $weight; }\n}\n\n// Compiled CSS (simplified)\n.button { padding: 1rem; }\n.button:focus-visible { outline: 3px solid #075e9a; outline-offset: 3px; }\n@media (min-width: 48rem) {\n  .button { padding-inline: 1.5rem; }\n}\n.font-regular { font-weight: 400; }\n.font-bold { font-weight: 700; }",
+              "walkthrough": [
+                "The Sass variable and map are compile-time values; CSS custom properties would remain available for runtime theme changes.",
+                "@use loads Sass modules with namespaces, while sass:math supplies unit-aware division for the px-to-rem function.",
+                "The mixin emits its focus declarations at the include site, and the nested selector compiles to .button:focus-visible.",
+                "The @each loop generates two predictable utility rules; the simplified compiled CSS makes the emitted selectors and values visible."
+              ]
+            },
+            "misconceptions": [
+              "Sass variables and CSS custom properties have different lifecycles: Sass values disappear during compilation, while custom properties remain dynamic.",
+              "Nesting is not free encapsulation; deeply nested rules compile into long selectors.",
+              "@extend does not simply copy declarations and may create grouped selectors with surprising reach; inspect its output."
+            ],
+            "check": {
+              "prompt": "A color must change when a user switches themes without recompiling the stylesheet. Should it be stored only in a Sass variable or in a CSS custom property, and why?",
+              "answer": "Use a CSS custom property for the runtime theme value. Sass variables are resolved during compilation and cannot respond to a browser-side theme change on their own.",
+              "explanation": "Choose the value mechanism according to when it needs to change: build time for Sass, runtime cascade for CSS custom properties."
+            }
+          }
         },
         {
           "title": "Utility and component frameworks",
-          "focus": "Compare Bootstrap, Bulma, and Tailwind patterns, configuration, and generated styles."
+          "focus": "Compare Bootstrap, Bulma, and Tailwind patterns, configuration, and generated styles.",
+          "teaching": {
+            "objectives": [
+              "Compare utility classes, component classes, and framework-generated styles by their tradeoffs.",
+              "Customize a framework through its intended configuration or token mechanisms rather than scattered overrides."
+            ],
+            "explanation": [
+              "Utility-first styling composes small classes in markup; it keeps a component’s visual recipe close to the element but can make markup dense. Component frameworks provide named components and conventions that accelerate common UI patterns, while often requiring customization for a distinct design system. Semantic component CSS uses project-owned classes and tokens, giving explicit control at the cost of authoring more styles. None of these choices guarantees accessibility; the resulting HTML semantics, keyboard behavior, contrast, and responsive states still need review.",
+              "Framework customization should use its supported theme system. Some frameworks generate utilities from configuration or Sass maps at build time, while runtime CSS custom properties can vary themes without rebuilding. Avoid layering large amounts of overrides on top of framework defaults: it increases cascade complexity and makes upgrades harder. Pick one clear source of truth for each design decision, document the chosen convention, and inspect the compiled CSS for unused or conflicting output."
+            ],
+            "example": {
+              "code": "<!-- Utility composition -->\n<a class=\"inline-flex items-center gap-2 rounded px-4 py-2 font-semibold\" href=\"/practice\">\n  Start practice\n</a>\n\n<!-- Project component with semantic tokens -->\n<a class=\"action-link\" href=\"/practice\">Start practice</a>\n\n<style>\n.action-link {\n  align-items: center;\n  background: var(--action-bg, #075e9a);\n  border-radius: var(--radius-control, 0.4rem);\n  color: white;\n  display: inline-flex;\n  font-weight: 700;\n  gap: 0.5rem;\n  padding: 0.5rem 1rem;\n}\n</style>",
+              "walkthrough": [
+                "The utility example composes many small classes directly on the link; the class vocabulary must exist in the selected utility system.",
+                "The component example places the same intent behind one project-owned class.",
+                "A framework can supply either utilities or components, but its configuration and build process determine which classes and tokens are available.",
+                "Both links remain anchors because they navigate; styling does not determine semantic element choice."
+              ]
+            },
+            "misconceptions": [
+              "Utility-first does not mean “no design system”; consistent tokens and conventions still matter.",
+              "A framework class name cannot be assumed to exist unless the framework and its build configuration generate it.",
+              "Adding ARIA or framework components does not automatically make an interaction accessible."
+            ],
+            "check": {
+              "prompt": "A team has 40 repeated framework overrides for colors, spacing, and radii. What should it investigate before adding more overrides?",
+              "answer": "Identify the framework’s supported configuration, theme tokens, Sass variables/maps, and CSS custom properties. Move repeated decisions to that supported source of truth and remove redundant overrides deliberately.",
+              "explanation": "Using the framework’s intended customization mechanism reduces conflicting cascade layers and upgrade friction."
+            }
+          }
         },
         {
           "title": "Theming and color schemes",
-          "focus": "Build light and dark palettes from the same tokens, and follow the user's prefers-color-scheme setting."
+          "focus": "Build light and dark palettes from the same tokens, and follow the user's prefers-color-scheme setting.",
+          "teaching": {
+            "objectives": [
+              "Build light and dark theme values with semantic tokens and a clear precedence policy.",
+              "Respect system color-scheme preferences while allowing an explicit user-selected theme."
+            ],
+            "explanation": [
+              "A theme should express semantic roles such as canvas, surface, text, muted text, border, and action rather than “light blue” or “dark gray.” Assign a complete palette to each theme so a component does not have to guess how to invert individual colors. Check text and non-text contrast in every state, including focus, disabled, error, and selected states. Color should not be the only way to communicate a distinction.",
+              "prefers-color-scheme reports the user’s system preference. It can provide a default, while an explicit user choice should take precedence and persist according to the product’s policy. Avoid a first-paint flash by applying the chosen theme before rendering when practical. The color-scheme property can tell browser-provided controls which scheme they should use. Theme switches should update tokens without changing content or focus, and should be testable with system preferences and manual overrides."
+            ],
+            "example": {
+              "code": ":root {\n  color-scheme: light dark;\n  --canvas: #f5f8fa;\n  --surface: #fff;\n  --text: #172b3a;\n  --border: #718096;\n  --action: #075e9a;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root:not([data-theme=\"light\"]) {\n    --canvas: #101820;\n    --surface: #1c2933;\n    --text: #f5f8fa;\n    --border: #aab7c4;\n    --action: #8ecbff;\n  }\n}\n\n:root[data-theme=\"light\"] { color-scheme: light; }\n:root[data-theme=\"dark\"] { color-scheme: dark; }\n\nbody { background: var(--canvas); color: var(--text); }\n.card { background: var(--surface); border: 1px solid var(--border); }",
+              "walkthrough": [
+                "Root tokens define the light palette and a role for each color.",
+                "The dark media query applies when the system requests dark mode unless the user explicitly selected light.",
+                "An explicit dark choice applies regardless of the system setting, and color-scheme updates native controls.",
+                "The same component styles consume semantic tokens in either mode, but each pairing still needs contrast verification."
+              ]
+            },
+            "misconceptions": [
+              "prefers-color-scheme is a preference signal, not a substitute for a user-facing theme choice when the product offers one.",
+              "A dark theme is not made accessible by mechanically inverting every color.",
+              "The CSS color-scheme property influences browser-rendered controls; it does not theme all application components automatically."
+            ],
+            "check": {
+              "prompt": "The operating system requests dark mode, but a user has explicitly selected light mode in the app. Which should win, and how should the CSS express that policy?",
+              "answer": "The explicit user selection should win. Apply system dark tokens only when no explicit light choice is present, such as with :root:not([data-theme=\"light\"]) inside the preference query, and give the explicit theme selector its own token set.",
+              "explanation": "A clear precedence policy prevents system preference from overriding a deliberate in-app choice."
+            }
+          }
         }
       ],
       "battery": [
