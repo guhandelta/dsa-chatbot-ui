@@ -672,19 +672,61 @@
           "id": "async-apis-data-loading-states",
           "title": "Data loading states",
           "task": "Build loading, success, empty, and error states using a provided local mock response.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Release notes</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Async UI states</p>\n    <h1>Release notes</h1>\n    <p>Choose a local response to practise loading, success, empty, and error states. No network request is made.</p>\n    <div class=\"actions\" aria-label=\"Choose a mock response\">\n      <button type=\"button\" data-outcome=\"success\">Load updates</button>\n      <button type=\"button\" data-outcome=\"empty\">Load empty result</button>\n      <button type=\"button\" data-outcome=\"error\">Simulate failure</button>\n    </div>\n    <p id=\"status\" role=\"status\" aria-live=\"polite\"></p>\n    <ul id=\"updates\" aria-label=\"Release updates\"></ul>\n    <p id=\"empty-state\" hidden>No updates are available yet.</p>\n    <p id=\"error-state\" role=\"alert\" hidden>Updates could not be loaded. Try again.</p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f5f7fb; color: #1f2937; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 44rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\n.actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }\n\nbutton { background: #164f9c; border: 0; border-radius: 0.4rem; color: white; cursor: pointer; font: inherit; padding: 0.65rem 0.8rem; }\n\nbutton:hover { background: #103c78; }\n\n#updates { display: grid; gap: 0.75rem; list-style: none; padding: 0; }\n\n#updates li { background: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.9rem; }\n\n[hidden] { display: none !important; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const responses = {\n  success: [{ title: 'Keyboard shortcuts', detail: 'Move through the editor without a pointer.' }, { title: 'Saved checkpoints', detail: 'Return to a previous draft at any time.' }],\n  empty: [],\n};\nconst status = document.querySelector('#status');\nconst list = document.querySelector('#updates');\nconst emptyState = document.querySelector('#empty-state');\nconst errorState = document.querySelector('#error-state');\n\nfunction mockRequest(outcome) {\n  return new Promise((resolve, reject) => {\n    window.setTimeout(() => {\n      if (outcome === 'error') reject(new Error('Local mock failure'));\n      else resolve(responses[outcome]);\n    }, 450);\n  });\n}\n\nasync function loadUpdates(outcome) {\n  // TODO: show loading, clear stale content, and reset previous empty/error states.\n  status.textContent = '';\n  try {\n    const updates = await mockRequest(outcome);\n    // TODO: render success data, or show the empty state when the list has no items.\n    list.replaceChildren();\n    emptyState.hidden = true;\n    errorState.hidden = true;\n  } catch {\n    // TODO: show a useful failure state and keep the page usable for retry.\n    errorState.hidden = true;\n  } finally {\n    // TODO: announce completion without replacing the specific error message.\n  }\n}\n\ndocument.querySelectorAll('[data-outcome]').forEach((button) => {\n  button.addEventListener('click', () => loadUpdates(button.dataset.outcome));\n});\n"
+            }
+          ]
         },
         {
           "id": "async-apis-race-condition-repair",
           "title": "Race-condition repair",
           "task": "Fix an interface that displays an older response after a newer search.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Topic search</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Async debugging</p>\n    <h1>Topic search</h1>\n    <p>Search for <code>arrays</code>, then quickly search for <code>maps</code>. The older response can arrive last.</p>\n    <form id=\"search-form\">\n      <label for=\"query\">Search topics</label>\n      <div class=\"search-row\"><input id=\"query\" name=\"query\" value=\"arrays\" required><button type=\"submit\">Search</button></div>\n    </form>\n    <p id=\"search-status\" role=\"status\" aria-live=\"polite\"></p>\n    <ul id=\"results\" aria-label=\"Search results\"></ul>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { color: #243244; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 42rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\nlabel { display: block; font-weight: 700; margin-block-end: 0.35rem; }\n\n.search-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }\n\ninput, button { font: inherit; padding: 0.6rem 0.75rem; }\n\ninput { flex: 1 1 14rem; min-width: 0; }\n\nbutton { background: #164f9c; border: 0; border-radius: 0.35rem; color: white; }\n\n#results { display: grid; gap: 0.65rem; list-style: none; padding: 0; }\n\n#results li { border: 1px solid #cbd5e1; border-radius: 0.45rem; padding: 0.8rem; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const catalog = [\n  { title: 'Array traversal', terms: 'arrays loops iteration' },\n  { title: 'Array transformations', terms: 'arrays map filter reduce' },\n  { title: 'Map lookups', terms: 'maps keys values lookup' },\n  { title: 'Map and set tradeoffs', terms: 'maps sets collections' },\n];\nconst form = document.querySelector('#search-form');\nconst queryInput = document.querySelector('#query');\nconst status = document.querySelector('#search-status');\nconst results = document.querySelector('#results');\n\nfunction searchCatalog(query) {\n  const normalized = query.toLocaleLowerCase();\n  const matches = catalog.filter((item) => `${item.title} ${item.terms}`.toLocaleLowerCase().includes(normalized));\n  const delay = normalized.includes('array') ? 700 : 120;\n  return new Promise((resolve) => window.setTimeout(() => resolve(matches), delay));\n}\n\nfunction render(items) {\n  results.replaceChildren(...items.map((item) => {\n    const row = document.createElement('li');\n    row.textContent = item.title;\n    return row;\n  }));\n}\n\nform.addEventListener('submit', async (event) => {\n  event.preventDefault();\n  const query = queryInput.value.trim();\n  if (!query) return;\n  status.textContent = `Searching for ${query}…`;\n  const items = await searchCatalog(query);\n  // Bug: an older request can finish later and overwrite newer results.\n  render(items);\n  status.textContent = `${items.length} result${items.length === 1 ? '' : 's'} for ${query}.`;\n});\n"
+            }
+          ]
         },
         {
           "id": "async-apis-api-choice-check",
           "title": "API choice check",
           "task": "Choose an observer or event API for several UI changes and explain the tradeoff.",
-          "kind": "learn"
+          "kind": "learn",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Choose a browser API</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Browser API decision lab</p>\n    <h1>Choose the right signal</h1>\n    <p>For each scenario, choose an API and write one reason it fits. Compare event-driven updates with polling.</p>\n    <form id=\"decision-form\">\n      <fieldset>\n        <legend>A chart container changes size when its side panel opens.</legend>\n        <label for=\"resize-choice\">Best API</label>\n        <select id=\"resize-choice\" name=\"resize\"><option value=\"\">Choose an API</option><option>ResizeObserver</option><option>MutationObserver</option><option>IntersectionObserver</option><option>click event</option></select>\n      </fieldset>\n      <fieldset>\n        <legend>A third-party widget inserts a status node into a region.</legend>\n        <label for=\"mutation-choice\">Best API</label>\n        <select id=\"mutation-choice\" name=\"mutation\"><option value=\"\">Choose an API</option><option>ResizeObserver</option><option>MutationObserver</option><option>IntersectionObserver</option><option>click event</option></select>\n      </fieldset>\n      <fieldset>\n        <legend>A long article should load images as they approach the viewport.</legend>\n        <label for=\"visibility-choice\">Best API</label>\n        <select id=\"visibility-choice\" name=\"visibility\"><option value=\"\">Choose an API</option><option>ResizeObserver</option><option>MutationObserver</option><option>IntersectionObserver</option><option>click event</option></select>\n      </fieldset>\n      <label for=\"reasoning\">Explain one choice and its tradeoff</label>\n      <textarea id=\"reasoning\" name=\"reasoning\" rows=\"4\" required></textarea>\n      <button type=\"submit\">Check my reasoning</button>\n    </form>\n    <p id=\"feedback\" role=\"status\" aria-live=\"polite\"></p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f6f7f3; color: #25352d; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 46rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #176b50; font-weight: 700; }\n\nform { display: grid; gap: 1rem; }\n\nfieldset { border: 1px solid #bdcbbf; border-radius: 0.5rem; display: grid; gap: 0.5rem; padding: 0.9rem; }\n\nlegend { font-weight: 700; padding-inline: 0.25rem; }\n\nselect, textarea, button { font: inherit; padding: 0.6rem; }\n\ntextarea { max-width: 100%; width: 100%; }\n\nbutton { background: #176b50; border: 0; border-radius: 0.4rem; color: white; justify-self: start; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#decision-form');\nconst feedback = document.querySelector('#feedback');\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  const selections = new FormData(form);\n  const choices = ['resize', 'mutation', 'visibility'];\n  const unanswered = choices.filter((choice) => !selections.get(choice));\n  if (unanswered.length > 0) {\n    feedback.textContent = `Choose an API for ${unanswered.length} remaining scenario${unanswered.length === 1 ? '' : 's'}.`;\n    return;\n  }\n  const reasoning = String(selections.get('reasoning') ?? '').trim();\n  feedback.textContent = reasoning\n    ? 'Decision check complete. Review whether each API observes the change you care about.'\n    : 'Add a reason and tradeoff before completing the check.';\n});\n"
+            }
+          ]
         }
       ]
     },

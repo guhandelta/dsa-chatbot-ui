@@ -158,6 +158,33 @@ it('provides accessible DOM and event workspaces for filtering, delegation, and 
   expect(workspaces['dom-events-keyboard-interaction-check']['script.js']).toContain('tab.tabIndex = selected ? 0 : -1')
 })
 
+it('provides offline async and browser API workspaces with explicit states and race conditions', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'async-apis')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css', 'script.js'])
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    const script = challenge.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
+    expect(html, challenge.id).toContain('<main>')
+    expect(html, challenge.id).toContain('<script src="script.js"></script>')
+    expect(() => new Function(script), `${challenge.id} JavaScript syntax`).not.toThrow()
+  }
+
+  const workspaces = Object.fromEntries((section?.battery ?? []).map((challenge) => [
+    challenge.id,
+    Object.fromEntries((challenge.starterFiles ?? []).map((file) => [file.name, file.content])),
+  ]))
+  expect(workspaces['async-apis-data-loading-states']['index.html']).toContain('role="alert"')
+  expect(workspaces['async-apis-data-loading-states']['script.js']).toContain("if (outcome === 'error') reject")
+  expect(workspaces['async-apis-race-condition-repair']['script.js']).toContain('normalized.includes(\'array\') ? 700 : 120')
+  expect(workspaces['async-apis-race-condition-repair']['script.js']).toContain('older request can finish later')
+  expect(workspaces['async-apis-api-choice-check']['index.html']).toContain('ResizeObserver')
+  expect(workspaces['async-apis-api-choice-check']['index.html']).toContain('MutationObserver')
+  expect(workspaces['async-apis-api-choice-check']['index.html']).toContain('IntersectionObserver')
+  expect(workspaces['async-apis-api-choice-check']['index.html']).toContain('name="reasoning"')
+  expect(workspaces['async-apis-api-choice-check']['index.html']).toContain('Check my reasoning')
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true
