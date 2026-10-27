@@ -1673,19 +1673,135 @@
       "lessons": [
         {
           "title": "Selecting and updating elements",
-          "focus": "Query the DOM, create nodes, update attributes, and distinguish text from HTML injection."
+          "focus": "Query the DOM, create nodes, update attributes, and distinguish text from HTML injection.",
+          "teaching": {
+            "objectives": [
+              "Select existing elements and create or update nodes using DOM APIs.",
+              "Render untrusted text safely and distinguish attributes, properties, and text from HTML."
+            ],
+            "explanation": [
+              "The DOM is a live object model of the parsed document. querySelector and querySelectorAll accept CSS selectors; the former returns one matching element or null, while the latter returns a static NodeList of matches. Check for a missing element when markup can vary. createElement, textContent, setAttribute, classList, and append provide explicit ways to create and update interface content. Use element properties when they represent the current state, such as input.value or checkbox.checked; attributes usually describe markup or default state.",
+              "Assigning textContent treats a string as text. Assigning innerHTML parses a string as markup and can create cross-site scripting vulnerabilities when the value contains untrusted content. Prefer DOM construction and textContent for user or API data. If rich untrusted HTML is a real requirement, use a vetted sanitizer and a narrow allowlist. Avoid building selector strings directly from user input; use escaped values or compare known data attributes safely."
+            ],
+            "example": {
+              "code": "const list = document.querySelector(\"#lesson-list\");\nconst lesson = { id: \"dom\", title: \"DOM updates <safely>\" };\n\nif (!list) throw new Error(\"Lesson list is missing.\");\n\nconst item = document.createElement(\"li\");\nitem.dataset.lessonId = lesson.id;\nconst link = document.createElement(\"a\");\nlink.href = `/lessons/${encodeURIComponent(lesson.id)}`;\nlink.textContent = lesson.title; // renders angle brackets as text\nitem.append(link);\nlist.append(item);",
+              "walkthrough": [
+                "querySelector returns Element or null, so the code checks before using the result.",
+                "createElement builds real nodes and dataset writes a data attribute without concatenating markup.",
+                "encodeURIComponent keeps the known identifier safe as one URL path segment.",
+                "textContent displays title content as text; using innerHTML here could interpret attacker-controlled markup."
+              ]
+            },
+            "misconceptions": [
+              "querySelectorAll returns a static NodeList, not a live collection that changes when matching nodes are added.",
+              "setAttribute changes markup attributes, while properties such as input.value can represent current runtime state and may differ from the initial attribute.",
+              "innerHTML is not a harmless string assignment when its contents can include untrusted data."
+            ],
+            "check": {
+              "prompt": "An API returns the title \"<img src=x onerror=alert(1)>\" and the page should display those exact characters. Which DOM API should you use, and why avoid innerHTML?",
+              "answer": "Set the element’s textContent to the title. textContent inserts text rather than parsing markup, so the string is displayed and its event-handler markup does not execute.",
+              "explanation": "Treat data as text by default; parsing untrusted strings as HTML can introduce script injection."
+            }
+          }
         },
         {
           "title": "Events and propagation",
-          "focus": "Understand event targets, bubbling, capture, default actions, and delegation."
+          "focus": "Understand event targets, bubbling, capture, default actions, and delegation.",
+          "teaching": {
+            "objectives": [
+              "Describe event target, currentTarget, capture, bubbling, and default actions.",
+              "Use event delegation for repeated controls and cancel browser behavior only when replacing it intentionally."
+            ],
+            "explanation": [
+              "An event travels through capture from the document toward its target, then at-target handling, then bubbles back through ancestors when it bubbles. event.target is where the event originated; event.currentTarget is the element whose listener is currently running. addEventListener can register capture listeners with an options object. Bubbling lets a stable parent handle events from many present or later-added descendants. Use closest() and verify the result remains inside the delegated container.",
+              "Some events have default actions, such as a link navigating or a form submitting. preventDefault cancels a cancelable default action; stopPropagation changes event travel and should be used sparingly because it can break other listeners. Returning false from addEventListener does not cancel browser behavior. Use semantic controls so browser defaults provide expected keyboard and accessibility behavior, and intercept only when the application provides an equivalent result."
+            ],
+            "example": {
+              "code": "const list = document.querySelector(\"#lesson-list\");\n\nlist.addEventListener(\"click\", (event) => {\n  if (!(event.target instanceof Element)) return;\n  const link = event.target.closest(\"a[data-lesson-id]\");\n  if (!link || !list.contains(link)) return;\n\n  event.preventDefault(); // app navigation replaces the link default\n  openLesson(link.dataset.lessonId);\n});",
+              "walkthrough": [
+                "One listener on the list handles clicks from its current and future lesson links.",
+                "The target may be a nested span or text-related node, so closest finds the nearest matching link.",
+                "The containment check ensures the match belongs to this delegated list rather than a nested unrelated region.",
+                "preventDefault is used because openLesson replaces navigation; stopping propagation is unnecessary."
+              ]
+            },
+            "misconceptions": [
+              "target and currentTarget are different when an event bubbles from a child to an ancestor listener.",
+              "Event delegation depends on the event bubbling; some events do not bubble, and alternatives such as focusin may be appropriate.",
+              "preventDefault cancels a browser default action; stopPropagation controls propagation and does not cancel that action."
+            ],
+            "check": {
+              "prompt": "A click listener is attached to a list, but clicks on an icon inside a lesson link do not match the link selector. Which event properties or methods help find the link, and how do you ensure it belongs to this list?",
+              "answer": "Use event.target.closest(\"a[data-lesson-id]\") to find the nearest matching ancestor, then verify list.contains(link) before handling it.",
+              "explanation": "Delegation starts at the actual event target and must confirm that the matched control is inside the intended listener boundary."
+            }
+          }
         },
         {
           "title": "State and rendering",
-          "focus": "Keep application state clear and render lists and interface states consistently."
+          "focus": "Keep application state clear and render lists and interface states consistently.",
+          "teaching": {
+            "objectives": [
+              "Represent interface state explicitly and render the DOM from that state.",
+              "Keep rendering deterministic and prevent stale or duplicated UI when data changes."
+            ],
+            "explanation": [
+              "Application state is the data that determines what the interface should show: selected filters, loaded records, pending work, and errors. Treat state as the source of truth and update it through clear transitions. A render function can derive the visible UI from current state; keeping rendering deterministic makes defects easier to reproduce. Represent loading, empty, success, and error states explicitly rather than inferring them from scattered DOM details.",
+              "For a small interface, direct DOM rendering can be sufficient. Clear or replace only the region owned by the renderer, create nodes with DOM APIs, and use stable identifiers when updating lists. For larger interfaces, a framework can manage state-to-DOM reconciliation, but mutation of shared state still makes updates difficult to reason about. Avoid writing the same state separately into multiple DOM nodes; update the data first, then render consistent output from it."
+            ],
+            "example": {
+              "code": "const state = { status: \"loading\", lessons: [], error: null };\nconst region = document.querySelector(\"#results\");\n\nfunction render() {\n  region.replaceChildren();\n\n  if (state.status === \"loading\") {\n    region.textContent = \"Loading lessons…\";\n    return;\n  }\n  if (state.status === \"error\") {\n    region.textContent = state.error ?? \"Lessons could not be loaded.\";\n    return;\n  }\n  if (state.lessons.length === 0) {\n    region.textContent = \"No lessons match this filter.\";\n    return;\n  }\n\n  const list = document.createElement(\"ul\");\n  for (const lesson of state.lessons) {\n    const item = document.createElement(\"li\");\n    item.textContent = lesson.title;\n    list.append(item);\n  }\n  region.append(list);\n}",
+              "walkthrough": [
+                "The state object distinguishes loading, error, and loaded lesson data.",
+                "render clears only its owned region, then chooses one visible state from the current data.",
+                "An empty list has an explicit message rather than looking like a failed or unfinished render.",
+                "Lesson titles are written as text, and the same state always produces the same visible result."
+              ]
+            },
+            "misconceptions": [
+              "The DOM is not a reliable source of application state when multiple controls and views depend on the same data.",
+              "An empty result, a loading request, and a failed request are different states and deserve different feedback.",
+              "A framework does not make shared mutable state or unsafe HTML insertion automatically safe."
+            ],
+            "check": {
+              "prompt": "After filtering produces zero matches, the interface still shows the previous cards. Which design change makes stale results less likely?",
+              "answer": "Update the filter state first and render the results region entirely from that state, including an explicit empty state when the filtered list has no items.",
+              "explanation": "A deterministic render replaces stale output with the state that currently governs the interface."
+            }
+          }
         },
         {
           "title": "Native interaction patterns",
-          "focus": "Build disclosure, tabs, menus, dialogs, and status feedback with semantics and focus management."
+          "focus": "Build disclosure, tabs, menus, dialogs, and status feedback with semantics and focus management.",
+          "teaching": {
+            "objectives": [
+              "Select native HTML interaction elements before implementing custom ARIA widgets.",
+              "Implement keyboard, focus, and status behavior that matches the chosen interaction pattern."
+            ],
+            "explanation": [
+              "Use native patterns when they match the interaction: details/summary for disclosure, button for actions, anchor for navigation, select for a choice, and dialog for modal content. Native elements provide much of the expected keyboard behavior. A set of links styled as a menu is usually navigation, not an ARIA menu widget; menu roles imply specialized arrow-key and focus behavior. Tabs are appropriate for layered panels where one panel is shown at a time, and require managed selection, roving tab focus, arrow-key behavior, and relationships between tab and tabpanel.",
+              "A modal dialog should have an accessible name, move focus inside when opened, keep modal focus contained, close by an understandable action, and return focus to the opener when closed. Native dialog.showModal() supplies modal behavior and Escape handling in current browsers, but the surrounding content and close controls still need accessible names and sensible focus. Announce asynchronous results with a concise status region such as role=status; use alert for urgent messages, not every update. Test with keyboard only and inspect focus after every state transition."
+            ],
+            "example": {
+              "code": "<button id=\"open-help\" type=\"button\">Open help</button>\n<dialog id=\"help-dialog\" aria-labelledby=\"help-title\">\n  <h2 id=\"help-title\">Practice help</h2>\n  <p>Use the lesson notes to plan your next step.</p>\n  <button id=\"close-help\" type=\"button\">Close help</button>\n</dialog>\n<p id=\"save-status\" role=\"status\" aria-live=\"polite\"></p>\n<script>\n  const opener = document.querySelector(\"#open-help\");\n  const dialog = document.querySelector(\"#help-dialog\");\n  const closer = document.querySelector(\"#close-help\");\n  opener.addEventListener(\"click\", () => dialog.showModal());\n  closer.addEventListener(\"click\", () => dialog.close());\n  dialog.addEventListener(\"close\", () => opener.focus());\n</script>",
+              "walkthrough": [
+                "The dialog’s heading provides its accessible name through aria-labelledby.",
+                "showModal opens a native modal dialog and moves interaction into the modal context; the browser handles Escape cancellation.",
+                "The explicit close button provides a discoverable action, and the close event returns focus to the opener.",
+                "The separate status region is available for polite save feedback and should be updated only when a save state changes."
+              ]
+            },
+            "misconceptions": [
+              "A visual menu is not automatically an ARIA menu; navigation links usually need ordinary navigation semantics and tab navigation.",
+              "Adding role=\"tab\" without the associated keyboard and focus model makes a tab interface incomplete.",
+              "Native dialog behavior helps, but does not supply a meaningful title, instructions, or a good focus-return target automatically."
+            ],
+            "check": {
+              "prompt": "A row of site links is styled like a dropdown “menu.” Should the links use role=\"menuitem\" by default, and what interaction model would that role require?",
+              "answer": "No. If these are ordinary site navigation links, use a nav landmark and links without menu roles. An ARIA menu widget requires menu-specific focus management and keyboard behavior such as arrow-key navigation.",
+              "explanation": "ARIA roles describe interaction contracts; choosing one means implementing the expected behavior, not just changing the announced label."
+            }
+          }
         }
       ],
       "battery": [
