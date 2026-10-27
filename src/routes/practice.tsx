@@ -335,7 +335,9 @@ export function PracticeWorkspace({
     setRunning(true);
     setWorkspaceError(null);
     try {
-      const result = await runWorkspaceTests(problemId, { language, files, entry });
+      const result = await runWorkspaceTests(problemId, {
+        language, files, entry, practice_session_id: sessionRef.current?.session_id,
+      });
       if (!mounted.current) return;
       setTestRun({ result, source: "run" });
       setAnnouncement(result.status === "passed" ? `All ${result.total} tests passed.` : `${result.passed} of ${result.total} tests passed.`);

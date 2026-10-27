@@ -142,6 +142,15 @@ it('adds a helper file and submits the whole workspace for evaluation', async ()
     entry: 'solution.py',
     files: [{ name: 'solution.py', content: SOLUTION }, { name: 'helpers.py', content: 'def twice(x):\n    return 2 * x\n' }],
   })
+
+  vi.mocked(runWorkspaceTests).mockResolvedValue({
+    status: 'passed', passed: 6, total: 6, cases: [], detail: '', diagnostic: null,
+  })
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Run tests' })) })
+  expect(runWorkspaceTests).toHaveBeenCalledWith('python-path-01-values', {
+    language: 'python', entry: 'solution.py', practice_session_id: 's1',
+    files: [{ name: 'solution.py', content: SOLUTION }, { name: 'helpers.py', content: 'def twice(x):\n    return 2 * x\n' }],
+  })
 })
 
 it('saves, restores and resets through checkpoints', async () => {
