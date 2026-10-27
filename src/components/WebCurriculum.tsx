@@ -19,12 +19,12 @@ export function WebCurriculum() {
           <h3 className="mb-1 mt-4 text-sm font-semibold">Lesson battery</h3>
           <ul className="list-disc space-y-1 pl-5 text-sm">{section.lessons.map((lesson) => <li key={lesson.title}><strong>{lesson.title}:</strong> {lesson.focus}</li>)}</ul>
           <h3 className="mb-1 mt-4 text-sm font-semibold">Core challenge battery</h3>
-          <ul className="space-y-2 pl-0">{section.battery.map((challenge, challengeIndex) => <li key={challenge.title} className="list-none rounded-lg border border-[var(--line)] p-3">
+          <ul className="space-y-2 pl-0">{section.battery.map((challenge) => <li key={challenge.id} className="list-none rounded-lg border border-[var(--line)] p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">{KIND_LABEL[challenge.kind]}</p>
             <p className="m-0 text-sm"><strong>{challenge.title}.</strong> {challenge.task}</p>
             <Link className="mini-btn mt-2 inline-flex" to="/playground" search={{
               project: `web-${section.id}`, template: 'html-css-js', section: section.id,
-              challenge: `${section.id}-${challengeIndex}`,
+              challenge: challenge.id,
             }}>Open challenge in playground</Link>
           </li>)}</ul>
         </details>
@@ -41,9 +41,8 @@ export function WebCurriculum() {
 export function ChallengeBrief({ sectionId, challengeId }: { sectionId?: string; challengeId?: string }) {
   if (!sectionId || !challengeId) return null
   const section = WEB_FUNDAMENTALS.find((item) => item.id === sectionId)
-  const index = Number(challengeId.slice(sectionId.length + 1))
-  const challenge = section?.battery[index]
-  if (!section || !challenge || !Number.isInteger(index)) return null
+  const challenge = section?.battery.find((item) => item.id === challengeId)
+  if (!section || !challenge) return null
   return <section className="my-3 rounded-xl border border-[var(--line)] p-4" aria-label="Challenge instructions">
     <p className="island-kicker mb-1">{section.title} · {KIND_LABEL[challenge.kind]}</p>
     <h2 className="ws-heading">{challenge.title}</h2>

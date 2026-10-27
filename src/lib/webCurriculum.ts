@@ -1,215 +1,28 @@
-/** Ordered, framework-independent curriculum spine for the browser playground.
- * Keep these as fundamentals; framework-specific paths are authored separately.
- */
+import curriculum from '../content/curricula/web-fundamentals.json'
+
+export type ChallengeKind = 'learn' | 'build' | 'debug' | 'review'
+
+export interface WebCurriculumChallenge {
+  id: string
+  title: string
+  task: string
+  kind: ChallengeKind
+}
+
 export interface WebCurriculumSection {
   id: string
   title: string
   outcome: string
   lessons: { title: string; focus: string }[]
-  battery: { title: string; task: string; kind: 'learn' | 'build' | 'debug' | 'review' }[]
+  battery: WebCurriculumChallenge[]
 }
 
-export const WEB_FUNDAMENTALS: WebCurriculumSection[] = [
-  {
-    id: 'browser', title: 'How the browser builds a page',
-    outcome: 'Trace how source files become a rendered, interactive page and use browser tools to inspect it.',
-    lessons: [
-      { title: 'The web platform', focus: 'HTML describes structure, CSS presentation, JavaScript behavior, and the browser provides runtime services.' },
-      { title: 'DOM, CSSOM, and rendering', focus: 'Relate source markup and styles to the document tree, style rules, layout, paint, and interaction.' },
-      { title: 'Inspecting a running page', focus: 'Use the Elements, Styles, Console, and Network panels to form and test a debugging hypothesis.' },
-    ],
-    battery: [
-      { title: 'Trace a page load', task: 'Given a starter project, identify the entry document and trace each linked stylesheet and script.', kind: 'learn' },
-      { title: 'Find the visual cause', task: 'Inspect a page with a missing style and determine whether the cause is markup, selector matching, or loading.', kind: 'debug' },
-      { title: 'Explain a browser change', task: 'Change one element and describe which part of the rendered page updates and why.', kind: 'review' },
-    ],
-  },
-  {
-    id: 'html-semantics', title: 'HTML structure and semantics',
-    outcome: 'Write meaningful, well-formed documents with native semantics and useful page metadata.',
-    lessons: [
-      { title: 'Document skeleton and metadata', focus: 'Doctype, language, title, character encoding, viewport, and metadata that describes the document.' },
-      { title: 'Text, links, images, lists, and tables', focus: 'Choose elements by meaning; write descriptive links and text alternatives; use tables for tabular data.' },
-      { title: 'Landmarks and content structure', focus: 'Use main, header, nav, article, section, aside, and footer according to their semantics.' },
-      { title: 'Attributes and element relationships', focus: 'Understand global attributes, IDs, classes, data attributes, and valid parent-child relationships.' },
-    ],
-    battery: [
-      { title: 'Repair a document outline', task: 'Fix heading order, landmark placement, and invalid nesting in a starter article.', kind: 'debug' },
-      { title: 'Build an information page', task: 'Create an article with a meaningful heading structure, navigation, links, and an informative image.', kind: 'build' },
-      { title: 'Semantic choice check', task: 'Choose native elements for navigation, emphasis, quotations, dates, and tabular data, then explain the choices.', kind: 'learn' },
-    ],
-  },
-  {
-    id: 'forms', title: 'Forms and browser-native behavior',
-    outcome: 'Build forms that communicate purpose, use native validation, and work by keyboard.',
-    lessons: [
-      { title: 'Labels and control types', focus: 'Associate labels with controls and select input types that fit the data being collected.' },
-      { title: 'Grouping and instructions', focus: 'Use fieldset, legend, help text, required state, and error messages that are programmatically related.' },
-      { title: 'Constraints and submission', focus: 'Use built-in constraints, understand submit events, and provide clear invalid, pending, and success states.' },
-      { title: 'Focus and keyboard behavior', focus: 'Keep a logical tab order, visible focus, and predictable submission behavior.' },
-    ],
-    battery: [
-      { title: 'Accessible profile form', task: 'Build a labeled profile form with appropriate types, required fields, and native constraints.', kind: 'build' },
-      { title: 'Fix an inaccessible form', task: 'Repair missing labels, unclear errors, and keyboard traps in a supplied form.', kind: 'debug' },
-      { title: 'Validation cases', task: 'Try empty, malformed, boundary, and valid input; record the browser behavior for each.', kind: 'review' },
-    ],
-  },
-  {
-    id: 'css-foundations', title: 'CSS foundations and visual rules',
-    outcome: 'Predict how the cascade, values, and box model determine an element’s final appearance and size.',
-    lessons: [
-      { title: 'Rules, selectors, and matching', focus: 'Type, class, ID, attribute, pseudo-class, pseudo-element, combinator, and selector lists.' },
-      { title: 'Cascade, specificity, and inheritance', focus: 'Resolve origin, importance, layers, specificity, source order, and inherited values.' },
-      { title: 'Values, units, and custom properties', focus: 'Use lengths, percentages, viewport and font-relative units, functions, and design tokens.' },
-      { title: 'Box model and sizing', focus: 'Reason about content, padding, border, margin, box-sizing, overflow, and intrinsic sizing.' },
-      { title: 'Typography, color, backgrounds, and borders', focus: 'Set readable type, contrast, decoration, surfaces, and robust visual states.' },
-    ],
-    battery: [
-      { title: 'Cascade prediction set', task: 'Predict the winning declaration for several selector and source-order combinations.', kind: 'learn' },
-      { title: 'Fix a clipped card', task: 'Find and repair a box-sizing, width, and overflow combination that clips content.', kind: 'debug' },
-      { title: 'Style from constraints', task: 'Create a readable content card using spacing, type, color, and focus-state requirements.', kind: 'build' },
-    ],
-  },
-  {
-    id: 'layout-responsive', title: 'Layout and responsive design',
-    outcome: 'Build resilient layouts that respond to content, viewport size, and user settings.',
-    lessons: [
-      { title: 'Normal flow and formatting contexts', focus: 'Understand block and inline flow, containing blocks, stacking, and positioning.' },
-      { title: 'Flexbox', focus: 'Use axes, alignment, wrapping, flexible sizing, gaps, and ordering for one-dimensional layouts.' },
-      { title: 'CSS Grid', focus: 'Define tracks, gaps, placement, repeat patterns, and responsive grids for two-dimensional layouts.' },
-      { title: 'Responsive rules and queries', focus: 'Use content-driven breakpoints, media features, container queries, and reduced-motion preferences.' },
-      { title: 'Images and intrinsic content', focus: 'Use responsive image sources, object fitting, and min/max sizing for long or variable content.' },
-    ],
-    battery: [
-      { title: 'Responsive navigation', task: 'Make a navigation layout work for narrow screens, long labels, and keyboard focus.', kind: 'build' },
-      { title: 'Grid under pressure', task: 'Repair a card grid that overflows with narrow viewports and uneven card content.', kind: 'debug' },
-      { title: 'Viewport variation set', task: 'Check a page at narrow, medium, and wide widths and justify each layout transition.', kind: 'review' },
-    ],
-  },
-  {
-    id: 'styling-systems', title: 'Reusable CSS and styling systems',
-    outcome: 'Organize styles for reuse and compare native CSS with common styling tools.',
-    lessons: [
-      { title: 'Custom properties and design tokens', focus: 'Create scoped tokens, theme variants, and meaningful fallbacks.' },
-      { title: 'Architecture and component styling', focus: 'Name classes, control scope, reduce accidental coupling, and organize responsive states.' },
-      { title: 'Sass and SCSS', focus: 'Variables, nesting, mixins, functions, modules, loops, and the CSS they compile to.' },
-      { title: 'Utility and component frameworks', focus: 'Compare Bootstrap, Bulma, and Tailwind patterns, configuration, and generated styles.' },
-    ],
-    battery: [
-      { title: 'Refactor repeated styles', task: 'Extract repeated values and component rules into a maintainable set of tokens and classes.', kind: 'build' },
-      { title: 'Compare styling approaches', task: 'Implement one responsive component using plain CSS and one selected framework approach.', kind: 'review' },
-      { title: 'Specificity cleanup', task: 'Reduce an escalating selector override chain while preserving the required states.', kind: 'debug' },
-    ],
-  },
-  {
-    id: 'js-fundamentals', title: 'JavaScript fundamentals for interfaces',
-    outcome: 'Use JavaScript’s core language constructs to model data and express interface behavior.',
-    lessons: [
-      { title: 'Values, variables, and types', focus: 'Primitive values, objects, coercion, equality, declarations, and immutable bindings.' },
-      { title: 'Conditions, loops, and iteration', focus: 'Choose clear branching and iteration strategies for UI data.' },
-      { title: 'Functions', focus: 'Declarations and expressions, parameters, return values, scope, closures, callbacks, and recursion.' },
-      { title: 'Arrays and objects', focus: 'Transform collections, access properties safely, and represent application state.' },
-      { title: 'Errors and modules', focus: 'Throw and handle errors, separate responsibilities, and import/export reusable modules.' },
-      { title: 'Language-specific behavior', focus: 'Understand this, prototypes, destructuring, optional chaining, and other JavaScript idioms.' },
-    ],
-    battery: [
-      { title: 'Function fluency set', task: 'Implement small pure functions for validation, formatting, and deriving display data.', kind: 'build' },
-      { title: 'Repair a state bug', task: 'Trace mutation and stale-value bugs in a small interface data transformation.', kind: 'debug' },
-      { title: 'Explain the closure', task: 'Predict callback output and explain which bindings remain available and why.', kind: 'learn' },
-    ],
-  },
-  {
-    id: 'dom-events', title: 'DOM, events, and interaction patterns',
-    outcome: 'Build predictable interactions using DOM events and explicit interface state.',
-    lessons: [
-      { title: 'Selecting and updating elements', focus: 'Query the DOM, create nodes, update attributes, and distinguish text from HTML injection.' },
-      { title: 'Events and propagation', focus: 'Understand event targets, bubbling, capture, default actions, and delegation.' },
-      { title: 'State and rendering', focus: 'Keep application state clear and render lists and interface states consistently.' },
-      { title: 'Native interaction patterns', focus: 'Build disclosure, tabs, menus, dialogs, and status feedback with semantics and focus management.' },
-    ],
-    battery: [
-      { title: 'Search and filter list', task: 'Build a searchable list with empty, match, and no-result states.', kind: 'build' },
-      { title: 'Event propagation lab', task: 'Diagnose duplicate event handling and implement one delegated listener.', kind: 'debug' },
-      { title: 'Keyboard interaction check', task: 'Verify a tabs or disclosure pattern using keyboard only and repair focus behavior.', kind: 'review' },
-    ],
-  },
-  {
-    id: 'async-apis', title: 'Asynchronous JavaScript and browser APIs',
-    outcome: 'Handle asynchronous work and browser capabilities with explicit loading and failure behavior.',
-    lessons: [
-      { title: 'Promises and async functions', focus: 'Chain, await, and handle asynchronous results and errors.' },
-      { title: 'Fetching and cancellation', focus: 'Request data, interpret responses, handle errors, and avoid stale updates.' },
-      { title: 'Storage, URL, and history', focus: 'Use browser persistence and navigation APIs with clear constraints.' },
-      { title: 'Observers and platform APIs', focus: 'Choose APIs such as ResizeObserver and MutationObserver for the job rather than polling.' },
-    ],
-    battery: [
-      { title: 'Data loading states', task: 'Build loading, success, empty, and error states using a provided local mock response.', kind: 'build' },
-      { title: 'Race-condition repair', task: 'Fix an interface that displays an older response after a newer search.', kind: 'debug' },
-      { title: 'API choice check', task: 'Choose an observer or event API for several UI changes and explain the tradeoff.', kind: 'learn' },
-    ],
-  },
-  {
-    id: 'accessibility', title: 'Accessible and robust UI behavior',
-    outcome: 'Make interface content and controls understandable and operable across input methods and assistive technology.',
-    lessons: [
-      { title: 'Semantic controls and accessible names', focus: 'Prefer native controls and ensure interactive elements have clear names and roles.' },
-      { title: 'Keyboard and focus', focus: 'Support logical order, visible focus, managed focus, and no keyboard traps.' },
-      { title: 'Contrast, motion, and content alternatives', focus: 'Respect text alternatives, contrast, reduced motion, zoom, and reflow.' },
-      { title: 'ARIA and live updates', focus: 'Use ARIA only to fill semantic gaps and announce meaningful dynamic changes.' },
-    ],
-    battery: [
-      { title: 'Keyboard-only audit', task: 'Complete a supplied workflow without a pointer and repair any inaccessible control.', kind: 'review' },
-      { title: 'Accessible status messages', task: 'Add clear success and error feedback to a dynamic form without stealing focus.', kind: 'build' },
-      { title: 'Semantic repair lab', task: 'Replace misleading clickable elements with controls that expose the right behavior.', kind: 'debug' },
-    ],
-  },
-  {
-    id: 'testing-debugging', title: 'Testing, debugging, and quality',
-    outcome: 'Reproduce problems, gather evidence, and verify fixes with behavior-focused checks.',
-    lessons: [
-      { title: 'Reproduction and hypotheses', focus: 'Write reliable reproduction steps and isolate one likely cause at a time.' },
-      { title: 'Console, network, and layout inspection', focus: 'Use developer tools to inspect errors, requests, DOM state, and computed layout.' },
-      { title: 'Behavior checks', focus: 'Test expected interactions, edge cases, keyboard behavior, and responsive states.' },
-      { title: 'Validation and regression prevention', focus: 'Confirm the fix against the original failure and nearby behavior.' },
-    ],
-    battery: [
-      { title: 'Seeded bug investigation', task: 'Resolve a multi-symptom page defect and submit evidence for the root cause.', kind: 'debug' },
-      { title: 'Write a behavior checklist', task: 'Create checks for a form or interaction covering normal and edge cases.', kind: 'review' },
-      { title: 'Regression challenge', task: 'Fix a reported issue while preserving existing interaction behavior.', kind: 'build' },
-    ],
-  },
-  {
-    id: 'performance', title: 'Performance and production readiness',
-    outcome: 'Measure user-visible performance and improve the page without breaking behavior.',
-    lessons: [
-      { title: 'Loading and rendering costs', focus: 'Understand resource loading, critical CSS, script timing, and expensive rendering work.' },
-      { title: 'Responsive assets and efficient updates', focus: 'Use right-sized assets and avoid unnecessary layout, paint, and DOM work.' },
-      { title: 'Measure before optimizing', focus: 'Use browser performance tools and distinguish observations from assumptions.' },
-      { title: 'Progressive enhancement', focus: 'Keep core content useful when scripts, APIs, or network resources are unavailable.' },
-    ],
-    battery: [
-      { title: 'Performance investigation', task: 'Inspect a deliberately inefficient page and identify the measured bottleneck.', kind: 'debug' },
-      { title: 'Resilient enhancement', task: 'Keep a page usable when one optional browser capability is unavailable.', kind: 'build' },
-      { title: 'Before-and-after review', task: 'Record a performance symptom, make one change, and compare the result.', kind: 'review' },
-    ],
-  },
-  {
-    id: 'capstone', title: 'Web fundamentals capstone',
-    outcome: 'Plan, build, and verify a complete small interface using the shared web platform skills.',
-    lessons: [
-      { title: 'Plan the interface', focus: 'Define users, content structure, interaction states, and acceptance criteria.' },
-      { title: 'Build in layers', focus: 'Start with semantic HTML, add resilient CSS, then implement only needed behavior.' },
-      { title: 'Verify and reflect', focus: 'Check functionality, accessibility, responsiveness, and performance; explain tradeoffs.' },
-    ],
-    battery: [
-      { title: 'Build a small multi-state interface', task: 'Create a responsive, accessible interface with at least one form or dynamic interaction.', kind: 'build' },
-      { title: 'Capstone review', task: 'Use a provided rubric to test behavior, keyboard access, narrow layouts, and error states.', kind: 'review' },
-    ],
-  },
-]
+export interface WebCurriculumElective {
+  title: string
+  items: string
+  prerequisite: string
+}
 
-export const UI_ELECTIVES = [
-  { title: 'CSS systems', items: 'Sass/SCSS · Bootstrap · Bulma · Tailwind CSS', prerequisite: 'Web Fundamentals sections 0–5' },
-  { title: 'Client-side component UI', items: 'Alpine · Preact · Vue · Svelte · Lit/Web Components · React · Angular', prerequisite: 'Web Fundamentals sections 0–8' },
-  { title: 'Component libraries and design systems', items: 'Framework-aligned component libraries, including shadcn/ui after React and Tailwind foundations', prerequisite: 'Relevant component framework path' },
-]
+/** Curriculum content is maintained in src/content/curricula/web-fundamentals.json. */
+export const WEB_FUNDAMENTALS = curriculum.fundamentals as WebCurriculumSection[]
+export const UI_ELECTIVES = curriculum.electives as WebCurriculumElective[]
