@@ -173,6 +173,29 @@ it('provides detailed study content for the complete reusable styling systems mo
   expect(section?.lessons[4].teaching?.example.code).toContain('prefers-color-scheme: dark')
 })
 
+it('provides detailed study content for the complete JavaScript fundamentals module', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'js-fundamentals')
+  expect(section?.lessons).toHaveLength(7)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+  }
+  expect(section?.lessons[0].teaching?.example.code).toContain('Number.isFinite')
+  expect(section?.lessons[1].teaching?.example.code).toContain('??')
+  expect(section?.lessons[2].teaching?.example.code).toContain('addEventListener')
+  expect(section?.lessons[3].teaching?.example.code).toContain('...profile.preferences')
+  expect(section?.lessons[4].teaching?.example.code).toContain('export function')
+  expect(section?.lessons[5].teaching?.example.code).toContain('.bind(course)')
+  expect(section?.lessons[6].teaching?.example.code).toContain('Intl.PluralRules')
+})
+
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
   const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
   expect(forms?.battery).toHaveLength(3)
@@ -486,7 +509,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 30 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 37 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -543,6 +566,15 @@ it('renders reusable styling systems lessons in the accessible lesson format', (
   expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('5 of 5 lesson topics have detailed study material.')
   fireEvent.click(screen.getByText('Study Custom properties and design tokens'))
   expect(screen.getByText(/A custom property uses a name beginning with two hyphens/)).toBeTruthy()
+})
+
+it('renders JavaScript fundamentals lessons in the accessible lesson format', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(7) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('7 of 7 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Values, variables, and types'))
+  expect(screen.getByText(/JavaScript has primitive types including string, number, bigint/)).toBeTruthy()
 })
 
 it('loads a known challenge brief in the editor and ignores malformed challenge identifiers', () => {

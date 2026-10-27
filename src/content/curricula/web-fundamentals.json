@@ -1373,31 +1373,234 @@
       "lessons": [
         {
           "title": "Values, variables, and types",
-          "focus": "Primitive values, objects, coercion, equality, declarations, and immutable bindings."
+          "focus": "Primitive values, objects, coercion, equality, declarations, and immutable bindings.",
+          "teaching": {
+            "objectives": [
+              "Distinguish primitive values from objects and predict when values are coerced.",
+              "Choose const, let, strict equality, and explicit conversions to make UI logic predictable."
+            ],
+            "explanation": [
+              "JavaScript has primitive types including string, number, bigint, boolean, undefined, symbol, and null; objects include arrays, functions, and ordinary records. Primitives are immutable values. Objects are reference values, so assigning an object to another variable copies the reference rather than cloning the object. typeof is useful but has historical quirks: typeof null is \"object\", and arrays also report \"object\"; use Array.isArray for arrays.",
+              "Use const by default to prevent rebinding, not to claim that an object is deeply immutable. Use let when a binding must change, and avoid var in new code because its function scope and hoisting behavior can confuse control flow. Prefer === and !== to avoid implicit coercion surprises. Convert input deliberately with Number(), String(), or Boolean() and validate the result; Number(\"\") is 0 and Number(\"abc\") is NaN, so conversion alone is not validation."
+            ],
+            "example": {
+              "code": "const rawCount = formData.get(\"count\"); // string, File, or null\nif (typeof rawCount !== \"string\" || rawCount.trim() === \"\") {\n  throw new TypeError(\"Enter a non-negative count.\");\n}\n\nconst count = Number(rawCount);\nif (!Number.isFinite(count) || count < 0) {\n  throw new TypeError(\"Enter a non-negative count.\");\n}\n\nconst settings = { theme: \"dark\" };\nconst sameSettings = settings;\nsameSettings.theme = \"light\";\nconsole.log(settings.theme); // \"light\": both names reference one object",
+              "walkthrough": [
+                "FormData.get returns FormDataEntryValue or null; this example expects a text input and converts its string explicitly.",
+                "The checks reject missing, blank, non-finite, and negative values before using the number.",
+                "const prevents reassignment of settings but does not freeze its object contents.",
+                "sameSettings receives the same object reference, so changing a property is visible through settings too."
+              ]
+            },
+            "misconceptions": [
+              "const does not make an object deeply immutable; it prevents reassignment of the binding.",
+              "typeof null returning \"object\" is a historical behavior, not evidence that null is an ordinary object.",
+              "== can coerce values in surprising ways; use strict equality unless a specific coercion is intentional and documented."
+            ],
+            "check": {
+              "prompt": "A text input contains \"\" and your code calls Number(value), then treats the result as a valid count. What happens, and how should the input be checked?",
+              "answer": "Number(\"\") evaluates to 0, so check for missing or blank text before conversion, then validate with Number.isFinite and the domain’s range rules.",
+              "explanation": "Conversion defines a numeric interpretation but does not establish that the original input was meaningful or allowed."
+            }
+          }
         },
         {
           "title": "Conditions, loops, and iteration",
-          "focus": "Choose clear branching and iteration strategies for UI data."
+          "focus": "Choose clear branching and iteration strategies for UI data.",
+          "teaching": {
+            "objectives": [
+              "Use conditionals to handle meaningful UI states and loops to process collections.",
+              "Choose iteration methods based on whether code transforms, searches, aggregates, or performs side effects."
+            ],
+            "explanation": [
+              "Use if/else for branching and switch when comparing one value against a clear set of cases. Keep conditions explicit and avoid relying on truthiness when zero, an empty string, or null has distinct meaning. The nullish coalescing operator (??) supplies a default only for null or undefined, while || also replaces valid falsy values such as 0 and \"\".",
+              "Use for...of for straightforward sequential iteration, map to transform each item into a new array, filter to retain matching items, and reduce when an aggregate is clearer than a loop. find returns the first match or undefined; some and every answer boolean questions. These methods do not mutate the original array by themselves, but callbacks can still mutate objects. Avoid async callbacks with forEach when awaiting sequential work; use for...of with await or Promise.all over map when concurrent work is safe."
+            ],
+            "example": {
+              "code": "const seats = [\n  { id: \"a\", available: 0 },\n  { id: \"b\", available: 3 },\n  { id: \"c\", available: 1 },\n];\n\nconst availableSeats = seats.filter((seat) => seat.available > 0);\nconst labels = availableSeats.map((seat) => `${seat.id}: ${seat.available}`);\nconst hasAvailability = seats.some((seat) => seat.available > 0);\nconst requested = Number(formData.get(\"seats\") ?? 1);\n\nif (!hasAvailability) {\n  showMessage(\"No seats are available.\");\n} else {\n  renderOptions(labels, requested);\n}",
+              "walkthrough": [
+                "filter creates a new array containing only seats with a positive availability count.",
+                "map transforms those records into display labels without changing the original records.",
+                "some answers whether at least one seat record is available.",
+                "Nullish coalescing uses 1 only when get returns null; it preserves a string value such as \"0\" for later validation."
+              ]
+            },
+            "misconceptions": [
+              "Using || for defaults can overwrite valid values such as 0; use ?? when only null or undefined means “missing.”",
+              "map and filter return new arrays but do not guarantee deep copies of their object elements.",
+              "Array.prototype.forEach does not wait for promises returned by an async callback."
+            ],
+            "check": {
+              "prompt": "A result count of 0 is meaningful, but code uses count || \"Not loaded\". Why is the display wrong, and what operator fits a null-or-undefined fallback?",
+              "answer": "Zero is falsy, so || replaces it. Use count ?? \"Not loaded\" when only null and undefined should trigger the fallback.",
+              "explanation": "The operators encode different policies: || uses truthiness, while ?? tests only for nullish values."
+            }
+          }
         },
         {
           "title": "Functions",
-          "focus": "Declarations and expressions, parameters, return values, scope, closures, callbacks, and recursion."
+          "focus": "Declarations and expressions, parameters, return values, scope, closures, callbacks, and recursion.",
+          "teaching": {
+            "objectives": [
+              "Write functions with clear inputs, outputs, and side effects.",
+              "Explain lexical scope, closures, and callback behavior in interface code."
+            ],
+            "explanation": [
+              "A function declaration, function expression, and arrow function all create callable behavior, but differ in hoisting and this binding. Parameters are local names; return sends a value to the caller. Prefer small functions with clear inputs and outputs. A callback is a function passed to other code to run later, such as an event listener or array transformation. Keep side effects visible at boundaries so pure logic can be tested independently.",
+              "JavaScript uses lexical scope: a function can access bindings from the scope where it was created. A closure is the function together with access to those surrounding bindings, even after the outer function returns. Closures are useful for event handlers and private state, but can retain data longer than expected if listeners are never removed. An arrow function captures this lexically; a regular function’s this depends on how it is called. Do not use an arrow as an object method when you need the method receiver."
+            ],
+            "example": {
+              "code": "function createCounter(start = 0) {\n  let value = start;\n\n  return {\n    next() {\n      value += 1;\n      return value;\n    },\n    current() {\n      return value;\n    },\n  };\n}\n\nconst counter = createCounter();\nbutton.addEventListener(\"click\", () => {\n  status.textContent = `Opened ${counter.next()} times`;\n});",
+              "walkthrough": [
+                "createCounter initializes a local binding and returns an object containing two methods.",
+                "The methods close over value, so they can read and update it after createCounter has returned.",
+                "The click callback also closes over counter, button, and status from its surrounding scope.",
+                "The binding stays reachable while the listener remains attached; remove listeners when a component or view is disposed if they capture unnecessary state."
+              ]
+            },
+            "misconceptions": [
+              "A closure is not a snapshot of a variable’s value; it retains access to the binding.",
+              "Arrow functions do not define their own this, arguments, or constructor behavior.",
+              "A function passed as a callback may run later, so do not assume local execution order from the line where it is registered."
+            ],
+            "check": {
+              "prompt": "An event listener reads a variable declared in the enclosing function after that function has returned. Why can it still access the variable, and what lifecycle risk should you consider?",
+              "answer": "The listener function closes over its lexical environment, keeping the binding reachable. If the listener is never removed, it may also retain referenced state or DOM longer than intended.",
+              "explanation": "Closures support deferred behavior but their captured references live as long as reachable functions do."
+            }
+          }
         },
         {
           "title": "Arrays and objects",
-          "focus": "Transform collections, access properties safely, and represent application state."
+          "focus": "Transform collections, access properties safely, and represent application state.",
+          "teaching": {
+            "objectives": [
+              "Choose arrays and objects to represent ordered collections and named records.",
+              "Update UI state immutably and handle absent or optional properties safely."
+            ],
+            "explanation": [
+              "Arrays represent ordered lists; objects represent records with named properties. Use map, filter, and other non-mutating array operations to derive display data. Methods such as push, splice, sort, and direct property assignment mutate their receiver; mutation can be appropriate for local data but makes state changes harder to track when references are shared. When updating state in UI frameworks, create a new array or object at each changed level so observers can detect the update.",
+              "Use optional chaining (?.) when a value may be null or undefined and access should stop safely. Use ?? for a missing-value default. Destructuring can make property access concise, but defaults apply to undefined, not null. Object spread copies enumerable own properties one level deep; nested objects remain shared references. Validate external data at boundaries because a static-looking object shape does not guarantee that network or user-provided data has the expected fields."
+            ],
+            "example": {
+              "code": "const profile = {\n  name: \"Mira\",\n  preferences: { theme: \"light\" },\n};\n\nconst updatedProfile = {\n  ...profile,\n  preferences: { ...profile.preferences, theme: \"dark\" },\n};\n\nconst lessons = [\n  { id: \"html\", title: \"HTML\", completed: true },\n  { id: \"css\", title: \"CSS\", completed: false },\n];\nconst completedTitles = lessons\n  .filter((lesson) => lesson.completed)\n  .map((lesson) => lesson.title);\nconst avatarUrl = apiUser?.profile?.avatarUrl ?? \"/images/default-avatar.svg\";",
+              "walkthrough": [
+                "The spread operations create a new profile and a new nested preferences object; a single shallow spread would still share preferences.",
+                "filter and map derive a new list of completed lesson titles without mutating lessons.",
+                "Optional chaining stops property access if apiUser or profile is nullish.",
+                "Nullish coalescing supplies the fallback URL only when avatarUrl is null or undefined, not when it is an intentionally empty string."
+              ]
+            },
+            "misconceptions": [
+              "Object spread is shallow; nested references remain shared unless copied intentionally.",
+              "Optional chaining avoids an exception for nullish access but does not validate that the resulting value has the expected type.",
+              "Destructuring and spread improve syntax but do not make data immutable or deeply copied."
+            ],
+            "check": {
+              "prompt": "You copy a profile with { ...profile } and then change copy.preferences.theme. The original theme also changes. Why, and what update pattern fixes this nested state change?",
+              "answer": "The spread copied only the top-level object, leaving preferences shared. Copy that nested object too: { ...profile, preferences: { ...profile.preferences, theme: \"dark\" } }.",
+              "explanation": "Immutably updating nested state requires a new reference at every changed level."
+            }
+          }
         },
         {
           "title": "Errors and modules",
-          "focus": "Throw and handle errors, separate responsibilities, and import/export reusable modules."
+          "focus": "Throw and handle errors, separate responsibilities, and import/export reusable modules.",
+          "teaching": {
+            "objectives": [
+              "Separate modules around responsibilities and use named or default exports intentionally.",
+              "Handle expected and unexpected failures without hiding useful diagnostics or user feedback."
+            ],
+            "explanation": [
+              "ES modules use import and export declarations that are statically analyzable. Named exports support several explicit values from one module; default exports provide one primary value. Prefer clear module boundaries and avoid circular dependencies that make initialization difficult to reason about. Keep browser-specific side effects out of pure utility modules when possible, and import only from trusted paths.",
+              "Errors can be thrown by application checks, browser APIs, or asynchronous operations. Catch an error where the program can take a useful action: show a recovery message, retry safely, or report a failure. Do not catch and silently ignore errors. Preserve diagnostic details for developers while presenting concise, actionable messages to users. For promises, use try/catch with await or a rejection handler; remember that errors thrown later in an unawaited callback are not caught by an outer synchronous try block."
+            ],
+            "example": {
+              "code": "// format.js\nexport function formatLessonTitle(lesson) {\n  if (!lesson || typeof lesson.title !== \"string\") {\n    throw new TypeError(\"A lesson title is required.\");\n  }\n  return lesson.title.trim();\n}\n\n// lesson-view.js\nimport { formatLessonTitle } from \"./format.js\";\n\nasync function showLesson(lessonId) {\n  try {\n    const lesson = await loadLesson(lessonId);\n    heading.textContent = formatLessonTitle(lesson);\n  } catch (error) {\n    console.error(\"Could not open lesson\", error);\n    status.textContent = \"This lesson could not be loaded. Try again.\";\n  }\n}",
+              "walkthrough": [
+                "The formatter exports one named function and validates its input at the module boundary.",
+                "The view imports that named export and owns the browser interaction.",
+                "await lets a rejected loadLesson promise be handled by the surrounding catch.",
+                "The console retains diagnostic context while the status text gives the learner a concise recovery message."
+              ]
+            },
+            "misconceptions": [
+              "A catch block should not erase failures silently; handle, rethrow, or report them with context.",
+              "try/catch around a function call does not catch errors thrown later by an unawaited promise or timer callback.",
+              "Default and named exports are both valid; consistency and clear import intent matter more than a universal preference."
+            ],
+            "check": {
+              "prompt": "A try block calls loadData() without await, and the returned promise later rejects. Why might the nearby catch not run, and what is a correction?",
+              "answer": "Without await or an explicit rejection handler, the rejection is not thrown into that synchronous try block. Use await inside the try or attach a .catch() handler.",
+              "explanation": "Asynchronous failures must be connected to a promise rejection handler."
+            }
+          }
         },
         {
           "title": "Language-specific behavior",
-          "focus": "Understand this, prototypes, destructuring, optional chaining, and other JavaScript idioms."
+          "focus": "Understand this, prototypes, destructuring, optional chaining, and other JavaScript idioms.",
+          "teaching": {
+            "objectives": [
+              "Explain how this is determined for regular functions and how prototypes support delegation.",
+              "Use destructuring, optional chaining, and nullish defaults without hiding missing-data cases."
+            ],
+            "explanation": [
+              "For a regular function, this is determined by the call form: a method call uses the object before the dot; call, apply, or bind can set it explicitly; a plain call has undefined this in strict mode. Arrow functions capture this from their surrounding lexical context. JavaScript objects can delegate property lookup through a prototype chain; class syntax builds on this model and methods are placed on the prototype. Prefer class or composition patterns appropriate to the problem, and be cautious when passing an unbound method as a callback because its receiver may be lost.",
+              "Destructuring extracts properties into local bindings and can provide defaults for undefined values. Optional chaining stops access across a nullish value; it does not protect against every wrong shape or misspelled property. Use nullish coalescing when null or undefined indicates absence, and validate values from APIs before rendering. These language features reduce defensive boilerplate, but clear boundary validation is still required."
+            ],
+            "example": {
+              "code": "const course = {\n  title: \"Web foundations\",\n  instructor: { name: \"Sam\" },\n  describe() { return `${this.title} with ${this.instructor.name}`; },\n};\n\nconst { title, instructor: { name } = {} } = course;\nconst instructorName = name ?? \"Instructor not assigned\";\nconst summary = course.describe();\nconst detachedDescribe = course.describe;\n// detachedDescribe() has no course receiver in strict mode.\nconst safeCallback = course.describe.bind(course);\n\nconsole.log(title, instructorName, safeCallback());",
+              "walkthrough": [
+                "The method call course.describe() sets this to course, so its property reads succeed.",
+                "Extracting instructor.name uses nested destructuring; the default protects only when instructor is undefined, not when it is null.",
+                "The detached function loses its receiver when called plainly; bind creates a function with course fixed as this.",
+                "Nullish coalescing supplies a label when the extracted name is null or undefined."
+              ]
+            },
+            "misconceptions": [
+              "A method does not permanently belong to its original receiver; extracting it can change this behavior.",
+              "Class syntax uses prototypes under the hood; it does not create a separate inheritance mechanism.",
+              "Destructuring defaults apply when a value is undefined, not when it is null."
+            ],
+            "check": {
+              "prompt": "A method uses this.name and works as object.method(), but fails when passed directly to addEventListener. What happened, and how can you preserve the needed receiver?",
+              "answer": "The callback call form no longer supplies the original object as this. Bind the method to the object, or use a wrapper/arrow callback that calls object.method().",
+              "explanation": "Regular-function this depends on invocation form; a callback API invokes it according to its own calling convention."
+            }
+          }
         },
         {
           "title": "Internationalization basics",
-          "focus": "Format numbers, currency, dates, and plural forms with Intl so the interface reads correctly for every locale."
+          "focus": "Format numbers, currency, dates, and plural forms with Intl so the interface reads correctly for every locale.",
+          "teaching": {
+            "objectives": [
+              "Format numbers, currencies, dates, and plural-sensitive messages with Intl APIs.",
+              "Avoid hard-coded locale conventions and test output using explicit locales and options."
+            ],
+            "explanation": [
+              "The Intl namespace provides locale-sensitive formatting without requiring manual separators or month names. Intl.NumberFormat formats numbers and currencies, Intl.DateTimeFormat formats dates and times, and Intl.PluralRules helps choose grammatical categories. Reuse formatter instances when formatting many values with the same locale and options. Supply a locale from the user’s preference when known, or allow the runtime default when the product intends that behavior.",
+              "Formatting output can vary across locale data and runtime versions, so tests should assert the behavior or use an explicit locale and suitable expectations. Store canonical values such as ISO timestamps or numeric amounts, then format them for display. A currency formatter formats a number; it does not perform currency conversion. For longer messages, use message catalogs or a localization system rather than assembling translated sentences by concatenating fragments."
+            ],
+            "example": {
+              "code": "const locale = userPreferences.locale ?? navigator.language;\nconst price = new Intl.NumberFormat(locale, {\n  style: \"currency\",\n  currency: \"EUR\",\n}).format(1234.5);\n\nconst date = new Intl.DateTimeFormat(locale, {\n  dateStyle: \"medium\",\n  timeZone: \"UTC\",\n}).format(new Date(\"2026-10-27T12:00:00Z\"));\n\nconst plural = new Intl.PluralRules(locale).select(lessonCount);\nconst message = messages.lessons[plural] ?? messages.lessons.other;",
+              "walkthrough": [
+                "The locale is selected from a stored user preference, with the browser locale as a fallback.",
+                "NumberFormat applies locale-appropriate currency formatting but does not convert the numeric amount into another currency.",
+                "DateTimeFormat formats the same instant for display using an explicit time zone, avoiding a machine-local time-zone surprise.",
+                "PluralRules selects a locale-specific category; a message catalog supplies the actual translated phrase for that category."
+              ]
+            },
+            "misconceptions": [
+              "Currency formatting changes display, not the value or exchange rate.",
+              "A date’s displayed day and time depend on locale and time zone; store and exchange unambiguous values.",
+              "Plural categories differ between languages, so English singular-versus-plural concatenation is not a universal localization strategy."
+            ],
+            "check": {
+              "prompt": "A price is stored as 1234.5 euros and currently displayed with a hard-coded \"$1,234.50\". What should Intl.NumberFormat change, and what does it not do?",
+              "answer": "Use Intl.NumberFormat with the user’s locale and currency: \"EUR\" to format separators and currency placement appropriately. It does not convert 1234.5 euros into another currency or apply an exchange rate.",
+              "explanation": "Internationalized formatting changes presentation while the underlying numeric amount remains the same."
+            }
+          }
         }
       ],
       "battery": [
