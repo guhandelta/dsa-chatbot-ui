@@ -248,6 +248,33 @@ it('provides testing and debugging workspaces with reproducible defects and a ch
   }
 })
 
+it('provides performance workspaces for measurement, resilient enhancement, and evidence-based review', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'performance')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css', 'script.js'])
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    const script = challenge.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
+    expect(html, challenge.id).toContain('<main>')
+    expect(html, challenge.id).toContain('<script src="script.js"></script>')
+    expect(() => new Function(script), `${challenge.id} JavaScript syntax`).not.toThrow()
+  }
+
+  const workspaces = Object.fromEntries((section?.battery ?? []).map((challenge) => [
+    challenge.id,
+    Object.fromEntries((challenge.starterFiles ?? []).map((file) => [file.name, file.content])),
+  ]))
+  expect(workspaces['performance-performance-investigation']['script.js']).toContain('item.getBoundingClientRect()')
+  expect(workspaces['performance-performance-investigation']['index.html']).toContain('forced layout reads')
+  expect(workspaces['performance-resilient-enhancement']['script.js']).toContain("if ('IntersectionObserver' in window)")
+  expect(workspaces['performance-resilient-enhancement']['script.js']).toContain('progress.hidden = false')
+  expect(workspaces['performance-resilient-enhancement']['script.js']).toContain('Every note remains available')
+  expect(workspaces['performance-resilient-enhancement']['index.html']).toContain('aria-label="Reading progress" hidden')
+  expect(workspaces['performance-resilient-enhancement']['index.html']).toContain('<section aria-labelledby=')
+  expect(workspaces['performance-before-and-after-review']['script.js']).toContain('Repeat measurements under similar conditions')
+  expect(workspaces['performance-before-and-after-review']['index.html']).toContain('type="number" min="0" step="any" required')
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true

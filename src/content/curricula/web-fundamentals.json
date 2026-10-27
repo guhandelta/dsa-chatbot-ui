@@ -927,19 +927,61 @@
           "id": "performance-performance-investigation",
           "title": "Performance investigation",
           "task": "Inspect a deliberately inefficient page and identify the measured bottleneck.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Workshop catalog performance lab</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Measure before optimizing</p>\n    <h1>Workshop catalog</h1>\n    <p>Search the catalog, inspect the browser Performance panel, and explain why rendering takes longer than it should. The page reports elapsed time and the number of forced layout reads.</p>\n    <label for=\"search\">Filter workshops</label>\n    <input id=\"search\" type=\"search\" autocomplete=\"off\" placeholder=\"Try “layout”\">\n    <p id=\"metrics\" role=\"status\" aria-live=\"polite\">Ready to measure.</p>\n    <ul id=\"workshops\" aria-label=\"Workshops\"></ul>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f5f7fb; color: #1f2937; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 48rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\nlabel { display: block; font-weight: 700; margin-block: 1rem 0.25rem; }\n\ninput { font: inherit; max-width: 100%; padding: 0.65rem; width: 100%; }\n\n#workshops { display: grid; gap: 0.55rem; list-style: none; padding: 0; }\n\n#workshops li { background: white; border: 1px solid #cad5e2; border-radius: 0.45rem; padding: 0.7rem; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const workshops = Array.from({ length: 240 }, (_, index) => ({\n  title: `${['Layout', 'Forms', 'Browser', 'Accessibility'][index % 4]} workshop ${index + 1}`,\n  duration: 20 + (index % 5) * 10,\n}));\nconst search = document.querySelector('#search');\nconst list = document.querySelector('#workshops');\nconst metrics = document.querySelector('#metrics');\n\nfunction render() {\n  const startedAt = performance.now();\n  const query = search.value.trim().toLowerCase();\n  const matching = workshops.filter((workshop) => workshop.title.toLowerCase().includes(query));\n  let forcedLayoutReads = 0;\n  list.replaceChildren();\n\n  matching.forEach((workshop) => {\n    const item = document.createElement('li');\n    item.textContent = `${workshop.title} · ${workshop.duration} minutes`;\n    list.append(item);\n    // Performance bug: reading geometry after every append forces synchronous layout.\n    item.getBoundingClientRect();\n    forcedLayoutReads += 1;\n  });\n\n  metrics.textContent = `Rendered ${matching.length} workshops with ${forcedLayoutReads} forced layout reads in ${(performance.now() - startedAt).toFixed(1)} ms.`;\n}\n\nsearch.addEventListener('input', render);\nrender();\n"
+            }
+          ]
         },
         {
           "id": "performance-resilient-enhancement",
           "title": "Resilient enhancement",
           "task": "Keep a page usable when one optional browser capability is unavailable.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Field notes reader</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Progressive enhancement</p>\n    <h1>Field notes</h1>\n    <p>All notes must remain readable if JavaScript or an optional browser API is unavailable. Add a visible reading-progress enhancement without hiding the content from the fallback experience.</p>\n    <p id=\"enhancement-status\" role=\"status\" aria-live=\"polite\">Reading progress enhancement is not connected yet.</p>\n    <progress id=\"reading-progress\" max=\"100\" value=\"0\" aria-label=\"Reading progress\" hidden></progress>\n    <article id=\"notes\">\n      <section aria-labelledby=\"observe-heading\"><h2 id=\"observe-heading\">Observe the page</h2><p>Begin with the content and the user’s goal. A performance improvement should respond to something observable, such as slow feedback, layout shift, or content that arrives late.</p></section>\n      <section aria-labelledby=\"measure-heading\"><h2 id=\"measure-heading\">Measure the experience</h2><p>Use browser tools to collect evidence. Compare the same interaction under similar conditions, and record the device, viewport, and network assumptions that affect the result.</p></section>\n      <section aria-labelledby=\"enhance-heading\"><h2 id=\"enhance-heading\">Enhance without removing the foundation</h2><p>Optional APIs can add useful feedback, but the reading experience should work before the enhancement runs and when the capability is missing.</p></section>\n    </article>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { color: #26352f; font-family: system-ui, sans-serif; line-height: 1.65; margin: 0; }\n\nmain { margin-inline: auto; max-width: 48rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #176b50; font-weight: 700; }\n\nsection { border-block-start: 1px solid #ccd6d1; padding-block: 1rem; }\n\nprogress { accent-color: #176b50; display: block; height: 0.8rem; position: sticky; top: 0; width: 100%; }\n\nprogress[hidden] { display: none; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const progress = document.querySelector('#reading-progress');\nconst status = document.querySelector('#enhancement-status');\nconst notes = document.querySelector('#notes');\nprogress.hidden = false;\n\nif ('IntersectionObserver' in window) {\n  const observer = new IntersectionObserver((entries) => {\n    const visibleSections = entries.filter((entry) => entry.isIntersecting).length;\n    status.textContent = `Optional observer is available. ${visibleSections} section(s) are currently entering view.`;\n  });\n  notes.querySelectorAll('section').forEach((section) => observer.observe(section));\n} else {\n  status.textContent = 'Optional observer is unavailable. Every note remains available; use the page scrollbar to track your reading.';\n}\n\nfunction updateProgress() {\n  const scrollable = document.documentElement.scrollHeight - window.innerHeight;\n  const percentage = scrollable > 0 ? Math.round((window.scrollY / scrollable) * 100) : 100;\n  progress.value = Math.max(0, Math.min(100, percentage));\n}\n\nwindow.addEventListener('scroll', updateProgress, { passive: true });\nwindow.addEventListener('resize', updateProgress);\nupdateProgress();\n"
+            }
+          ]
         },
         {
           "id": "performance-before-and-after-review",
           "title": "Before-and-after review",
           "task": "Record a performance symptom, make one change, and compare the result.",
-          "kind": "review"
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Performance change review</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Change one thing, then compare</p>\n    <h1>Performance review</h1>\n    <p>Choose one measurable symptom, make one implementation change in the other files, and record comparable before-and-after observations. Lower duration is better for this example.</p>\n    <form id=\"review-form\">\n      <label for=\"symptom\">Observed symptom</label>\n      <input id=\"symptom\" required placeholder=\"For example: filtering stalls after each keystroke\">\n      <label for=\"before\">Before duration (milliseconds)</label>\n      <input id=\"before\" type=\"number\" min=\"0\" step=\"any\" required>\n      <label for=\"after\">After duration (milliseconds)</label>\n      <input id=\"after\" type=\"number\" min=\"0\" step=\"any\" required>\n      <label for=\"change\">Single change made</label>\n      <textarea id=\"change\" rows=\"3\" required></textarea>\n      <button type=\"submit\">Compare observations</button>\n    </form>\n    <p id=\"result\" role=\"status\" aria-live=\"polite\">No comparison recorded yet.</p>\n    <h2>Comparison notes</h2><ol id=\"history\"></ol>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f7f7f4; color: #26352f; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 46rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #176b50; font-weight: 700; }\n\nform { display: grid; gap: 0.5rem; }\n\nlabel { font-weight: 700; margin-block-start: 0.6rem; }\n\ninput, textarea, button { font: inherit; max-width: 100%; padding: 0.65rem; width: 100%; }\n\nbutton { background: #176b50; border: 0; border-radius: 0.4rem; color: white; cursor: pointer; margin-block-start: 0.8rem; }\n\n#history { display: grid; gap: 0.5rem; padding-inline-start: 1.5rem; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#review-form');\nconst result = document.querySelector('#result');\nconst history = document.querySelector('#history');\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  const symptom = form.querySelector('#symptom').value.trim();\n  const before = Number(form.querySelector('#before').value);\n  const after = Number(form.querySelector('#after').value);\n  const change = form.querySelector('#change').value.trim();\n  if (!symptom || !change || !Number.isFinite(before) || !Number.isFinite(after) || before <= 0 || after < 0) {\n    result.textContent = 'Enter a symptom, a change, a positive before duration, and a non-negative after duration.';\n    return;\n  }\n\n  const improvement = ((before - after) / before) * 100;\n  const direction = improvement >= 0 ? 'faster' : 'slower';\n  const item = document.createElement('li');\n  item.textContent = `${symptom}: ${before} ms → ${after} ms (${Math.abs(improvement).toFixed(1)}% ${direction}); change: ${change}`;\n  history.prepend(item);\n  result.textContent = `Recorded ${Math.abs(improvement).toFixed(1)}% ${direction}. Repeat measurements under similar conditions before drawing a conclusion.`;\n});\n"
+            }
+          ]
         }
       ]
     },

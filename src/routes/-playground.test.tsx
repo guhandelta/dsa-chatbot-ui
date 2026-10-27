@@ -283,6 +283,24 @@ it.each([
   expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
 })
 
+it.each([
+  ['performance-performance-investigation', 'Performance investigation', 'item.getBoundingClientRect()'],
+  ['performance-resilient-enhancement', 'Resilient enhancement', "if ('IntersectionObserver' in window)"],
+  ['performance-before-and-after-review', 'Before-and-after review', 'Repeat measurements under similar conditions'],
+])('seeds the %s performance workspace', async (challenge, title, expectedScript) => {
+  const project = webChallengeProjectSlug('performance', challenge)
+  state.search = { project, template: 'html-css-js', section: 'performance', challenge }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: title })).toBeTruthy()
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain('<main>')
+  fireEvent.click(screen.getByRole('tab', { name: 'script.js' }))
+  const script = await screen.findByRole('textbox', { name: 'script.js editor' }) as HTMLTextAreaElement
+  expect(script.value).toContain(expectedScript)
+  expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
+})
+
 it('confirms and autosaves a challenge reset to its starter files', async () => {
   const challenge = 'browser-trace-a-page-load'
   const project = webChallengeProjectSlug('browser', challenge)
