@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { WEB_FUNDAMENTALS, UI_ELECTIVES } from '../lib/webCurriculum'
+import { WEB_FUNDAMENTALS, UI_ELECTIVES, webChallengeProjectSlug } from '../lib/webCurriculum'
 
 const KIND_LABEL = { learn: 'Understand', build: 'Build', debug: 'Debug', review: 'Review' } as const
 
@@ -23,7 +23,7 @@ export function WebCurriculum() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">{KIND_LABEL[challenge.kind]}</p>
             <p className="m-0 text-sm"><strong>{challenge.title}.</strong> {challenge.task}</p>
             <Link className="mini-btn mt-2 inline-flex" to="/playground" search={{
-              project: `web-${section.id}`, template: 'html-css-js', section: section.id,
+              project: webChallengeProjectSlug(section.id, challenge.id), template: 'html-css-js', section: section.id,
               challenge: challenge.id,
             }}>Open challenge in playground</Link>
           </li>)}</ul>

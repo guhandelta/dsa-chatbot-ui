@@ -14,6 +14,7 @@ import type { WorkspaceFile } from '../lib/workspaceApi'
 import { FileTabs } from '../components/workspace/FileTabs'
 import { useAutosave, type Saver } from '../components/workspace/useAutosave'
 import { ChallengeBrief, WebCurriculum } from '../components/WebCurriculum'
+import { WEB_FUNDAMENTALS, webChallengeProjectSlug } from '../lib/webCurriculum'
 
 export const Route = createFileRoute('/playground')({
   beforeLoad: () => {
@@ -50,6 +51,10 @@ function ProjectList() {
   const [name, setName] = useState('')
   const [template, setTemplate] = useState('html-css-js')
   const [error, setError] = useState<string | null>(null)
+  const curriculumProjects = new Map(WEB_FUNDAMENTALS.flatMap((section) => section.battery.map((challenge) => [
+    webChallengeProjectSlug(section.id, challenge.id),
+    { search: { section: section.id, challenge: challenge.id }, title: challenge.title },
+  ] as const)))
   useEffect(() => {
     listPlayground().then(setListing).catch((e) => setError(getApiErrorMessage(e)))
   }, [])
@@ -69,7 +74,9 @@ function ProjectList() {
       <ul className="ws-list">
         {listing?.projects.map((p) => (
           <li key={p.slug}>
-            <Link to="/playground" search={{ project: p.slug }}>{p.slug}</Link>
+            <Link to="/playground" search={{ project: p.slug, ...curriculumProjects.get(p.slug)?.search }}>
+              {curriculumProjects.get(p.slug)?.title ?? p.slug}
+            </Link>
             <span className="ws-hint">{listing.templates.find((t) => t.id === p.template)?.title}</span>
           </li>
         ))}

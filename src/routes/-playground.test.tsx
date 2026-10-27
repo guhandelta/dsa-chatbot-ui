@@ -1,13 +1,14 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { listPlayground, openPlayground, savePlayground, transpileTypeScript } from '../lib/playgroundApi'
+import { webChallengeProjectSlug } from '../lib/webCurriculum'
 
 const state = vi.hoisted(() => ({ search: {} as Record<string, string>, navigate: vi.fn() }))
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => (options: Record<string, unknown>) => ({ ...options, useSearch: () => state.search }),
   redirect: (value: unknown) => value,
   useNavigate: () => state.navigate,
-  Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
+  Link: ({ children, search }: { children: React.ReactNode; search?: Record<string, unknown> }) => <a data-search={JSON.stringify(search)}>{children}</a>,
 }))
 vi.mock('../lib/auth', () => ({ hasToken: () => true }))
 vi.mock('../lib/api', () => ({ getApiErrorMessage: (e: Error) => e.message }))
@@ -66,11 +67,29 @@ it('compiles TypeScript, renders a sandboxed preview and reports type errors', a
 })
 
 it('shows the selected curriculum challenge beside the code editor', async () => {
-  state.search = { project: 'web-js-fundamentals', section: 'js-fundamentals', challenge: 'js-fundamentals-function-fluency-set' }
+  const project = webChallengeProjectSlug('js-fundamentals', 'js-fundamentals-function-fluency-set')
+  state.search = { project, template: 'html-css-js', section: 'js-fundamentals', challenge: 'js-fundamentals-function-fluency-set' }
   render(<Page />)
   expect(await screen.findByRole('heading', { name: 'Function fluency set' })).toBeTruthy()
   expect(screen.getByText(/validation, formatting, and deriving display data/)).toBeTruthy()
   expect(screen.getByText(/not yet automatically evaluated/)).toBeTruthy()
+  expect(openPlayground).toHaveBeenCalledWith(project, 'html-css-js')
+})
+
+it('restores the matching challenge brief when opening its saved project from the project list', async () => {
+  const challenge = 'js-fundamentals-function-fluency-set'
+  const project = webChallengeProjectSlug('js-fundamentals', challenge)
+  vi.mocked(listPlayground).mockResolvedValue({ projects: [{ slug: project, template: 'html-css-js', updated_at: null }],
+    templates: [{ id: 'html-css-js', title: 'HTML, CSS and JavaScript' }],
+    limits: { max_files: 12, max_total_chars: 60000, max_projects: 100 } })
+  render(<Page />)
+  await waitFor(() => expect(document.querySelectorAll(`a[data-search*="${project}"]`).length).toBeGreaterThan(1))
+  const matchingLinks = document.querySelectorAll(`a[data-search*="${project}"]`)
+  const link = matchingLinks.item(matchingLinks.length - 1)
+  expect(link?.textContent).toContain('Function fluency set')
+  expect(JSON.parse(link?.getAttribute('data-search') ?? '{}')).toEqual({
+    project, section: 'js-fundamentals', challenge,
+  })
 })
 
 it('autosaves edits and refreshes the preview for markup without re-running scripts', async () => {

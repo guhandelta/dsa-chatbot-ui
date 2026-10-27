@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { WEB_FUNDAMENTALS } from '../lib/webCurriculum'
+import { WEB_FUNDAMENTALS, webChallengeProjectSlug } from '../lib/webCurriculum'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, search }: { children: React.ReactNode; search?: unknown }) => <a data-search={JSON.stringify(search)}>{children}</a>,
@@ -29,6 +29,11 @@ it('defines an ordered, substantial common web fundamentals spine with a battery
     expect(new Set(section.battery.map((challenge) => challenge.kind)).size, `${section.id} challenge variety`).toBeGreaterThan(1)
   }
   expect(new Set(WEB_FUNDAMENTALS.map((section) => section.id)).size).toBe(WEB_FUNDAMENTALS.length)
+  const challengeProjects = WEB_FUNDAMENTALS.flatMap((section) => section.battery.map((challenge) =>
+    webChallengeProjectSlug(section.id, challenge.id),
+  ))
+  expect(new Set(challengeProjects).size).toBe(challengeProjects.length)
+  expect(challengeProjects.every((slug) => slug.length <= 40 && /^[a-z0-9][a-z0-9-]*$/.test(slug))).toBe(true)
 })
 
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
@@ -41,6 +46,9 @@ it('renders lesson batteries, same-section challenge links, and the current asse
     WEB_FUNDAMENTALS.reduce((total, section) => total + section.battery.length, 0),
   )
   expect(container.querySelector('a[data-search*="js-fundamentals-function-fluency-set"]')).toBeTruthy()
+  const firstChallenge = WEB_FUNDAMENTALS[0].battery[0]
+  const firstLink = container.querySelector(`a[data-search*="${firstChallenge.id}"]`)
+  expect(firstLink?.getAttribute('data-search')).toContain(webChallengeProjectSlug(WEB_FUNDAMENTALS[0].id, firstChallenge.id))
   expect(screen.getByText(/Client-side component UI:/)).toBeTruthy()
 })
 
