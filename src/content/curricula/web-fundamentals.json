@@ -757,19 +757,61 @@
           "id": "accessibility-keyboard-only-audit",
           "title": "Keyboard-only audit",
           "task": "Complete a supplied workflow without a pointer and repair any inaccessible control.",
-          "kind": "review"
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Choose a practice session</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Keyboard-only audit</p>\n    <h1>Choose a practice session</h1>\n    <p>Use Tab and Shift+Tab to move through the choices, select one with the keyboard, then continue. One control is skipped and focus is difficult to see.</p>\n    <form id=\"session-form\">\n      <fieldset>\n        <legend>Pick a session length</legend>\n        <label><input type=\"radio\" name=\"duration\" value=\"10\" checked> 10 minutes</label>\n        <label><input type=\"radio\" name=\"duration\" value=\"25\"> 25 minutes</label>\n      </fieldset>\n      <label for=\"goal\">What will you practise?</label>\n      <input id=\"goal\" name=\"goal\" required placeholder=\"For example, array traversal\">\n      <button id=\"continue\" type=\"submit\" tabindex=\"-1\">Continue</button>\n    </form>\n    <p id=\"confirmation\" role=\"status\" aria-live=\"polite\"></p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f6f7f3; color: #25352d; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 42rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #176b50; font-weight: 700; }\n\nform { display: grid; gap: 1rem; }\n\nfieldset { border: 1px solid #bdcbbf; border-radius: 0.5rem; display: grid; gap: 0.5rem; padding: 1rem; }\n\ninput, button { font: inherit; padding: 0.6rem; }\n\nbutton { background: #176b50; border: 0; border-radius: 0.4rem; color: white; justify-self: start; }\n\n:focus { outline: none; }\n\n:focus-visible { outline: none; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#session-form');\nconst confirmation = document.querySelector('#confirmation');\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  const values = new FormData(form);\n  const duration = values.get('duration');\n  const goal = String(values.get('goal') ?? '').trim();\n  if (!goal) return;\n  confirmation.textContent = `Your ${duration}-minute session for ${goal} is ready.`;\n});\n"
+            }
+          ]
         },
         {
           "id": "accessibility-accessible-status-messages",
           "title": "Accessible status messages",
           "task": "Add clear success and error feedback to a dynamic form without stealing focus.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Weekly practice note</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Accessible feedback</p>\n    <h1>Get a weekly practice note</h1>\n    <p>Enter an email address. Use <code>offline@example.com</code> to simulate a service error.</p>\n    <form id=\"signup-form\" novalidate>\n      <label for=\"email\">Email address</label>\n      <input id=\"email\" name=\"email\" type=\"email\" autocomplete=\"email\" required aria-describedby=\"email-help\">\n      <p id=\"email-help\">We will send one practice note each week.</p>\n      <button type=\"submit\">Sign me up</button>\n    </form>\n    <p id=\"success-message\" role=\"status\" aria-live=\"polite\" hidden></p>\n    <p id=\"error-message\" role=\"alert\" hidden></p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { color: #243244; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 38rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\nform { display: grid; gap: 0.6rem; }\n\ninput, button { font: inherit; padding: 0.65rem; }\n\nbutton { background: #164f9c; border: 0; border-radius: 0.4rem; color: white; justify-self: start; }\n\n#success-message { border-inline-start: 0.3rem solid #176b50; padding-inline-start: 0.75rem; }\n\n#error-message { border-inline-start: 0.3rem solid #a92f2f; padding-inline-start: 0.75rem; }\n\n[hidden] { display: none !important; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#signup-form');\nconst email = document.querySelector('#email');\nconst success = document.querySelector('#success-message');\nconst error = document.querySelector('#error-message');\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  // TODO: validate the address, clear stale feedback, and show the right message.\n  const address = email.value.trim();\n  if (address.toLowerCase() === 'offline@example.com') {\n    error.textContent = '';\n    error.hidden = true;\n    success.hidden = true;\n    return;\n  }\n  success.textContent = '';\n  success.hidden = true;\n  error.hidden = true;\n});\n"
+            }
+          ]
         },
         {
           "id": "accessibility-semantic-repair-lab",
           "title": "Semantic repair lab",
           "task": "Replace misleading clickable elements with controls that expose the right behavior.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Practice guide</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Semantic repair lab</p>\n    <h1>Practice guide</h1>\n    <article class=\"guide-card\">\n      <h2>Build a reliable loop</h2>\n      <p>Write a small hypothesis, try it, and inspect the result.</p>\n      <div class=\"action\" data-action=\"save\">Save this guide</div>\n      <a class=\"action\" href=\"#\" data-action=\"details\">Read the details</a>\n      <p id=\"save-status\" aria-live=\"polite\"></p>\n    </article>\n    <section id=\"details\" hidden>\n      <h2>Details</h2>\n      <p>Keep the practice small enough that you can explain each change.</p>\n    </section>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f5f7fb; color: #1f2937; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 42rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\n.guide-card, #details { background: white; border: 1px solid #cbd5e1; border-radius: 0.6rem; margin-block: 1rem; padding: 1rem; }\n\n.action { background: #164f9c; border-radius: 0.35rem; color: white; cursor: pointer; display: inline-block; margin-inline-end: 0.4rem; padding: 0.6rem 0.8rem; text-decoration: none; }\n\n[hidden] { display: none !important; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const card = document.querySelector('.guide-card');\nconst saveStatus = document.querySelector('#save-status');\nconst details = document.querySelector('#details');\n\ncard.addEventListener('click', (event) => {\n  const action = event.target.closest('[data-action]');\n  if (!action || !card.contains(action)) return;\n  if (action.dataset.action === 'save') {\n    saveStatus.textContent = 'Save action simulated for this exercise.';\n  }\n  if (action.dataset.action === 'details') {\n    event.preventDefault();\n    details.hidden = !details.hidden;\n  }\n});\n"
+            }
+          ]
         }
       ]
     },

@@ -185,6 +185,31 @@ it('provides offline async and browser API workspaces with explicit states and r
   expect(workspaces['async-apis-api-choice-check']['index.html']).toContain('Check my reasoning')
 })
 
+it('provides accessibility audit, live feedback, and semantic repair workspaces', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'accessibility')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css', 'script.js'])
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    const script = challenge.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
+    expect(html, challenge.id).toContain('<main>')
+    expect(html, challenge.id).toContain('<script src="script.js"></script>')
+    expect(() => new Function(script), `${challenge.id} JavaScript syntax`).not.toThrow()
+  }
+
+  const workspaces = Object.fromEntries((section?.battery ?? []).map((challenge) => [
+    challenge.id,
+    Object.fromEntries((challenge.starterFiles ?? []).map((file) => [file.name, file.content])),
+  ]))
+  expect(workspaces['accessibility-keyboard-only-audit']['index.html']).toContain('tabindex="-1"')
+  expect(workspaces['accessibility-keyboard-only-audit']['styles.css']).toContain(':focus-visible { outline: none; }')
+  expect(workspaces['accessibility-accessible-status-messages']['index.html']).toContain('role="status" aria-live="polite"')
+  expect(workspaces['accessibility-accessible-status-messages']['index.html']).toContain('role="alert"')
+  expect(workspaces['accessibility-semantic-repair-lab']['index.html']).toContain('<div class="action" data-action="save">')
+  expect(workspaces['accessibility-semantic-repair-lab']['index.html']).toContain('href="#" data-action="details"')
+  expect(workspaces['accessibility-semantic-repair-lab']['script.js']).toContain('Save action simulated for this exercise.')
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true
