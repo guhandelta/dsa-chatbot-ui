@@ -842,19 +842,61 @@
           "id": "testing-debugging-seeded-bug-investigation",
           "title": "Seeded bug investigation",
           "task": "Resolve a multi-symptom page defect and submit evidence for the root cause.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Workshop health check</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Reproduce · observe · explain</p>\n    <h1>Workshop health check</h1>\n    <p>Run the local check several times. Compare the button clicks, request count, and history entries. Find one root cause that explains the growing mismatch.</p>\n    <button id=\"run-check\" type=\"button\">Run local check</button>\n    <p id=\"request-count\" aria-live=\"polite\">Checks requested: 0</p>\n    <p id=\"status\" role=\"status\" aria-live=\"polite\">Ready to check.</p>\n    <h2>Recent checks</h2>\n    <ol id=\"history\"></ol>\n    <label for=\"evidence\">Record the reproduction and evidence</label>\n    <textarea id=\"evidence\" rows=\"4\" placeholder=\"What did you click? What changed? Which code path explains the evidence?\"></textarea>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f5f7fb; color: #1f2937; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 44rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\nbutton, textarea { font: inherit; padding: 0.65rem; }\n\nbutton { background: #164f9c; border: 0; border-radius: 0.4rem; color: white; cursor: pointer; }\n\ntextarea { display: block; max-width: 100%; width: 100%; }\n\n#history { display: grid; gap: 0.4rem; padding-inline-start: 1.5rem; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const runButton = document.querySelector('#run-check');\nconst requestCount = document.querySelector('#request-count');\nconst status = document.querySelector('#status');\nconst history = document.querySelector('#history');\nconst state = { requests: 0, entries: [] };\n\nfunction render() {\n  requestCount.textContent = `Checks requested: ${state.requests}`;\n  history.replaceChildren(...state.entries.map((entry) => {\n    const item = document.createElement('li');\n    item.textContent = entry;\n    return item;\n  }));\n\n  // Bug: each render adds another listener to this same button.\n  runButton.addEventListener('click', () => {\n    state.requests += 1;\n    state.entries.unshift(`Check ${state.requests}: 3 local checks passed`);\n    state.entries = state.entries.slice(0, 5);\n    status.textContent = `Check ${state.requests} complete.`;\n    render();\n  });\n}\n\nrender();\n"
+            }
+          ]
         },
         {
           "id": "testing-debugging-write-a-behavior-checklist",
           "title": "Write a behavior checklist",
           "task": "Create checks for a form or interaction covering normal and edge cases.",
-          "kind": "review"
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Signup behavior checklist</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Plan checks before changing code</p>\n    <h1>Signup behavior checklist</h1>\n    <p>Review the form scenarios, add one edge case, then mark each check as you verify it.</p>\n    <form id=\"signup-preview\" novalidate>\n      <label for=\"email\">Email address</label>\n      <input id=\"email\" type=\"email\" autocomplete=\"email\" placeholder=\"learner@example.com\">\n      <button type=\"submit\">Try signup</button>\n      <p id=\"preview-status\" role=\"status\" aria-live=\"polite\"></p>\n    </form>\n    <section aria-labelledby=\"checks-heading\">\n      <h2 id=\"checks-heading\">Test cases</h2>\n      <p id=\"coverage\" role=\"status\" aria-live=\"polite\">0 of 5 checks verified.</p>\n      <ul id=\"checks\">\n        <li><label><input type=\"checkbox\"> Valid address is accepted</label></li>\n        <li><label><input type=\"checkbox\"> Empty address is explained</label></li>\n        <li><label><input type=\"checkbox\"> Invalid address is rejected</label></li>\n        <li><label><input type=\"checkbox\"> Leading and trailing spaces are handled</label></li>\n        <li><label><input type=\"checkbox\"> Feedback is announced without moving focus</label></li>\n      </ul>\n      <form id=\"add-check-form\">\n        <label for=\"new-check\">Add a test case</label>\n        <div class=\"add-row\"><input id=\"new-check\" required><button type=\"submit\">Add case</button></div>\n      </form>\n    </section>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { color: #243244; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 46rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #3156a3; font-weight: 700; }\n\nform { display: grid; gap: 0.5rem; margin-block: 1rem; }\n\ninput, button { font: inherit; padding: 0.6rem; }\n\n.add-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }\n\n.add-row input { flex: 1 1 15rem; }\n\nbutton { background: #164f9c; border: 0; border-radius: 0.35rem; color: white; }\n\n#checks { display: grid; gap: 0.6rem; list-style: none; padding: 0; }\n\n#checks li { background: #f5f7fb; border-radius: 0.45rem; padding: 0.7rem; }\n\n#checks label { align-items: start; display: flex; gap: 0.6rem; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const checks = document.querySelector('#checks');\nconst coverage = document.querySelector('#coverage');\nconst addForm = document.querySelector('#add-check-form');\nconst signupForm = document.querySelector('#signup-preview');\nconst previewStatus = document.querySelector('#preview-status');\n\nfunction updateCoverage() {\n  const boxes = [...checks.querySelectorAll('input[type=checkbox]')];\n  const verified = boxes.filter((box) => box.checked).length;\n  coverage.textContent = `${verified} of ${boxes.length} checks verified.`;\n}\n\nchecks.addEventListener('change', updateCoverage);\n\naddForm.addEventListener('submit', (event) => {\n  event.preventDefault();\n  const input = addForm.querySelector('#new-check');\n  const description = input.value.trim();\n  if (!description) return;\n  // TODO: add a labeled checkbox for this case and refresh the coverage count.\n  input.value = '';\n});\n\nsignupForm.addEventListener('submit', (event) => {\n  event.preventDefault();\n  const address = signupForm.querySelector('#email').value.trim();\n  previewStatus.textContent = address.includes('@') ? 'Signup accepted in this local preview.' : 'Enter an email address to continue.';\n});\n\nupdateCoverage();\n"
+            }
+          ]
         },
         {
           "id": "testing-debugging-regression-challenge",
           "title": "Regression challenge",
           "task": "Fix a reported issue while preserving existing interaction behavior.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Practice task list</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <p class=\"eyebrow\">Fix the report, protect the working paths</p>\n    <h1>Practice task list</h1>\n    <p>Reported issue: searching with lowercase letters misses titles containing uppercase letters. Fix it, then confirm the completion filters and counts still work.</p>\n    <label for=\"search\">Search tasks</label>\n    <input id=\"search\" type=\"search\" value=\"DOM\" autocomplete=\"off\">\n    <label for=\"filter\">Show</label>\n    <select id=\"filter\"><option value=\"all\">All tasks</option><option value=\"open\">Open tasks</option><option value=\"done\">Completed tasks</option></select>\n    <p id=\"summary\" role=\"status\" aria-live=\"polite\"></p>\n    <ul id=\"tasks\" aria-label=\"Practice tasks\"></ul>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody { background: #f7f7f4; color: #25352d; font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }\n\nmain { margin-inline: auto; max-width: 44rem; padding: 2rem 1rem; }\n\n.eyebrow { color: #176b50; font-weight: 700; }\n\nlabel { display: block; font-weight: 700; margin-block: 0.75rem 0.25rem; }\n\ninput, select { font: inherit; max-width: 100%; padding: 0.6rem; width: 100%; }\n\n#tasks { display: grid; gap: 0.65rem; list-style: none; padding: 0; }\n\n#tasks li { align-items: center; border: 1px solid #cbd5e1; border-radius: 0.5rem; display: flex; gap: 0.7rem; padding: 0.8rem; }\n\n#tasks li.is-done span { color: #526171; text-decoration: line-through; }\n\n:focus-visible { outline: 3px solid #9a4b00; outline-offset: 3px; }\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const tasks = [\n  { id: 'dom', title: 'Inspect the DOM tree', done: false },\n  { id: 'forms', title: 'Test form validation', done: true },\n  { id: 'events', title: 'Trace event bubbling', done: false },\n  { id: 'css', title: 'Review CSS layout', done: true },\n];\nconst search = document.querySelector('#search');\nconst filter = document.querySelector('#filter');\nconst list = document.querySelector('#tasks');\nconst summary = document.querySelector('#summary');\n\nfunction render() {\n  const query = search.value.trim();\n  const visible = tasks.filter((task) => {\n    const matchesQuery = task.title.includes(query); // Regression: this comparison is case-sensitive.\n    const matchesFilter = filter.value === 'all' || (filter.value === 'done' ? task.done : !task.done);\n    return matchesQuery && matchesFilter;\n  });\n  list.replaceChildren(...visible.map((task) => {\n    const item = document.createElement('li');\n    if (task.done) item.classList.add('is-done');\n    const checkbox = document.createElement('input');\n    checkbox.type = 'checkbox';\n    checkbox.checked = task.done;\n    checkbox.setAttribute('aria-label', `Mark ${task.title} complete`);\n    checkbox.addEventListener('change', () => {\n      task.done = checkbox.checked;\n      render();\n    });\n    const title = document.createElement('span');\n    title.textContent = task.title;\n    item.append(checkbox, title);\n    return item;\n  }));\n  summary.textContent = `${visible.length} of ${tasks.length} tasks shown.`;\n}\n\nsearch.addEventListener('input', render);\nfilter.addEventListener('change', render);\nrender();\n"
+            }
+          ]
         }
       ]
     },

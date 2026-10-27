@@ -210,6 +210,44 @@ it('provides accessibility audit, live feedback, and semantic repair workspaces'
   expect(workspaces['accessibility-semantic-repair-lab']['script.js']).toContain('Save action simulated for this exercise.')
 })
 
+it('provides testing and debugging workspaces with reproducible defects and a checklist scaffold', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'testing-debugging')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css', 'script.js'])
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    const script = challenge.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
+    expect(html, challenge.id).toContain('<main>')
+    expect(html, challenge.id).toContain('<script src="script.js"></script>')
+    expect(() => new Function(script), `${challenge.id} JavaScript syntax`).not.toThrow()
+  }
+
+  const workspaces = Object.fromEntries((section?.battery ?? []).map((challenge) => [
+    challenge.id,
+    Object.fromEntries((challenge.starterFiles ?? []).map((file) => [file.name, file.content])),
+  ]))
+  expect(workspaces['testing-debugging-seeded-bug-investigation']['script.js']).toContain("runButton.addEventListener('click'")
+  expect(workspaces['testing-debugging-seeded-bug-investigation']['script.js']).toContain('function render()')
+  expect(workspaces['testing-debugging-write-a-behavior-checklist']['index.html']).toContain('0 of 5 checks verified.')
+  expect(workspaces['testing-debugging-write-a-behavior-checklist']['script.js']).toContain('TODO: add a labeled checkbox')
+  expect(workspaces['testing-debugging-regression-challenge']['script.js']).toContain('task.title.includes(query)')
+  expect(workspaces['testing-debugging-regression-challenge']['index.html']).toContain('completion filters and counts still work')
+
+  const originalBody = document.body.innerHTML
+  try {
+    document.body.innerHTML = workspaces['testing-debugging-seeded-bug-investigation']['index.html']
+    const script = workspaces['testing-debugging-seeded-bug-investigation']['script.js']
+    new Function(script)()
+    const button = document.querySelector<HTMLButtonElement>('#run-check')!
+    button.click()
+    expect(document.querySelector('#request-count')?.textContent).toBe('Checks requested: 1')
+    button.click()
+    expect(document.querySelector('#request-count')?.textContent).toBe('Checks requested: 3')
+  } finally {
+    document.body.innerHTML = originalBody
+  }
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true
