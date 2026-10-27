@@ -309,6 +309,55 @@ it('provides detailed testing and debugging instruction with reproducible, behav
   }
 })
 
+it('provides detailed performance and frontend security instruction with current metrics and safe examples', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'performance')
+  expect(section?.lessons).toHaveLength(6)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+  }
+  expect(section?.lessons[0].teaching?.example.code).toContain('loading="lazy"')
+  expect(section?.lessons[1].teaching?.example.code).toContain('getBoundingClientRect()')
+  expect(section?.lessons[2].teaching?.example.code).toContain('performance.measure')
+  expect(section?.lessons[4].teaching?.example.code).toContain('onINP')
+  expect(section?.lessons[4].teaching?.example.code).toContain('LCP <= 2.5 s')
+  const securityExample = section?.lessons[5].teaching?.example.code ?? ''
+  expect(securityExample).toContain('textContent = untrustedComment')
+  expect(securityExample).toContain('Content-Security-Policy')
+  const secureSnippet = securityExample.split('// Example HTTP response header')[0]
+  expect(() => new Function(secureSnippet), 'security example syntax').not.toThrow()
+
+  const progressive = section?.lessons[3].teaching?.example.code ?? ''
+  const script = progressive.match(/<script>([\s\S]*?)<\/script>/)?.[1]
+  expect(script).toBeTruthy()
+  expect(() => new Function(script!), 'progressive enhancement script syntax').not.toThrow()
+  const originalBody = document.body.innerHTML
+  try {
+    document.body.innerHTML = progressive.replace(/<script>[\s\S]*?<\/script>/, '')
+    new Function(script!)()
+    const form = document.querySelector<HTMLFormElement>('#search-form')!
+    const query = document.querySelector<HTMLInputElement>('#query')!
+    query.value = 'array'
+    fireEvent.submit(form)
+    expect(document.querySelector('#workshop-results li')?.hasAttribute('hidden')).toBe(false)
+    expect(document.querySelectorAll('#workshop-results li[hidden]')).toHaveLength(1)
+    expect(document.querySelector('#enhancement-status')?.textContent).toBe('1 workshop shown.')
+    query.value = 'no match'
+    fireEvent.submit(form)
+    expect(document.querySelectorAll('#workshop-results li[hidden]')).toHaveLength(2)
+    expect(document.querySelector('#empty-state')?.hasAttribute('hidden')).toBe(false)
+  } finally {
+    document.body.innerHTML = originalBody
+  }
+})
+
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
   const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
   expect(forms?.battery).toHaveLength(3)
@@ -622,7 +671,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 55 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 61 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -679,6 +728,19 @@ it('renders testing and debugging lessons and preserves the explicit quick-check
   fireEvent.click(screen.getByText('Study Reproduction and hypotheses'))
   expect(screen.getByText(/A useful bug report describes the environment and preconditions/)).toBeTruthy()
   const check = container.querySelector<HTMLDetailsElement>('[aria-label="Reproduction and hypotheses knowledge check"] details')!
+  expect(check.open).toBe(false)
+  fireEvent.click(check.querySelector('summary')!)
+  expect(check.open).toBe(true)
+})
+
+it('renders performance lessons with their evidence-led and privacy-aware guidance', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(12) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('6 of 6 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Core Web Vitals'))
+  expect(screen.getByText(/Interaction to Next Paint \(INP\) summarizes responsiveness/)).toBeTruthy()
+  const check = container.querySelector<HTMLDetailsElement>('[aria-label="Core Web Vitals knowledge check"] details')!
   expect(check.open).toBe(false)
   fireEvent.click(check.querySelector('summary')!)
   expect(check.open).toBe(true)

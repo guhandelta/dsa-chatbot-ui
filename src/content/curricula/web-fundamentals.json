@@ -2549,27 +2549,195 @@
       "lessons": [
         {
           "title": "Loading and rendering costs",
-          "focus": "Understand resource loading, critical CSS, script timing, and expensive rendering work."
+          "focus": "Understand resource loading, critical CSS, script timing, and expensive rendering work.",
+          "teaching": {
+            "objectives": [
+              "Trace the critical resource path from navigation through parsing, loading, script execution, and first useful rendering.",
+              "Choose script and resource loading hints according to dependency and user-visible priority."
+            ],
+            "explanation": [
+              "The browser must discover and fetch HTML, CSS, scripts, fonts, and images before it can render some content. A parser-blocking classic script can delay HTML parsing; defer scripts execute after parsing and preserve document order, while async scripts execute as soon as each is ready and do not guarantee relative order. Use module scripts for dependency-managed JavaScript and avoid adding scripts to the critical path without a reason.",
+              "Prioritize resources needed for the initial viewport, but do not preload everything. Reserve image dimensions to prevent layout shifts, use responsive sources so the browser can select an appropriate asset, and lazy-load below-the-fold images. Measure whether a font, stylesheet, script, or server response is actually delaying the content before changing loading strategy."
+            ],
+            "example": {
+              "code": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Workshop guide</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n  <script src=\"app.js\" defer></script>\n</head>\n<body>\n  <main>\n    <h1>Workshop guide</h1>\n    <p>Read the guide and choose a practice session.</p>\n    <img src=\"workshop-640.webp\" srcset=\"workshop-640.webp 640w, workshop-1280.webp 1280w\"\n         sizes=\"(max-width: 40rem) 100vw, 40rem\" width=\"1280\" height=\"720\"\n         alt=\"Learners working together at a whiteboard\">\n    <h2>More workshops</h2>\n    <img src=\"workshop-room.webp\" width=\"800\" height=\"450\" loading=\"lazy\" alt=\"A quiet workshop room\">\n  </main>\n</body>\n</html>",
+              "walkthrough": [
+                "The stylesheet is discovered early; the deferred script does not block HTML parsing and runs after parsing, in document order relative to other deferred classic scripts.",
+                "The first image is in the initial content and is not lazy-loaded. Its width/height reserve an aspect ratio, while srcset and sizes let the browser choose an appropriate file.",
+                "The second image is below the main content and may be lazy-loaded. Measure real loading before adding preload hints or additional complexity."
+              ]
+            },
+            "misconceptions": [
+              "async and defer are not interchangeable: async execution order is not guaranteed and may interrupt parsing when the script executes.",
+              "loading=\"lazy\" on the likely largest above-the-fold image can delay LCP. Lazy-load content that is genuinely offscreen.",
+              "preload is a strong priority hint; unused or excessive preloads compete with more important resources."
+            ],
+            "check": {
+              "prompt": "For two dependent scripts whose document order matters, which loading strategy fits, and which image should generally not be lazy-loaded?",
+              "answer": "Use defer for classic scripts that depend on document order (or modules with their dependency system). Do not lazy-load an important above-the-fold image such as the likely LCP image.",
+              "explanation": "Loading choices change the browser critical path. Keep critical resources discoverable and measure their effect instead of applying hints indiscriminately."
+            }
+          }
         },
         {
           "title": "Responsive assets and efficient updates",
-          "focus": "Use right-sized assets and avoid unnecessary layout, paint, and DOM work."
+          "focus": "Use right-sized assets and avoid unnecessary layout, paint, and DOM work.",
+          "teaching": {
+            "objectives": [
+              "Serve appropriately sized images and media for the rendered slot and device.",
+              "Reduce repeated DOM and layout work by batching reads and writes and choosing efficient visual properties."
+            ],
+            "explanation": [
+              "Responsive images combine candidate files in srcset with a sizes description of the rendered slot; the browser selects a candidate based on the viewport and device. Provide intrinsic width and height to reserve space. Use loading=\"lazy\" for offscreen images, not the initial hero; use decoding=\"async\" when asynchronous image decoding is appropriate. Avoid downloading large desktop assets for small slots.",
+              "JavaScript can trigger layout when it reads geometry after style changes. Batch geometry reads, compute in memory, then apply writes together. Update only the necessary nodes and prefer transform or opacity for suitable animation because they can often avoid layout; they still need profiling and can consume paint/compositing resources. Do not use will-change everywhere."
+            ],
+            "example": {
+              "code": "const cards = [...document.querySelectorAll(\".workshop-card\")];\n\n// Read layout once for all cards before applying visual writes.\nconst measurements = cards.map((card) => ({\n  card,\n  width: card.getBoundingClientRect().width,\n}));\n\nconst updates = measurements.map(({ card, width }) => ({\n  card,\n  compact: width < 280,\n}));\n\nfor (const { card, compact } of updates) {\n  card.classList.toggle(\"is-compact\", compact);\n}\n\n// For a decorative entrance animation, prefer transform/opacity and\n// respect reduced-motion preferences in the matching CSS.",
+              "walkthrough": [
+                "The first pass reads each card’s geometry without changing styles, reducing read-write interleaving that can force repeated synchronous layout.",
+                "The second pass computes which visual state each card needs without touching the DOM.",
+                "The final pass applies class changes. Verify the result in the Performance panel and avoid repeating this measurement on every event when ResizeObserver or CSS can solve the problem."
+              ]
+            },
+            "misconceptions": [
+              "transform and opacity are often efficient for animation, but not every property change is free; measure paint and compositing costs.",
+              "getBoundingClientRect is not inherently bad. Repeatedly alternating geometry reads and writes is the pattern that can force layout work.",
+              "Responsive image selection requires accurate sizes; if sizes understates the rendered slot, the browser can choose a blurry source."
+            ],
+            "check": {
+              "prompt": "Why are geometry reads grouped before class writes, and when is loading=\"lazy\" appropriate for an image?",
+              "answer": "Grouped reads followed by writes avoid repeated forced layout caused by interleaving measurements and mutations. Lazy loading is useful for images expected to be offscreen initially, not an important above-the-fold image.",
+              "explanation": "Efficient rendering starts with correct asset sizing and a small number of necessary DOM updates. Use profiling to confirm that a change improves the experience."
+            }
+          }
         },
         {
           "title": "Measure before optimizing",
-          "focus": "Use browser performance tools and distinguish observations from assumptions."
+          "focus": "Use browser performance tools and distinguish observations from assumptions.",
+          "teaching": {
+            "objectives": [
+              "Collect a baseline using browser performance tools and real user measurements where available.",
+              "Form a measurable hypothesis and verify the same workload after changing one bottleneck."
+            ],
+            "explanation": [
+              "Lab measurements use a controlled test environment and help reproduce and attribute a problem. Field measurements include real devices, networks, and interaction patterns; they reveal variation that one local run cannot represent. Use both when possible, and compare like-for-like routes, devices, cache state, and test conditions. A single Lighthouse or DevTools score is diagnostic evidence, not a complete user-experience verdict.",
+              "Record the symptom, the likely bottleneck, and a metric before optimizing. Use the Performance panel to inspect long tasks, scripting, layout, paint, and network timing. Add performance marks around meaningful application work. After the change, repeat the same workload and compare; retain a change only when the measured result supports the hypothesis and correctness remains intact."
+            ],
+            "example": {
+              "code": "performance.mark(\"catalog-render-start\");\nrenderCatalog(items);\nperformance.mark(\"catalog-render-end\");\nperformance.measure(\"catalog-render\", \"catalog-render-start\", \"catalog-render-end\");\n\nconst measure = performance.getEntriesByName(\"catalog-render\", \"measure\").at(-1);\nif (measure) {\n  console.info(`Catalog render: ${measure.duration.toFixed(1)} ms`);\n  performance.clearMarks(\"catalog-render-start\");\n  performance.clearMarks(\"catalog-render-end\");\n  performance.clearMeasures(\"catalog-render\");\n}",
+              "walkthrough": [
+                "The marks bracket the operation that matters to the hypothesis rather than measuring unrelated page work.",
+                "The measure reports elapsed duration for this local execution. One sample can be noisy and does not represent every learner device or field session.",
+                "Clear entries when they are no longer useful so repeated measurements do not accumulate indefinitely. Use a repeatable workload and compare several runs or field distributions."
+              ]
+            },
+            "misconceptions": [
+              "Do not optimize by intuition alone; a code path that looks expensive may not be the user-visible bottleneck.",
+              "A lab score cannot capture every real network, device, or interaction. Field and lab data answer different questions.",
+              "Do not compare measurements from different routes, throttling, cache states, or workloads as if they were equivalent."
+            ],
+            "check": {
+              "prompt": "What should remain the same when comparing before and after measurements, and why is one local timing sample insufficient?",
+              "answer": "Use the same route, workload, device/network settings, and cache conditions where relevant. A single sample is noisy and does not represent the range of real devices and sessions.",
+              "explanation": "A useful optimization is a measured, repeatable change tied to a user-facing symptom. Keep correctness checks alongside performance comparisons."
+            }
+          }
         },
         {
           "title": "Progressive enhancement",
-          "focus": "Keep core content useful when scripts, APIs, or network resources are unavailable."
+          "focus": "Keep core content useful when scripts, APIs, or network resources are unavailable.",
+          "teaching": {
+            "objectives": [
+              "Keep the primary content and essential task available before optional client-side enhancements run.",
+              "Provide meaningful loading, failure, and no-script behavior instead of making the interface depend on one successful script or request."
+            ],
+            "explanation": [
+              "Progressive enhancement starts with a functional HTML baseline, then adds CSS and JavaScript improvements. A native form with a real action and method can submit without client-side code; JavaScript can enhance validation or update the page without removing the fallback. Content should remain understandable if a nonessential API or enhancement is unavailable.",
+              "Use feature detection for optional capabilities rather than assuming support. Keep a clear fallback for network or script failures, and preserve semantic controls and keyboard access in enhanced states. A client-side error boundary can help a framework recover from rendering errors, but it does not replace server-provided content or a usable no-script baseline."
+            ],
+            "example": {
+              "code": "<form action=\"/workshops/search\" method=\"get\" id=\"search-form\">\n  <label for=\"query\">Find a workshop</label>\n  <input id=\"query\" name=\"q\" type=\"search\">\n  <button type=\"submit\">Search</button>\n</form>\n<ul id=\"workshop-results\">\n  <li><a href=\"/workshops/arrays\">Array practice</a></li>\n  <li><a href=\"/workshops/dom\">DOM practice</a></li>\n</ul>\n<p id=\"enhancement-status\" role=\"status\" aria-live=\"polite\"></p>\n<p id=\"empty-state\" hidden>No matching workshops. Try another search.</p>\n<noscript><p>Search submits to the server. JavaScript filtering is optional.</p></noscript>\n<script>\nconst form = document.querySelector(\"#search-form\");\nconst queryInput = document.querySelector(\"#query\");\nconst results = [...document.querySelectorAll(\"#workshop-results li\")];\nconst status = document.querySelector(\"#enhancement-status\");\nconst emptyState = document.querySelector(\"#empty-state\");\n\nif (form && queryInput && status && emptyState && results.length > 0) {\n  form.addEventListener(\"submit\", (event) => {\n    event.preventDefault();\n    const query = queryInput.value.trim().toLocaleLowerCase();\n    let visibleCount = 0;\n    for (const item of results) {\n      const matches = item.textContent.toLocaleLowerCase().includes(query);\n      item.hidden = !matches;\n      if (matches) visibleCount += 1;\n    }\n    emptyState.hidden = visibleCount !== 0;\n    status.textContent = `${visibleCount} workshop${visibleCount === 1 ? \"\" : \"s\"} shown.`;\n  });\n}\n</script>",
+              "walkthrough": [
+                "The form has a real server endpoint, method, named input, and submit button; without JavaScript, the browser submits the search to the server.",
+                "When the expected DOM is available, JavaScript intercepts submission and filters the already-rendered links. It uses textContent for matching and preserves the original links.",
+                "A polite live region announces the count, and a separate empty state explains zero matches. If the enhancement script is unavailable, the server form remains usable."
+              ]
+            },
+            "misconceptions": [
+              "Progressive enhancement does not mean avoiding JavaScript; it means keeping a useful baseline and adding capabilities without making essential content disappear.",
+              "A noscript message alone is not a fallback if the underlying content or action has no functional baseline.",
+              "Feature detection can confirm an API exists, but it does not guarantee that a request will succeed; handle errors and keep a recovery path."
+            ],
+            "check": {
+              "prompt": "What makes the search form usable before JavaScript runs, and when should an enhanced handler prevent its native submission?",
+              "answer": "The form has a real action, GET method, named input, and submit button. The enhanced handler should prevent native submission only when its client-side flow is ready to take over and can recover or report failures.",
+              "explanation": "Start with working document semantics and navigation. Enhance progressively while keeping essential content and task completion resilient to unavailable scripts, APIs, or networks."
+            }
+          }
         },
         {
           "title": "Core Web Vitals",
-          "focus": "Understand what LCP, INP, and CLS measure, and which page changes can move each metric."
+          "focus": "Understand what LCP, INP, and CLS measure, and which page changes can move each metric.",
+          "teaching": {
+            "objectives": [
+              "Explain what LCP, INP, and CLS measure and use their recommended good thresholds in context.",
+              "Connect each metric to likely browser or application causes and measure results at the 75th percentile by device class."
+            ],
+            "explanation": [
+              "Largest Contentful Paint (LCP) measures when the largest visible image or text block is rendered and reflects loading experience. Interaction to Next Paint (INP) summarizes responsiveness across qualifying interactions during a visit. Cumulative Layout Shift (CLS) measures unexpected visual movement. The current recommended good thresholds are LCP ≤ 2.5 seconds, INP ≤ 200 milliseconds, and CLS ≤ 0.1. Evaluate field results at the 75th percentile and segment mobile and desktop rather than relying on one local run. Metric definitions and recommended thresholds can evolve, so check current Web Vitals guidance when setting product targets.",
+              "For poor LCP, inspect server response, resource discovery, priority, and image/font loading; do not lazy-load the main above-the-fold image. For poor INP, identify long JavaScript tasks and reduce work blocking the main thread, splitting it when appropriate. For CLS, reserve image/embed space, avoid inserting content above existing content unexpectedly, and manage font/layout changes. Use lab tools to diagnose and field data to confirm real-user outcomes."
+            ],
+            "example": {
+              "code": "// Optional instrumentation with the web-vitals package.\n// This example logs locally; use a privacy-reviewed field analytics path in production.\nimport { onCLS, onINP, onLCP } from \"web-vitals\";\n\nfunction reportMetric(metric) {\n  console.info(metric.name, metric.value, metric.rating);\n}\n\nonLCP(reportMetric);\nonINP(reportMetric);\nonCLS(reportMetric);\n\n// Recommended good thresholds (evaluate field data at p75):\n// LCP <= 2.5 s · INP <= 200 ms · CLS <= 0.1",
+              "walkthrough": [
+                "The web-vitals helpers observe browser performance entries and report metric updates through callbacks; integrate and bundle the package according to the application build.",
+                "A metric is useful only when associated with the relevant route/device cohort and a privacy-aware reporting plan. Do not upload raw user content as part of performance telemetry.",
+                "The numeric values are recommended “good” thresholds, not guarantees of accessibility, correctness, or user satisfaction. Diagnose the cause of any poor result."
+              ]
+            },
+            "misconceptions": [
+              "INP replaced First Input Delay as a Core Web Vital; it accounts for responsiveness across qualifying interactions, not only the first input.",
+              "A passing Lighthouse run does not guarantee good field experience for every network and device.",
+              "Do not chase a metric by hiding content or delaying essential feedback; preserve correct and accessible behavior while optimizing."
+            ],
+            "check": {
+              "prompt": "Match each metric to its concern and state the recommended good thresholds: LCP, INP, and CLS.",
+              "answer": "LCP measures loading of the largest visible content and should be ≤ 2.5 seconds; INP measures interaction responsiveness and should be ≤ 200 ms; CLS measures unexpected visual instability and should be ≤ 0.1. Use field data at the 75th percentile, segmented by device class.",
+              "explanation": "These thresholds are web.dev recommendations for good user experience. Field distributions and diagnostic traces help identify which changes could improve each metric."
+            }
+          }
         },
         {
           "title": "Front-end security basics",
-          "focus": "Escape untrusted text, avoid unsafe HTML insertion, use safe external links, and understand Content Security Policy."
+          "focus": "Escape untrusted text, avoid unsafe HTML insertion, use safe external links, and understand Content Security Policy.",
+          "teaching": {
+            "objectives": [
+              "Render untrusted text as text, validate URL destinations, and avoid unsafe HTML injection.",
+              "Explain how Content Security Policy adds defense in depth without replacing safe coding practices."
+            ],
+            "explanation": [
+              "Treat user input, API data, URL parameters, and stored values as untrusted. Use textContent for plain text; HTML parsing sinks such as innerHTML can turn attacker-controlled strings into executable markup. If rich HTML is a required product feature, use a well-maintained sanitizer with a narrow allowlist and safe handling for the exact context. Encode or validate values for their output context; one escaping rule does not fit HTML, attributes, URLs, CSS, and JavaScript equally.",
+              "Validate link destinations against allowed schemes and destinations, especially for user-supplied URLs. For new browsing contexts, use rel=\"noopener noreferrer\" when appropriate. Configure Content Security Policy as an HTTP response header, preferably with nonces or hashes and without unsafe-inline where practical. CSP limits some injection impact, but it does not sanitize content or make unsafe DOM APIs safe."
+            ],
+            "example": {
+              "code": "function renderComment(untrustedComment) {\n  const item = document.createElement(\"li\");\n  item.textContent = untrustedComment; // Render as text, never parsed as HTML.\n  document.querySelector(\"#comments\").append(item);\n}\n\nfunction safeProfileLink(rawUrl) {\n  try {\n    const url = new URL(rawUrl, location.origin);\n    if (url.protocol !== \"https:\" || url.hostname !== \"learn.example\") return null;\n    return url.href;\n  } catch {\n    return null;\n  }\n}\n\n// Example HTTP response header (configure at the server/CDN):\n// Content-Security-Policy: default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; script-src 'self' 'nonce-{per-response-random-value}'\n// Add only required sources; test the policy in report-only mode before enforcement.",
+              "walkthrough": [
+                "textContent creates a text node, so markup-looking input is displayed literally instead of interpreted as HTML.",
+                "The URL constructor normalizes a candidate, then the allowlist checks protocol and host. Adapt the host to product policy and consider relative same-origin URLs if required.",
+                "CSP is delivered as a response header. A per-response nonce must be unpredictable and used consistently only for authorized scripts; a fixed example placeholder is not a nonce. Roll out complex policies with reporting and testing."
+              ]
+            },
+            "misconceptions": [
+              "Replacing innerHTML with a hand-written string escape is not generally safe across every output context. Prefer text APIs; sanitize only when rich HTML is intentionally supported.",
+              "Checking only that a URL starts with a trusted-looking string can accept deceptive hostnames or schemes; parse and validate its components.",
+              "CSP is defense in depth, not a replacement for preventing injection or reviewing third-party scripts."
+            ],
+            "check": {
+              "prompt": "How should plain user comments be inserted, what must a URL allowlist check, and what security role does CSP play?",
+              "answer": "Insert plain comments with textContent. Parse candidate URLs and validate allowed protocol and host rather than checking a prefix. CSP constrains resource/script execution as defense in depth but does not sanitize content or replace safe DOM handling.",
+              "explanation": "Frontend security depends on context-aware handling of untrusted values and restrictive policy. Keep allowed URL destinations and CSP sources as explicit product decisions, then test the deployed response headers."
+            }
+          }
         }
       ],
       "battery": [
