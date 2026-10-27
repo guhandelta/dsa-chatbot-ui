@@ -45,6 +45,7 @@ it('defines an ordered, substantial common web fundamentals spine with a battery
   expect(new Set(challengeProjects).size).toBe(challengeProjects.length)
   expect(challengeProjects.every((slug) => slug.length <= 40 && /^[a-z0-9][a-z0-9-]*$/.test(slug))).toBe(true)
   expect(WEB_FUNDAMENTALS.reduce((total, section) => total + section.lessons.length, 0)).toBe(65)
+  expect(WEB_FUNDAMENTALS.flatMap((section) => section.lessons).filter((lesson) => lesson.teaching).length).toBe(65)
   expect(challengeProjects).toHaveLength(41)
   expect(WEB_FUNDAMENTALS.flatMap((section) => section.battery).filter((challenge) => challenge.starterFiles).length).toBe(41)
 })
@@ -352,6 +353,48 @@ it('provides detailed performance and frontend security instruction with current
     query.value = 'no match'
     fireEvent.submit(form)
     expect(document.querySelectorAll('#workshop-results li[hidden]')).toHaveLength(2)
+    expect(document.querySelector('#empty-state')?.hasAttribute('hidden')).toBe(false)
+  } finally {
+    document.body.innerHTML = originalBody
+  }
+})
+
+it('provides a complete capstone module with a working layered interface example and reviewable handoff', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'capstone')
+  expect(section?.lessons).toHaveLength(4)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+  }
+  expect(section?.lessons[0].teaching?.example.code).toContain('Acceptance criteria')
+  expect(section?.lessons[1].teaching?.example.code).toContain('action="/workshops/search"')
+  expect(section?.lessons[1].teaching?.example.code).toContain('textContent')
+  expect(section?.lessons[2].teaching?.example.code).toContain('Expected result')
+  expect(section?.lessons[3].teaching?.example.code).toContain('Known limitations')
+  expect(section?.lessons[3].teaching?.example.code).toContain('remove private information')
+
+  const layeredExample = section?.lessons[1].teaching?.example.code ?? ''
+  const script = layeredExample.slice(layeredExample.indexOf('// Layer 3:'))
+  expect(() => new Function(script), 'capstone interaction example syntax').not.toThrow()
+  const originalBody = document.body.innerHTML
+  try {
+    document.body.innerHTML = layeredExample.split('/* Layer 2:')[0]
+    new Function(script)()
+    const form = document.querySelector<HTMLFormElement>('#search-form')!
+    const query = document.querySelector<HTMLInputElement>('#query')!
+    query.value = 'array'
+    fireEvent.submit(form)
+    expect(document.querySelector('#search-status')?.textContent).toBe('1 workshop shown.')
+    expect(document.querySelectorAll('#results li[hidden]')).toHaveLength(1)
+    query.value = 'no match'
+    fireEvent.submit(form)
     expect(document.querySelector('#empty-state')?.hasAttribute('hidden')).toBe(false)
   } finally {
     document.body.innerHTML = originalBody
@@ -671,7 +714,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 61 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 65 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -741,6 +784,19 @@ it('renders performance lessons with their evidence-led and privacy-aware guidan
   fireEvent.click(screen.getByText('Study Core Web Vitals'))
   expect(screen.getByText(/Interaction to Next Paint \(INP\) summarizes responsiveness/)).toBeTruthy()
   const check = container.querySelector<HTMLDetailsElement>('[aria-label="Core Web Vitals knowledge check"] details')!
+  expect(check.open).toBe(false)
+  fireEvent.click(check.querySelector('summary')!)
+  expect(check.open).toBe(true)
+})
+
+it('renders the capstone plan and keeps handoff answers behind an explicit reveal', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(13) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('4 of 4 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Plan the interface'))
+  expect(screen.getByText(/Acceptance criteria make “done” observable/)).toBeTruthy()
+  const check = container.querySelector<HTMLDetailsElement>('[aria-label="Handoff knowledge check"] details')!
   expect(check.open).toBe(false)
   fireEvent.click(check.querySelector('summary')!)
   expect(check.open).toBe(true)

@@ -2830,19 +2830,131 @@
       "lessons": [
         {
           "title": "Plan the interface",
-          "focus": "Define users, content structure, interaction states, and acceptance criteria."
+          "focus": "Define users, content structure, interaction states, and acceptance criteria.",
+          "teaching": {
+            "objectives": [
+              "Translate a user need into a narrow, testable scope and a clear content model.",
+              "Write acceptance criteria for normal, empty, invalid, loading, and failure states before implementation."
+            ],
+            "explanation": [
+              "A capstone starts with a user and a task, not a list of fashionable features. Describe who is using the interface, what they need to accomplish, what content and controls are required, and what is explicitly outside scope. Sketch the information hierarchy and interaction states before writing markup.",
+              "Acceptance criteria make “done” observable. Cover the successful path and important alternatives: empty input, no matching data, validation errors, keyboard access, narrow viewport, and unavailable network/API when relevant. Note accessibility and privacy requirements, and decide how you will verify each criterion. Keep the scope small enough to finish and review."
+            ],
+            "example": {
+              "code": "# Capstone brief: Workshop finder\n\n## User and outcome\nA learner needs to find a relevant workshop and open its details on a phone or desktop.\n\n## Content model\nWorkshop: stable id, title, topic, level, summary, detail URL.\n\n## In scope\n- Search the provided workshop list.\n- Show a useful empty state when nothing matches.\n- Keep each result as a working link to its detail page.\n- Support keyboard and narrow-screen use.\n\n## Acceptance criteria\n- The page has a title, main landmark, labeled search control, and semantic result list.\n- Submitting an empty query shows all workshops.\n- A matching query shows only matching links; no matches show a clear message.\n- Keyboard users can reach and operate the search and result links with visible focus.\n- At 320 CSS px, content remains readable and controls operable without page-level horizontal scrolling.\n- Search status is announced without moving focus.\n- The no-script baseline still exposes workshop links and a server search form.\n\n## Out of scope\nAccounts, payments, recommendations, and framework-specific rendering.",
+              "walkthrough": [
+                "The brief identifies one user outcome and a small data shape; stable IDs and detail URLs help keep results navigable.",
+                "Each criterion can be checked by a person or an automated test. It includes baseline, empty-result, keyboard, narrow-layout, announcement, and no-script behavior.",
+                "The out-of-scope list protects the timebox. If a new feature appears, revise the brief and acceptance tests rather than silently expanding the build."
+              ]
+            },
+            "misconceptions": [
+              "A feature list without a user and outcome does not explain what should be prioritized.",
+              "“Looks good on mobile” is not testable; name a viewport and observable behavior.",
+              "Planning every possible feature is not the same as planning a finished capstone. Keep the scope focused and record later ideas separately."
+            ],
+            "check": {
+              "prompt": "What makes an acceptance criterion testable, and why include explicit out-of-scope items?",
+              "answer": "A criterion names a condition, action, and observable result that can be verified. Out-of-scope items protect a finishable target and make deferred features visible without letting them expand the current build.",
+              "explanation": "A strong plan connects user needs to content, interaction states, and verification. It gives implementation a boundary and review a shared definition of done."
+            }
+          }
         },
         {
           "title": "Build in layers",
-          "focus": "Start with semantic HTML, add resilient CSS, then implement only needed behavior."
+          "focus": "Start with semantic HTML, add resilient CSS, then implement only needed behavior.",
+          "teaching": {
+            "objectives": [
+              "Build the experience from semantic HTML outward, then add resilient responsive CSS and only the JavaScript behavior the task needs.",
+              "Keep content, presentation, and interaction responsibilities distinct and provide useful defaults at every layer."
+            ],
+            "explanation": [
+              "Start with meaningful headings, landmarks, labels, links, lists, and forms. The document should expose its content and navigation before styling or scripting. Add mobile-first CSS with fluid sizing, readable focus indicators, and layout that adapts without relying on fixed widths. Then add behavior with event listeners, derived state, and safe text rendering; do not duplicate information in competing sources of truth.",
+              "Enhance the baseline without replacing native behavior unnecessarily. Use real links for navigation and buttons for actions. If JavaScript improves a server-backed form, preserve its action/method fallback and communicate loading, empty, success, and error states. Keep DOM updates targeted, validate input, and honor reduced-motion preferences."
+            ],
+            "example": {
+              "code": "<!-- Layer 1: semantic, useful HTML baseline -->\n<main>\n  <h1>Find a workshop</h1>\n  <form action=\"/workshops/search\" method=\"get\" id=\"search-form\">\n    <label for=\"query\">Search workshops</label>\n    <div class=\"search-row\">\n      <input id=\"query\" name=\"q\" type=\"search\">\n      <button type=\"submit\">Search</button>\n    </div>\n  </form>\n  <p id=\"search-status\" role=\"status\" aria-live=\"polite\"></p>\n  <p id=\"empty-state\" hidden>No workshops match. Try another search.</p>\n  <ul id=\"results\" aria-label=\"Workshops\">\n    <li><a href=\"/workshops/arrays\">Array practice</a></li>\n    <li><a href=\"/workshops/dom\">DOM practice</a></li>\n  </ul>\n</main>\n\n/* Layer 2: mobile-first CSS */\n.search-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }\n.search-row input { flex: 1 1 14rem; min-width: 0; }\n:focus-visible { outline: 3px solid #7c2d12; outline-offset: 3px; }\n\n// Layer 3: narrow, safe interaction behavior\nconst form = document.querySelector(\"#search-form\");\nconst query = document.querySelector(\"#query\");\nconst rows = [...document.querySelectorAll(\"#results li\")];\nform.addEventListener(\"submit\", (event) => {\n  event.preventDefault();\n  const term = query.value.trim().toLocaleLowerCase();\n  let count = 0;\n  for (const row of rows) {\n    row.hidden = !row.textContent.toLocaleLowerCase().includes(term);\n    if (!row.hidden) count += 1;\n  }\n  document.querySelector(\"#empty-state\").hidden = count !== 0;\n  document.querySelector(\"#search-status\").textContent = `${count} workshop${count === 1 ? \"\" : \"s\"} shown.`;\n});",
+              "walkthrough": [
+                "The HTML contains the core task, labels, results, and native server fallback. Without CSS or JavaScript, the content and destinations remain available.",
+                "The CSS allows the input and button to wrap instead of overflowing a narrow screen and gives focused controls a visible outline. Production work should use design tokens and verify contrast.",
+                "The handler derives visible results from the query, updates only the relevant list items, uses existing text rather than injecting HTML, and announces the result count. A complete project should guard required DOM references and test empty and no-match cases."
+              ]
+            },
+            "misconceptions": [
+              "Writing JavaScript first often creates controls with no names, landmarks, or baseline behavior. Start with the document.",
+              "Responsive CSS is not achieved by shrinking a desktop fixed-width layout; allow content to wrap and use intrinsic sizing.",
+              "Do not use innerHTML for user-controlled text or move keyboard focus just to announce an ordinary result update."
+            ],
+            "check": {
+              "prompt": "Why does this interface begin with a real GET form and links, and what responsibilities do CSS and JavaScript add afterward?",
+              "answer": "The HTML provides named controls, content, navigation, and a server fallback. CSS adapts presentation and focus to different sizes and input methods. JavaScript enhances filtering and status updates while preserving safe rendering.",
+              "explanation": "Layered implementation keeps the core useful and makes each layer easier to test. The enhanced state should preserve the semantics and behavior of the baseline."
+            }
+          }
         },
         {
           "title": "Verify and reflect",
-          "focus": "Check functionality, accessibility, responsiveness, and performance; explain tradeoffs."
+          "focus": "Check functionality, accessibility, responsiveness, and performance; explain tradeoffs.",
+          "teaching": {
+            "objectives": [
+              "Verify every acceptance criterion with a repeatable test and inspect the experience with keyboard and representative viewport sizes.",
+              "Reflect on evidence, tradeoffs, defects found, and what should change next."
+            ],
+            "explanation": [
+              "Run the normal, empty, and no-match flows from a clean state. Check keyboard order and visible focus, accessible names, announced status, narrow reflow, and error/retry behavior. Use browser DevTools for console and network issues; inspect computed layout and performance only where the project suggests a bottleneck. A checklist should name the action and expected result rather than simply say “tested.”",
+              "After verification, compare outcomes with the acceptance criteria and record failures honestly. Note which checks are automated, which were manual, the browsers/viewports tested, known limitations, and unresolved questions. Reflect on tradeoffs such as local filtering versus server search; distinguish evidence from assumptions and propose the smallest useful next step."
+            ],
+            "example": {
+              "code": "| Check | Action | Expected result | Result |\n| --- | --- | --- | --- |\n| Initial | Load page with default data | All workshop links are available | Pass / Fail |\n| Match | Search “array” | Only Array practice remains visible | Pass / Fail |\n| Empty query | Submit a blank search | All links become visible | Pass / Fail |\n| No match | Search “unknown” | Empty message appears; status reports zero | Pass / Fail |\n| Keyboard | Tab through search and results | Logical order and visible focus | Pass / Fail |\n| Narrow layout | Test at 320 CSS px | No page-level horizontal overflow | Pass / Fail |\n| No script | Disable JavaScript and submit | Server form and result links remain useful | Pass / Fail |\n\n## Reflection\nEvidence: record browser, viewport, and any reproducible failures.\nTradeoff: explain why filtering is local or server-backed.\nNext step: name one improvement supported by a finding.",
+              "walkthrough": [
+                "The table maps each criterion to an action and expected result. Record the actual outcome and do not label an unrun check as passed.",
+                "Keyboard, narrow viewport, and no-script checks reveal failures that a desktop pointer happy path misses.",
+                "Reflection connects a design choice to evidence and keeps the next improvement focused rather than speculative."
+              ]
+            },
+            "misconceptions": [
+              "A checklist that has no expected result cannot tell a reviewer whether a test passed.",
+              "A single successful run does not establish all browser and device behavior; state test conditions and limits.",
+              "Do not “fix” a performance metric by removing useful content or accessibility behavior; recheck the whole task after optimization."
+            ],
+            "check": {
+              "prompt": "What should a useful verification record include besides a pass/fail label, and how should the reflection choose a next step?",
+              "answer": "Record the action, expected and observed result, browser/viewport or other conditions, and whether the check was automated or manual. Choose a next step from a verified limitation or finding, not an unsupported assumption.",
+              "explanation": "Verification makes quality reviewable. Reflection turns the evidence into a reasoned follow-up while keeping uncertainty and limitations explicit."
+            }
+          }
         },
         {
           "title": "Handoff",
-          "focus": "Prepare a README, screenshots, and a list of known limitations so others can run and judge the work."
+          "focus": "Prepare a README, screenshots, and a list of known limitations so others can run and judge the work.",
+          "teaching": {
+            "objectives": [
+              "Prepare a concise project handoff that lets another person run, inspect, and assess the interface.",
+              "Document features, verification, limitations, and decisions without exposing secrets or overstating completion."
+            ],
+            "explanation": [
+              "A handoff includes the project purpose, prerequisites, exact run commands, key routes, and how to use the interface. Add screenshots with descriptive captions when they clarify the result; ensure screenshots do not expose real personal data or credentials. Include a verification table with browser and viewport conditions, and note automated versus manual checks.",
+              "State known limitations and unimplemented behavior plainly, including inaccessible or untested states if any remain. Record meaningful architecture choices and why they fit the scope. Provide the relevant source files and a short next-step list. A reviewer should be able to reproduce the result without relying on private local configuration or undocumented setup."
+            ],
+            "example": {
+              "code": "# Workshop Finder\n\nA small, responsive workshop search interface built with semantic HTML, CSS, and JavaScript.\n\n## Run locally\n1. Install the project prerequisites listed in package.json.\n2. Run `pnpm install`.\n3. Run `pnpm dev` and open the local URL printed by the dev server.\n\n## Use\nSearch by workshop title. Open a result to view its detail page. If JavaScript is disabled, the form submits to the server search route.\n\n## Verification\n- Automated: list filtering and empty-state tests (`pnpm test`).\n- Manual: keyboard order/focus, 320 CSS px layout, no-script form fallback.\n- Browsers/viewports tested: fill in actual results before handoff.\n\n## Known limitations\n- The sample catalog is local and intentionally small.\n- Server search behavior depends on the receiving route.\n- Performance field data has not been collected.\n\n## Decisions and next steps\nExplain local filtering versus server search. List improvements that follow from verified findings.\n\n## Screenshots\nAdd captioned screenshots of the default and no-results states. Use synthetic data and remove private information.",
+              "walkthrough": [
+                "The README identifies the project, exact setup/use process, verification commands, and manual scenarios; replace placeholders with results actually obtained.",
+                "Known limitations separate a prototype from claims about production behavior. The screenshot note protects user data and asks for useful state coverage.",
+                "Decision notes and next steps explain the reasoning so another developer can continue without guessing. Never put tokens, secrets, or real learner data in the handoff."
+              ]
+            },
+            "misconceptions": [
+              "A screenshot alone cannot replace setup instructions, test results, or known limitations.",
+              "Do not claim a browser or viewport was tested unless it was actually tested. Distinguish automated checks from manual review.",
+              "Do not include private credentials, personal records, or environment-specific secrets in README files or screenshots."
+            ],
+            "check": {
+              "prompt": "What information lets a reviewer reproduce the project, and how should known limitations and unrun checks be represented?",
+              "answer": "Provide prerequisites, exact run commands, usage instructions, verification results and conditions, plus relevant artifacts. State known limitations and unrun checks explicitly; do not imply they passed.",
+              "explanation": "A useful handoff turns a finished learning project into a reviewable artifact. Clear setup, honest evidence, and documented limits let another person assess and continue the work."
+            }
+          }
         }
       ],
       "battery": [
