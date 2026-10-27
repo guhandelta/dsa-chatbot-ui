@@ -13,14 +13,17 @@ import { PREVIEW_SANDBOX, autoRefreshable, buildPreview, loadReactRuntime, needs
 import type { WorkspaceFile } from '../lib/workspaceApi'
 import { FileTabs } from '../components/workspace/FileTabs'
 import { useAutosave, type Saver } from '../components/workspace/useAutosave'
+import { ChallengeBrief, WebCurriculum } from '../components/WebCurriculum'
 
 export const Route = createFileRoute('/playground')({
   beforeLoad: () => {
     if (!hasToken()) throw redirect({ to: '/login' })
   },
-  validateSearch: (search: Record<string, unknown>): { project?: string; template?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { project?: string; template?: string; section?: string; challenge?: string } => ({
     project: typeof search.project === 'string' ? search.project : undefined,
     template: typeof search.template === 'string' ? search.template : undefined,
+    section: typeof search.section === 'string' ? search.section : undefined,
+    challenge: typeof search.challenge === 'string' ? search.challenge : undefined,
   }),
   component: PlaygroundPage,
 })
@@ -29,14 +32,14 @@ const SLUG = /^[a-z0-9][a-z0-9-]{0,39}$/
 const MONACO: Record<string, string> = { html: 'html', css: 'css', js: 'javascript', ts: 'typescript', jsx: 'javascript', tsx: 'typescript', md: 'markdown', txt: 'plaintext' }
 
 function PlaygroundPage() {
-  const { project, template } = Route.useSearch()
+  const { project, template, section, challenge } = Route.useSearch()
   return (
     <main className="page-wrap px-4 py-8">
       <div className="practice-chrome">
         <Link to="/learn">← Learning home</Link>
         <h1 className="display-title my-4 text-3xl font-bold">Web playground</h1>
       </div>
-      {project ? <PlaygroundEditor key={project} slug={project} template={template} /> : <ProjectList />}
+      {project ? <PlaygroundEditor key={project} slug={project} template={template} section={section} challenge={challenge} /> : <ProjectList />}
     </main>
   )
 }
@@ -57,7 +60,8 @@ function ProjectList() {
     if (listing?.projects.some((p) => p.slug === slug)) { setError('A project with that name already exists.'); return }
     void navigate({ to: '/playground', search: { project: slug, template } })
   }
-  return (
+  return <div className="space-y-5">
+    <WebCurriculum />
     <section className="island-shell rounded-2xl p-5" aria-labelledby="pg-projects">
       <h2 id="pg-projects" className="ws-heading">Your projects</h2>
       {error && <p className="ws-error" role="alert">{error}</p>}
@@ -86,12 +90,12 @@ function ProjectList() {
         <button type="submit" className="primary-btn">Create project</button>
       </form>
     </section>
-  )
+  </div>
 }
 
 interface ConsoleLine { level: 'log' | 'info' | 'warn' | 'error'; text: string }
 
-function PlaygroundEditor({ slug, template: requested }: { slug: string; template?: string }) {
+function PlaygroundEditor({ slug, template: requested, section, challenge }: { slug: string; template?: string; section?: string; challenge?: string }) {
   const [files, setFiles] = useState<WorkspaceFile[]>([])
   const [active, setActive] = useState('index.html')
   const [template, setTemplate] = useState(requested ?? 'html-css-js')
@@ -207,6 +211,7 @@ function PlaygroundEditor({ slug, template: requested }: { slug: string; templat
       }
     }}>
       <section className="island-shell rounded-2xl p-5" aria-label="Project files">
+        <ChallengeBrief sectionId={section} challengeId={challenge} />
         <div className="ws-toolbar">
           <strong>{slug}</strong>
           <Link to="/playground" className="lang-tab">All projects</Link>

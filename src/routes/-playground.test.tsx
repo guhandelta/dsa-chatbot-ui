@@ -65,6 +65,14 @@ it('compiles TypeScript, renders a sandboxed preview and reports type errors', a
   expect(screen.getByRole('button', { name: 'Go to line 1' })).toBeTruthy()
 })
 
+it('shows the selected curriculum challenge beside the code editor', async () => {
+  state.search = { project: 'web-js-fundamentals', section: 'js-fundamentals', challenge: 'js-fundamentals-0' }
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: 'Function fluency set' })).toBeTruthy()
+  expect(screen.getByText(/validation, formatting, and deriving display data/)).toBeTruthy()
+  expect(screen.getByText(/not yet automatically evaluated/)).toBeTruthy()
+})
+
 it('autosaves edits and refreshes the preview for markup without re-running scripts', async () => {
   state.search = { project: 'demo' }
   render(<Page />)
