@@ -421,19 +421,49 @@
           "id": "styling-systems-refactor-repeated-styles",
           "title": "Refactor repeated styles",
           "task": "Extract repeated values and component rules into a maintainable set of tokens and classes.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Garden cards</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Garden guides</h1>\n    <p>Choose a guide to plan your next visit.</p>\n    <ul class=\"guide-list\">\n      <li><article id=\"planting\" class=\"guide-card\"><p class=\"guide-card__eyebrow\">Seasonal</p><h2>Planting calendar</h2><p>Find the right time to sow common crops.</p><a href=\"#planting\">Read the planting guide</a></article></li>\n      <li><article id=\"soil\" class=\"guide-card\"><p class=\"guide-card__eyebrow\">Getting started</p><h2>Healthy soil</h2><p>Learn how to prepare a small growing space.</p><a href=\"#soil\">Read the soil guide</a></article></li>\n      <li><article id=\"water\" class=\"guide-card guide-card--featured\"><p class=\"guide-card__eyebrow\">Popular</p><h2>Water wisely</h2><p>Keep plants healthy while conserving water.</p><a href=\"#water\">Read the watering guide</a></article></li>\n    </ul>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* {\n  box-sizing: border-box;\n}\n\nbody {\n  background: #f3f6f1;\n  color: #20352d;\n  font-family: system-ui, sans-serif;\n  line-height: 1.55;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 66rem;\n  padding: 2rem 1rem;\n}\n\n.guide-list {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));\n  list-style: none;\n  margin: 1.5rem 0 0;\n  padding: 0;\n}\n\n.guide-card {\n  background: #fff;\n  border: 1px solid #c6d4c8;\n  border-radius: 0.75rem;\n  padding: 1.25rem;\n}\n\n.guide-card--featured {\n  border-color: #176b50;\n}\n\n.guide-card__eyebrow {\n  color: #176b50;\n  font-size: 0.8rem;\n  font-weight: 700;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.guide-card h2 {\n  color: #20352d;\n}\n\n.guide-card a {\n  color: #075e46;\n  font-weight: 650;\n}\n\n.guide-card a:focus-visible {\n  outline: 3px solid #9a4b00;\n  outline-offset: 3px;\n}\n"
+            }
+          ]
         },
         {
           "id": "styling-systems-compare-styling-approaches",
           "title": "Compare styling approaches",
-          "task": "Implement one responsive component using plain CSS and one selected framework approach.",
-          "kind": "review"
+          "task": "Review the responsive panel styled with plain CSS, then record how its spacing, color, and grid choices map to one utility or component framework without adding a network dependency.",
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Styling approach comparison</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <header class=\"page-heading\">\n      <p class=\"eyebrow\">Design system lab</p>\n      <h1>Choose a workshop</h1>\n      <p>Compare how a reusable component can be expressed with different styling approaches.</p>\n    </header>\n    <section class=\"workshop-grid\" aria-label=\"Available workshops\">\n      <article id=\"tokens\" class=\"workshop-card\">\n        <p class=\"workshop-card__level\">Beginner</p>\n        <h2>CSS tokens</h2>\n        <p>Build a small palette and spacing scale with native custom properties.</p>\n        <a href=\"#tokens\">View workshop</a>\n      </article>\n      <article id=\"utilities\" class=\"workshop-card\">\n        <p class=\"workshop-card__level\">Practice</p>\n        <h2>Component utilities</h2>\n        <p>Compare component classes with concise utility-style composition.</p>\n        <a href=\"#utilities\">View workshop</a>\n      </article>\n    </section>\n    <aside class=\"notes\" aria-labelledby=\"notes-heading\">\n      <h2 id=\"notes-heading\">Comparison notes</h2>\n      <p>Record the framework, its equivalent spacing and color choices, and one tradeoff. Keep this page self-contained and usable offline.</p>\n    </aside>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": ":root {\n  color-scheme: light;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n}\n\n* { box-sizing: border-box; }\n\nbody {\n  background: #f5f7fb;\n  color: #1e293b;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 58rem;\n  padding: 2rem 1rem;\n}\n\n.page-heading {\n  max-width: 42rem;\n  margin-block-end: 2rem;\n}\n\n.eyebrow, .workshop-card__level {\n  color: #3156a3;\n  font-size: 0.85rem;\n  font-weight: 700;\n}\n\n.workshop-grid {\n  display: grid;\n  gap: 1rem;\n  grid-template-columns: 1fr;\n}\n\n.workshop-card {\n  background: white;\n  border: 1px solid #cbd5e1;\n  border-radius: 0.75rem;\n  padding: 1.25rem;\n}\n\n.workshop-card a {\n  color: #1d4ed8;\n  display: inline-block;\n  font-weight: 650;\n  margin-block-start: 0.5rem;\n}\n\n.notes {\n  background: #e8eefb;\n  border-inline-start: 0.25rem solid #3156a3;\n  margin-block-start: 1.5rem;\n  padding: 1rem;\n}\n\n:focus-visible {\n  outline: 3px solid #9a4b00;\n  outline-offset: 3px;\n}\n\n@media (min-width: 40rem) {\n  .workshop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n}\n"
+            }
+          ]
         },
         {
           "id": "styling-systems-specificity-cleanup",
           "title": "Specificity cleanup",
           "task": "Reduce an escalating selector override chain while preserving the required states.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Specificity cleanup</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Booking status</h1>\n    <p class=\"notice notice--success\" role=\"status\">Your seat is reserved.</p>\n    <p class=\"notice notice--warning\" role=\"status\">Payment is still processing.</p>\n    <button class=\"action action--primary\" type=\"button\">Review booking</button>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "* { box-sizing: border-box; }\n\nbody {\n  color: #243244;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain { max-width: 40rem; margin-inline: auto; padding: 2rem 1rem; }\n\n#app main p.notice {\n  background: #e8f5ec;\n  border-inline-start: 0.3rem solid #1b6e3b;\n  color: #174c2b;\n  padding: 0.85rem;\n}\n\nbody main p.notice.notice--warning {\n  background: #fff4d6;\n  border-color: #a65b00;\n  color: #663800;\n}\n\nmain .notice { margin-block: 1rem; }\n\nmain p.notice { border-radius: 0.35rem; }\n\nbutton.action {\n  background: #164f9c !important;\n  border: 0;\n  border-radius: 0.4rem;\n  color: white !important;\n  font: inherit;\n  padding: 0.7rem 1rem;\n}\n\nbutton.action.action--primary { background: #164f9c !important; }\n\nbutton.action:focus-visible { outline: 3px solid #a34b00; outline-offset: 3px; }\n"
+            }
+          ]
         }
       ]
     },

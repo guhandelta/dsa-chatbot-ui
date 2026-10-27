@@ -175,6 +175,24 @@ it('seeds the viewport review challenge with observations and real responsive br
   expect(css.value).toContain('prefers-reduced-motion: reduce')
 })
 
+it.each([
+  ['styling-systems-refactor-repeated-styles', 'Refactor repeated styles', '.guide-card--featured'],
+  ['styling-systems-compare-styling-approaches', 'Compare styling approaches', '.workshop-grid'],
+  ['styling-systems-specificity-cleanup', 'Specificity cleanup', '#app main p.notice'],
+])('seeds the %s styling-systems workspace', async (challenge, title, expectedContent) => {
+  const project = webChallengeProjectSlug('styling-systems', challenge)
+  state.search = { project, template: 'html-css-js', section: 'styling-systems', challenge }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: title })).toBeTruthy()
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain('<main>')
+  fireEvent.click(screen.getByRole('tab', { name: 'styles.css' }))
+  const css = await screen.findByRole('textbox', { name: 'styles.css editor' }) as HTMLTextAreaElement
+  expect(css.value).toContain(expectedContent)
+  expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
+})
+
 it('confirms and autosaves a challenge reset to its starter files', async () => {
   const challenge = 'browser-trace-a-page-load'
   const project = webChallengeProjectSlug('browser', challenge)

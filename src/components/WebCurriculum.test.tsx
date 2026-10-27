@@ -87,6 +87,29 @@ it('provides a complete responsive-layout workspace for every core challenge', (
   expect(workspaces['layout-responsive-viewport-variation-set']['styles.css']).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
 })
 
+it('provides offline styling-systems workspaces for tokens, framework comparison, and specificity repair', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'styling-systems')
+  expect(section?.battery).toHaveLength(3)
+  for (const challenge of section?.battery ?? []) {
+    expect(challenge.starterFiles?.map((file) => file.name), challenge.id).toEqual(['index.html', 'styles.css'])
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    expect(html, challenge.id).toContain('<main>')
+    expect(html, challenge.id).toContain('<link rel="stylesheet" href="styles.css">')
+  }
+
+  const workspaces = Object.fromEntries((section?.battery ?? []).map((challenge) => [
+    challenge.id,
+    Object.fromEntries((challenge.starterFiles ?? []).map((file) => [file.name, file.content])),
+  ]))
+  expect(workspaces['styling-systems-refactor-repeated-styles']['styles.css'].match(/#176b50/g)?.length).toBeGreaterThanOrEqual(2)
+  expect(workspaces['styling-systems-refactor-repeated-styles']['styles.css'].match(/#20352d/g)?.length).toBeGreaterThanOrEqual(2)
+  expect(workspaces['styling-systems-refactor-repeated-styles']['index.html']).toContain('guide-card--featured')
+  expect(workspaces['styling-systems-compare-styling-approaches']['index.html']).toContain('Comparison notes')
+  expect(workspaces['styling-systems-compare-styling-approaches']['styles.css']).toContain('@media (min-width: 40rem)')
+  expect(workspaces['styling-systems-specificity-cleanup']['styles.css']).toContain('!important')
+  expect(workspaces['styling-systems-specificity-cleanup']['styles.css']).toContain('#app main p.notice')
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true
