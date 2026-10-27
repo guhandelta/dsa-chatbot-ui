@@ -146,6 +146,7 @@ export async function runWorkspaceTests(problemId: string, body: {
   language: string
   files: WorkspaceFile[]
   entry: string
+  practice_session_id?: string
 }): Promise<TestRun> {
   return (await api.post(`/workspace/${enc(problemId)}/run`, body, SILENT)).data
 }
