@@ -317,6 +317,8 @@ it('provides complete capstone build and review workspaces with a working rubric
   expect(build?.starterFiles?.map((file) => file.name)).toEqual(['index.html', 'styles.css', 'script.js'])
   expect(build?.starterFiles?.find((file) => file.name === 'index.html')?.content).toContain('aria-live="polite"')
   expect(build?.starterFiles?.find((file) => file.name === 'script.js')?.content).toContain('reportValidity()')
+  expect(build?.starterFiles?.find((file) => file.name === 'script.js')?.content).toContain('TODO: Show an accessible success message')
+  expect(build?.starterFiles?.find((file) => file.name === 'styles.css')?.content).toContain('TODO: Create a clear visual hierarchy')
   expect(review?.title).toBe('Capstone review')
   expect(review?.starterFiles?.find((file) => file.name === 'index.html')?.content).toContain('320px without horizontal scrolling')
   const script = review?.starterFiles?.find((file) => file.name === 'script.js')?.content ?? ''
