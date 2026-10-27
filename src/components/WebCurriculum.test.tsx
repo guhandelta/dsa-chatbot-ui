@@ -42,6 +42,18 @@ it('defines an ordered, substantial common web fundamentals spine with a battery
   expect(challengeProjects.every((slug) => slug.length <= 40 && /^[a-z0-9][a-z0-9-]*$/.test(slug))).toBe(true)
 })
 
+it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
+  const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
+  expect(forms?.battery).toHaveLength(3)
+  for (const challenge of forms?.battery ?? []) {
+    const names = challenge.starterFiles?.map((file) => file.name) ?? []
+    expect(names, challenge.id).toEqual(expect.arrayContaining(['index.html', 'styles.css', 'script.js']))
+    const html = challenge.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+    expect(html).toContain('<form')
+    expect(html).toContain('<label')
+  }
+})
+
 it('renders lesson batteries, same-section challenge links, and the current assessment limitation honestly', () => {
   const { container } = render(<WebCurriculum />)
   for (const details of container.querySelectorAll('details')) details.open = true

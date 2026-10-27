@@ -103,6 +103,20 @@ it('seeds a new HTML semantics challenge with its authored multi-file project', 
   expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
 })
 
+it('seeds the accessible profile form challenge with its HTML, CSS, and JavaScript files', async () => {
+  const challenge = 'forms-accessible-profile-form'
+  const project = webChallengeProjectSlug('forms', challenge)
+  state.search = { project, template: 'html-css-js', section: 'forms', challenge }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: 'Accessible profile form' })).toBeTruthy()
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain('<fieldset>')
+  expect(html.value).toContain('autocomplete="email" required')
+  expect(html.value).toContain('aria-describedby="about-help"')
+  expect(await screen.findByRole('tab', { name: 'script.js' })).toBeTruthy()
+})
+
 it('confirms and autosaves a challenge reset to its starter files', async () => {
   const challenge = 'browser-trace-a-page-load'
   const project = webChallengeProjectSlug('browser', challenge)

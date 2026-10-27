@@ -182,19 +182,61 @@
           "id": "forms-accessible-profile-form",
           "title": "Accessible profile form",
           "task": "Build a labeled profile form with appropriate types, required fields, and native constraints.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Profile setup</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Profile setup</h1>\n    <p>Complete the form to see a local profile preview.</p>\n    <form id=\"profile-form\">\n      <div class=\"form-field\">\n        <label for=\"display-name\">Display name</label>\n        <input id=\"display-name\" name=\"displayName\" autocomplete=\"nickname\" required minlength=\"2\" maxlength=\"32\">\n      </div>\n      <div class=\"form-field\">\n        <label for=\"email\">Email address</label>\n        <input id=\"email\" name=\"email\" type=\"email\" autocomplete=\"email\" required>\n      </div>\n      <fieldset>\n        <legend>Preferred contact method</legend>\n        <label class=\"choice\"><input type=\"radio\" name=\"contact\" value=\"email\" required> Email</label>\n        <label class=\"choice\"><input type=\"radio\" name=\"contact\" value=\"none\"> No contact</label>\n      </fieldset>\n      <div class=\"form-field\">\n        <label for=\"about\">About you <span>(optional)</span></label>\n        <textarea id=\"about\" name=\"about\" rows=\"4\" maxlength=\"240\" aria-describedby=\"about-help\"></textarea>\n        <p id=\"about-help\" class=\"help\">Share up to 240 characters.</p>\n      </div>\n      <button type=\"submit\">Preview profile</button>\n    </form>\n    <p id=\"result\" role=\"status\"></p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  color: #1d2b3a;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 38rem;\n  padding: 1.5rem;\n}\n\nform, fieldset {\n  display: grid;\n  gap: 1rem;\n}\n\n.form-field {\n  display: grid;\n  gap: 0.35rem;\n}\n\ninput, textarea, button {\n  font: inherit;\n}\n\ninput:not([type=radio]), textarea {\n  box-sizing: border-box;\n  max-width: 100%;\n  padding: 0.55rem;\n  width: 100%;\n}\n\n.choice {\n  align-items: center;\n  display: flex;\n  gap: 0.5rem;\n}\n\nbutton {\n  justify-self: start;\n  padding: 0.6rem 1rem;\n}\n\n:focus-visible {\n  outline: 3px solid #075e9a;\n  outline-offset: 3px;\n}\n\n.help {\n  color: #4b5563;\n  margin: 0;\n}\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#profile-form');\nconst result = document.querySelector('#result');\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  const data = new FormData(form);\n  result.textContent = `Profile preview ready for ${data.get('displayName')}.`;\n});\n"
+            }
+          ]
         },
         {
           "id": "forms-fix-an-inaccessible-form",
           "title": "Fix an inaccessible form",
-          "task": "Repair missing labels, unclear errors, and keyboard traps in a supplied form.",
-          "kind": "debug"
+          "task": "Repair missing labels, unclear validation feedback, and incorrect keyboard or focus behavior in a supplied form.",
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Workshop registration</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Workshop registration</h1>\n    <form id=\"registration-form\">\n      <div class=\"field\">\n        <input id=\"name\" name=\"name\" placeholder=\"Your name\" required tabindex=\"2\">\n      </div>\n      <div class=\"field\">\n        <input id=\"email\" name=\"email\" type=\"email\" placeholder=\"Email\" required tabindex=\"1\">\n      </div>\n      <div class=\"field\">\n        <label for=\"session\">Choose a session</label>\n        <select id=\"session\" name=\"session\" required>\n          <option value=\"\">Select a time</option>\n          <option value=\"morning\">Morning</option>\n          <option value=\"afternoon\">Afternoon</option>\n        </select>\n      </div>\n      <p id=\"error\" class=\"error\" hidden></p>\n      <button type=\"submit\">Register</button>\n    </form>\n    <p id=\"result\" role=\"status\"></p>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 34rem;\n  padding: 1.5rem;\n}\n\nform, .field {\n  display: grid;\n  gap: 1rem;\n}\n\ninput, select, button {\n  font: inherit;\n  padding: 0.55rem;\n}\n\n.error {\n  color: #a51d2d;\n}\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#registration-form');\nconst error = document.querySelector('#error');\nconst result = document.querySelector('#result');\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  error.hidden = false;\n  error.textContent = 'Something went wrong.';\n  result.textContent = 'Registration received.';\n});\n"
+            }
+          ]
         },
         {
           "id": "forms-validation-cases",
           "title": "Validation cases",
           "task": "Try empty, malformed, boundary, and valid input; record the browser behavior for each.",
-          "kind": "review"
+          "kind": "review",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Native validation lab</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <main>\n    <h1>Native validation lab</h1>\n    <p>Submit with different values and compare the browser response. Try empty, malformed, boundary, and valid values.</p>\n    <form id=\"validation-lab\">\n      <div class=\"field\">\n        <label for=\"handle\">Handle (2–20 characters)</label>\n        <input id=\"handle\" name=\"handle\" required minlength=\"2\" maxlength=\"20\" autocomplete=\"off\">\n      </div>\n      <div class=\"field\">\n        <label for=\"email\">Email</label>\n        <input id=\"email\" name=\"email\" type=\"email\" required>\n      </div>\n      <div class=\"field\">\n        <label for=\"age\">Age (13–120)</label>\n        <input id=\"age\" name=\"age\" type=\"number\" min=\"13\" max=\"120\" required>\n      </div>\n      <button type=\"submit\">Check valid input</button>\n    </form>\n    <p id=\"result\" role=\"status\" aria-live=\"polite\"></p>\n    <label for=\"observations\">Record what you observed for each test case</label>\n    <textarea id=\"observations\" rows=\"6\" placeholder=\"Empty, malformed, boundary, valid…\"></textarea>\n  </main>\n  <script src=\"script.js\"></script>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  color: #202c39;\n  font-family: system-ui, sans-serif;\n  line-height: 1.5;\n  margin: 0;\n}\n\nmain {\n  margin-inline: auto;\n  max-width: 38rem;\n  padding: 1.5rem;\n}\n\nform, .field {\n  display: grid;\n  gap: 0.8rem;\n}\n\nform {\n  margin-block: 1.25rem;\n}\n\ninput, button, textarea {\n  box-sizing: border-box;\n  font: inherit;\n  max-width: 100%;\n  padding: 0.55rem;\n  width: 100%;\n}\n\nbutton {\n  width: fit-content;\n}\n\n:focus-visible {\n  outline: 3px solid #075e9a;\n  outline-offset: 3px;\n}\n"
+            },
+            {
+              "name": "script.js",
+              "content": "const form = document.querySelector('#validation-lab');\nconst result = document.querySelector('#result');\n\nform.addEventListener('submit', (event) => {\n  event.preventDefault();\n  result.textContent = 'All constraints passed. Record which values you tested.';\n});\n"
+            }
+          ]
         }
       ]
     },
