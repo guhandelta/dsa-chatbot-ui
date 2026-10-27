@@ -281,9 +281,44 @@ export interface KnowledgeDocument {
   reviewed_at: string | null
   retrieval_status?: string
   reference_language?: string | null
+  topic_scope?: string | null
   reference_chunks?: number
+  projection_version?: string
+  content_sha256?: string
+  publication_review?: 'approved' | 'pending' | 'rejected' | 'not_recorded'
+  executable_verification?: 'not_recorded' | 'verified' | 'failed'
+  pedagogical_review?: 'not_recorded' | 'reviewed' | 'needs_revision'
 }
 
 export interface KnowledgeDocumentDetail extends KnowledgeDocument {
   preview: string
+}
+
+export interface KnowledgeSourceInventory {
+  source_id: string
+  source_type: string
+  path: string
+  content_sha256: string | null
+  record_count: number
+  by_language: Record<string, number>
+  by_subject: Record<string, number>
+  provenance_coverage?: { records_with_provenance: number; records_without_provenance: number; distinct_labels: number }
+  by_declared_version?: Record<string, number>
+  declared_version?: string | number | null
+  declared_status?: string | null
+  by_track?: Record<string, number>
+  fixture_metadata?: Record<string, number>
+  provenance: string
+  retrieval_status: string
+  publication_review: string
+  executable_examples: string
+  pedagogical_review: string
+  quality_status: string
+}
+
+export interface KnowledgeInventory {
+  generated_from: string
+  semantics: Record<string, string>
+  sources: KnowledgeSourceInventory[]
+  limitations: string[]
 }

@@ -6,6 +6,7 @@ vi.mock('../lib/api', () => ({
   fetchLearnStatus: vi.fn(),
   fetchTracks: vi.fn(),
   fetchKnowledgeDocuments: vi.fn(),
+  fetchKnowledgeInventory: vi.fn(),
   fetchKnowledgeDocument: vi.fn(),
   uploadKnowledge: vi.fn(),
   deleteKnowledgeDocument: vi.fn(),
@@ -57,6 +58,7 @@ beforeEach(() => {
   m.fetchTracks.mockResolvedValue({ training_languages: ["java", "python"] } as Awaited<ReturnType<typeof api.fetchTracks>>)
   m.fetchLearnStatus.mockResolvedValue({ ...status, allowed_tracks: [...status.allowed_tracks] })
   m.fetchKnowledgeDocuments.mockResolvedValue([])
+  m.fetchKnowledgeInventory.mockResolvedValue({ sources: [], semantics: {}, limitations: [], generated_from: 'test' })
 })
 
 afterEach(cleanup)
@@ -91,6 +93,25 @@ describe('KnowledgeUploadPanel — teacher', () => {
     expect(screen.getByRole('button', { name: 'Upload for review' })).toBeTruthy()
     // tracks come from /learn/status once it answers
     await waitFor(() => expect(within(screen.getByRole('combobox', { name: 'Use in' })).getAllByRole('option')).toHaveLength(2))
+  })
+
+  it('shows packaged source inventory and keeps quality status distinct from availability', async () => {
+    m.fetchKnowledgeInventory.mockResolvedValue({
+      generated_from: 'current local data files',
+      semantics: { published: 'Retrieval availability only; not a correctness claim.' },
+      limitations: [],
+      sources: [{
+        source_id: 'reference_library:records.jsonl', source_type: 'packaged_file',
+        path: 'data/reference_library/records.jsonl', content_sha256: 'abc123', record_count: 42,
+        by_language: { javascript: 42 }, by_subject: { arrays: 42 }, provenance: 'Curated source set',
+        retrieval_status: 'available', publication_review: 'not_applicable',
+        executable_examples: 'not_recorded', pedagogical_review: 'not_recorded', quality_status: 'not_certified',
+      }],
+    })
+    render(<KnowledgeUploadPanel isAdmin />)
+    expect(await screen.findByText('data/reference_library/records.jsonl')).toBeTruthy()
+    expect(screen.getByText(/42 records · not certified/)).toBeTruthy()
+    expect(screen.getByText(/Execution: not_recorded/)).toBeTruthy()
   })
 
   it('requires a file before uploading', async () => {
@@ -278,16 +299,32 @@ describe('KnowledgeUploadPanel — admin', () => {
   })
 
   it('offers Unpublish for published docs and surfaces action errors', async () => {
-    m.fetchKnowledgeDocuments.mockResolvedValue([doc({ status: 'published', chunks: 4 })])
+    m.fetchKnowledgeDocuments.mockResolvedValue([doc({ status: 'published', chunks: 4,
+      reference_language: 'all_languages', retrieval_status: 'available',
+      content_sha256: '0123456789abcdef0123456789abcdef', projection_version: 'upload-reference-v2',
+      publication_review: 'approved', executable_verification: 'not_recorded',
+      pedagogical_review: 'not_recorded', created_at: '2026-10-27T10:00:00Z',
+    })])
     m.rejectKnowledgeDocument.mockRejectedValue(new Error('store down'))
     render(<KnowledgeUploadPanel isAdmin />)
     const item = (await screen.findByText('heaps.md')).closest('li') as HTMLElement
     expect(within(item).getByText(/4 chunks/)).toBeTruthy()
+    expect(within(item).getByText('Available for retrieval')).toBeTruthy()
+    expect(within(item).getByText(/Language: Language-neutral \/ all languages/)).toBeTruthy()
+    expect(within(item).getByText(/Execution evidence: not recorded/)).toBeTruthy()
+    expect(within(item).getByText(/Teaching review: not recorded/)).toBeTruthy()
+    expect(within(item).getByText(/Extracted-text SHA-256: 0123456789abcdef/)).toBeTruthy()
     expect(within(item).queryByRole('button', { name: 'Approve' })).toBeNull()
 
     fireEvent.click(within(item).getByRole('button', { name: 'Unpublish' }))
     fireEvent.click(within(item).getByRole('button', { name: 'Confirm' }))
     expect((await screen.findByRole('alert')).textContent).toBe('store down')
+  })
+
+  it('explains that publication is separate from content verification', async () => {
+    render(<KnowledgeUploadPanel isAdmin />)
+    expect(await screen.findByText(/Published means available to retrieval/)).toBeTruthy()
+    expect(screen.getByText(/does not mean examples ran successfully/)).toBeTruthy()
   })
 
   it('shows a loading state before documents arrive', async () => {

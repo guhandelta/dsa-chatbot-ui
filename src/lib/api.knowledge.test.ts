@@ -20,6 +20,7 @@ import {
   deleteKnowledgeDocument,
   fetchKnowledgeDocument,
   fetchKnowledgeDocuments,
+  fetchKnowledgeInventory,
   fetchLearnStatus,
   rejectKnowledgeDocument,
   uploadKnowledge,
@@ -37,6 +38,11 @@ describe('knowledge base api', () => {
   it('fetches the pipeline status', async () => {
     expect(await fetchLearnStatus()).toBe('got')
     expect(http.get).toHaveBeenCalledWith('/teach/status', { silentError: true })
+  })
+
+  it('fetches the packaged knowledge-source inventory', async () => {
+    expect(await fetchKnowledgeInventory()).toBe('got')
+    expect(http.get).toHaveBeenCalledWith('/teach/inventory')
   })
 
   it('uploads a file as multipart form data', async () => {

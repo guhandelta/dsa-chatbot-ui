@@ -8,6 +8,7 @@ import {
   deleteKnowledgeDocument,
   fetchKnowledgeDocument,
   fetchKnowledgeDocuments,
+  fetchKnowledgeInventory,
   fetchLearnStatus,
   fetchTracks,
   getApiErrorMessage,
@@ -18,6 +19,7 @@ import { LANGUAGE_LABELS } from '../lib/languageAccess'
 import type {
   KnowledgeDocument,
   KnowledgeDocumentDetail,
+  KnowledgeInventory,
   KnowledgeStatus,
   KnowledgeTrack,
   LearnStatus,
@@ -62,6 +64,8 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [preview, setPreview] = useState<KnowledgeDocumentDetail | null>(null)
   const [rejecting, setRejecting] = useState<{ id: string; note: string } | null>(null)
+  const [inventory, setInventory] = useState<KnowledgeInventory | null>(null)
+  const [inventoryError, setInventoryError] = useState<string | null>(null)
 
   const formats = learnStatus?.supported_formats ?? DEFAULT_FORMATS
   const maxMb = learnStatus?.max_upload_mb ?? DEFAULT_MAX_MB
@@ -71,6 +75,12 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
     fetchLearnStatus()
       .then(setLearnStatus)
       .catch(() => setLearnStatus(null))
+  }, [])
+
+  useEffect(() => {
+    fetchKnowledgeInventory().then(setInventory).catch((err) => {
+      setInventoryError(getApiErrorMessage(err))
+    })
   }, [])
 
   useEffect(() => {
@@ -190,6 +200,37 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
           ? 'Your uploads publish immediately.'
           : 'An admin reviews each upload before learners see it.'}
       </p>
+      <div className="mb-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3 text-sm text-[var(--sea-ink-soft)]" role="note">
+        <strong className="text-[var(--sea-ink)]">Status guide:</strong> Published means available to retrieval when its scope matches. It does not mean examples ran successfully or the material passed a pedagogical review. The inventory below reports those evidence states separately.
+      </div>
+
+      <section className="mb-5 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4" aria-labelledby="kb-inventory-title">
+        <h3 id="kb-inventory-title" className="mb-1 text-base font-bold text-[var(--sea-ink)]">Packaged curriculum and knowledge sources</h3>
+        <p className="mb-3 text-sm text-[var(--sea-ink-soft)]">Counts and fingerprints describe what is stored. They do not certify correctness or teaching quality.</p>
+        {inventoryError ? <p role="status" className="text-sm text-[var(--sea-ink-soft)]">Packaged inventory unavailable: {inventoryError}</p> : !inventory ? (
+          <p className="text-sm text-[var(--sea-ink-soft)]" role="status">Loading packaged inventory…</p>
+        ) : (
+          <ul className="space-y-3">
+            {inventory.sources.map((source) => (
+              <li key={source.source_id} className="rounded-lg border border-[var(--line)] p-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <strong className="text-sm text-[var(--sea-ink)]">{source.path}</strong>
+                  <span className="text-xs text-[var(--sea-ink-soft)]">{source.record_count.toLocaleString()} records · {source.quality_status.replaceAll('_', ' ')}</span>
+                </div>
+                <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Languages: {Object.keys(source.by_language).join(', ') || 'none recorded'} · Retrieval: {source.retrieval_status} · Execution: {source.executable_examples} · Pedagogical review: {source.pedagogical_review}</p>
+                <details className="mt-1 text-xs text-[var(--sea-ink-soft)]">
+                  <summary className="cursor-pointer">Subject scope ({Object.keys(source.by_subject).length})</summary>
+                  <p className="mt-1">{Object.entries(source.by_subject).map(([subject, count]) => `${subject} (${count})`).join(' · ') || 'No subjects recorded'}</p>
+                </details>
+                {source.by_declared_version && <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Declared versions: {Object.entries(source.by_declared_version).map(([version, count]) => `${version} (${count})`).join(', ')}</p>}
+                {source.declared_version != null && <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Dataset version: {source.declared_version}{source.declared_status ? ` · status ${source.declared_status}` : ''}</p>}
+                {source.provenance_coverage && <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Source provenance recorded for {source.provenance_coverage.records_with_provenance.toLocaleString()} / {source.record_count.toLocaleString()} records ({source.provenance_coverage.distinct_labels.toLocaleString()} distinct labels)</p>}
+                <p className="mt-1 break-all text-xs text-[var(--sea-ink-soft)]">SHA-256: {source.content_sha256 ?? 'unavailable'} · {source.provenance}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="lang-tabs mb-3" role="tablist" aria-label="Upload type">
         {(['file', 'text'] as const).map((m) => (
@@ -342,16 +383,20 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
                   <div className="kb-item-meta">
                     <strong className="kb-filename">{doc.filename}</strong>
                     <span className={`kb-badge kb-badge-${doc.status}`}>{doc.status}</span>
+                    {doc.status === 'published' && <span className="kb-badge">Available for retrieval</span>}
                     <span className="kb-sub">
                       {TRACK_LABELS[doc.track] ?? doc.track} · {doc.characters.toLocaleString()} chars
                       {doc.status === 'published' && ` · ${doc.chunks} chunks`}
-                      {isAdmin && doc.owner_email && ` · ${doc.owner_email}`}
                     </span>
-                    {doc.status === 'published' && (
-                      <span className="kb-sub">
-                        Scope: {doc.reference_language === 'all_languages' ? 'All languages' : (doc.reference_language ?? 'Unclassified')} · {doc.retrieval_status ?? 'status unavailable'}
-                      </span>
-                    )}
+                    <span className="kb-sub">
+                      Language: {doc.reference_language === 'all_languages' ? 'Language-neutral / all languages' : (doc.reference_language ?? 'Unclassified')} · Track: {TRACK_LABELS[doc.track] ?? doc.track} · Topic: {doc.topic_scope || 'not recorded'} · Retrieval: {doc.retrieval_status ?? 'status unavailable'}
+                    </span>
+                    <span className="kb-sub">
+                      Publication review: {doc.publication_review ?? (doc.status === 'published' ? 'published; approval details unavailable' : doc.status)} · Execution evidence: {doc.executable_verification === 'verified' ? 'verified' : doc.executable_verification === 'failed' ? 'failed' : 'not recorded'} · Teaching review: {doc.pedagogical_review === 'reviewed' ? 'reviewed' : doc.pedagogical_review === 'needs_revision' ? 'needs revision' : 'not recorded'}
+                    </span>
+                    <span className="kb-sub">
+                      Source: {isAdmin ? (doc.owner_email || 'uploader unavailable') : 'your upload'} · Uploaded: {doc.created_at ? new Date(doc.created_at).toLocaleString() : 'date unavailable'}{doc.reviewed_at ? ` · Publication decision: ${new Date(doc.reviewed_at).toLocaleString()}` : ''} · Extracted-text SHA-256: {doc.content_sha256 ? `${doc.content_sha256.slice(0, 16)}…` : 'unavailable'}{doc.projection_version ? ` · projection ${doc.projection_version}` : ''}
+                    </span>
                     {doc.review_note && <span className="kb-sub">Note: {doc.review_note}</span>}
                   </div>
                   <div className="kb-actions">

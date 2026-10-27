@@ -580,6 +580,11 @@ export async function fetchKnowledgeDocuments(
   return data
 }
 
+export async function fetchKnowledgeInventory(): Promise<import('../types').KnowledgeInventory> {
+  const { data } = await api.get('/teach/inventory')
+  return data
+}
+
 export async function fetchKnowledgeDocument(
   id: string,
 ): Promise<import('../types').KnowledgeDocumentDetail> {
