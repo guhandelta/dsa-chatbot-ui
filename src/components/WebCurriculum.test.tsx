@@ -84,6 +84,27 @@ it('provides detailed study content for the complete HTML semantics module', () 
   expect(section?.lessons[3].teaching?.example.code).toContain('data-action')
 })
 
+it('provides detailed study content for the complete forms module', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'forms')
+  expect(section?.lessons).toHaveLength(5)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+  }
+  expect(section?.lessons[0].teaching?.example.code).toContain('<label')
+  expect(section?.lessons[1].teaching?.example.code).toContain('<fieldset>')
+  expect(section?.lessons[2].teaching?.example.code).toContain('new FormData(form)')
+  expect(section?.lessons[3].teaching?.example.code).toContain(':focus-visible')
+  expect(section?.lessons[4].teaching?.example.code).toContain('autocomplete="email"')
+})
+
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
   const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
   expect(forms?.battery).toHaveLength(3)
@@ -94,6 +115,11 @@ it('provides complete offline starter workspaces for each browser-native forms e
     expect(html).toContain('<form')
     expect(html).toContain('<label')
   }
+  const repair = forms?.battery.find((challenge) => challenge.id === 'forms-fix-an-inaccessible-form')
+  const repairHtml = repair?.starterFiles?.find((file) => file.name === 'index.html')?.content ?? ''
+  expect(repairHtml).toContain('placeholder="Your name" required tabindex="2"')
+  expect(repairHtml).toContain('placeholder="Email" required tabindex="1"')
+  expect(repair?.starterFiles?.find((file) => file.name === 'script.js')?.content).toContain("error.textContent = 'Something went wrong.'")
 })
 
 it('provides a CSS file and page scaffold for each CSS foundations challenge', () => {
@@ -392,7 +418,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 8 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 13 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -413,6 +439,15 @@ it('renders HTML semantics lessons in the same accessible lesson format', () => 
   expect(check.open).toBe(false)
   fireEvent.click(check.querySelector('summary')!)
   expect(check.open).toBe(true)
+})
+
+it('renders browser-native form lessons in the accessible lesson format', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(3) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('5 of 5 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Labels and control types'))
+  expect(screen.getByText(/A label gives a control its accessible name/)).toBeTruthy()
 })
 
 it('loads a known challenge brief in the editor and ignores malformed challenge identifiers', () => {

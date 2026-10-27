@@ -387,23 +387,168 @@
       "lessons": [
         {
           "title": "Labels and control types",
-          "focus": "Associate labels with controls and select input types that fit the data being collected."
+          "focus": "Associate labels with controls and select input types that fit the data being collected.",
+          "teaching": {
+            "objectives": [
+              "Associate every form control with a persistent, programmatic label.",
+              "Choose native input types and controls that match the information and expected interaction."
+            ],
+            "explanation": [
+              "A label gives a control its accessible name and enlarges the clickable target when explicitly connected with for and a matching unique id. Wrapping a control in its label is another valid association. Placeholder text is a hint, not a replacement: it can disappear while typing and often has weaker contrast. Give submitted controls a name; the name becomes the key in FormData and in ordinary form submission.",
+              "Choose a control for the data and interaction. email, url, number, date, checkbox, radio, select, and textarea expose useful native behavior, but type=\"number\" is for quantities where incrementing makes sense, not identifiers such as postal codes. Use a button with type=\"submit\" to submit and type=\"button\" for unrelated actions, since a button inside a form submits by default."
+            ],
+            "example": {
+              "code": "<form action=\"/profile\" method=\"post\">\n  <label for=\"display-name\">Display name</label>\n  <input id=\"display-name\" name=\"displayName\" autocomplete=\"nickname\" required minlength=\"2\">\n\n  <label for=\"email\">Email address</label>\n  <input id=\"email\" name=\"email\" type=\"email\" autocomplete=\"email\" required>\n\n  <label for=\"bio\">Short introduction</label>\n  <textarea id=\"bio\" name=\"bio\" rows=\"4\" maxlength=\"240\"></textarea>\n  <button type=\"submit\">Save profile</button>\n  <button type=\"button\" id=\"preview\">Preview</button>\n</form>",
+              "walkthrough": [
+                "Each label for value matches one unique control id, so clicking the label focuses its control and the accessible name is clear.",
+                "name values identify submitted data; autocomplete describes the kind of value so the browser can offer appropriate saved information.",
+                "The email input offers email-oriented semantics and native validity checks, while textarea is appropriate for free-form multi-line text.",
+                "Explicit button types keep Save profile as the submit action and Preview from submitting the form."
+              ]
+            },
+            "misconceptions": [
+              "A placeholder is not a durable label and should not carry the only instruction or name for a control.",
+              "A valid-looking email input does not prove that an address exists or belongs to the person; format validation is not identity verification.",
+              "Every button inside a form submits unless its type says otherwise; choose the type explicitly."
+            ],
+            "check": {
+              "prompt": "A postal-code field loses its hint once the user types, and the Preview button submits the form. What should change?",
+              "answer": "Add a persistent label associated with the field, keep any placeholder as optional supplemental guidance, and set the Preview button to type=\"button\".",
+              "explanation": "Labels provide a stable accessible name, while explicit button types prevent accidental submission."
+            }
+          }
         },
         {
           "title": "Grouping and instructions",
-          "focus": "Use fieldset, legend, help text, required state, and error messages that are programmatically related."
+          "focus": "Use fieldset, legend, help text, required state, and error messages that are programmatically related.",
+          "teaching": {
+            "objectives": [
+              "Group related controls with fieldset and legend and connect help text to its control.",
+              "Communicate required and invalid states in text as well as through programmatic relationships."
+            ],
+            "explanation": [
+              "Use fieldset and legend for a related group of controls, especially radio buttons or checkboxes that share one question. A legend names the group; a label names each individual option. A visual heading alone does not create this relationship. Keep instructions near the relevant control and connect supplementary text with aria-describedby when the relationship needs to be exposed to assistive technology.",
+              "The required attribute participates in native constraint validation and communicates that a value is needed. Do not rely on color or an asterisk alone: explain required status in text and mark the control with required. For custom errors, set a clear message, expose it in the control description, set aria-invalid while invalid, and provide a way to find or focus the affected field. Avoid announcing the same message through several competing live regions."
+            ],
+            "example": {
+              "code": "<fieldset>\n  <legend>Choose a workshop session <span>(required)</span></legend>\n  <label><input type=\"radio\" name=\"session\" value=\"morning\" required> Morning</label>\n  <label><input type=\"radio\" name=\"session\" value=\"afternoon\"> Afternoon</label>\n</fieldset>\n\n<label for=\"phone\">Phone number</label>\n<input id=\"phone\" name=\"phone\" type=\"tel\" aria-describedby=\"phone-help\">\n<p id=\"phone-help\">Include the country code, for example +1 555 0100.</p>",
+              "walkthrough": [
+                "The legend gives the radio group a shared question, and the labels name the individual choices.",
+                "For same-named radio controls, required on one member makes a selection in that group necessary for native validation.",
+                "The help paragraph is referenced by the input id through aria-describedby, preserving the instruction as a programmatic description.",
+                "The instruction also states an example in text instead of relying on a visual format alone."
+              ]
+            },
+            "misconceptions": [
+              "A fieldset is not a generic layout box; reserve it for a logically related set of controls and give it a useful legend.",
+              "aria-describedby supplements an accessible name; it does not replace a label.",
+              "Required state and an error message are different: required describes a constraint, while an error explains why the current value is invalid."
+            ],
+            "check": {
+              "prompt": "A screen reader encounters two unlabeled radio buttons beneath the visual heading “Delivery”. What HTML relationships should you add?",
+              "answer": "Wrap the related radios in a fieldset with a legend such as “Delivery method”, and give each radio its own associated label.",
+              "explanation": "The legend names the group and each label identifies one selectable option."
+            }
+          }
         },
         {
           "title": "Constraints and submission",
-          "focus": "Use built-in constraints, understand submit events, and provide clear invalid, pending, and success states."
+          "focus": "Use built-in constraints, understand submit events, and provide clear invalid, pending, and success states.",
+          "teaching": {
+            "objectives": [
+              "Use native constraints such as required, minlength, min, max, and type before writing custom validation.",
+              "Handle the submit event and distinguish browser validation, application validation, and server-side validation."
+            ],
+            "explanation": [
+              "HTML constraints provide a first layer of validation. required checks presence, type checks supported formats, minlength and maxlength constrain text length, and numeric or date controls can use min and max. The browser normally blocks submission when a constraint fails and focuses an invalid control. These checks improve feedback but can be bypassed, so a server must validate untrusted data independently.",
+              "The submit event fires after native constraints pass. Read FormData from the form and preventDefault only when the page is intentionally handling submission in JavaScript. For custom checks, use setCustomValidity and reportValidity, clear the custom message when the value changes, and show a specific correction. If a request is pending, prevent duplicate submits and announce status; report success only after the operation actually succeeds."
+            ],
+            "example": {
+              "code": "<form id=\"invite-form\">\n  <label for=\"invite-email\">Invite email</label>\n  <input id=\"invite-email\" name=\"email\" type=\"email\" required>\n  <button type=\"submit\">Send invitation</button>\n</form>\n<p id=\"status\" role=\"status\" aria-live=\"polite\"></p>\n<script>\n  const form = document.querySelector(\"#invite-form\");\n  const status = document.querySelector(\"#status\");\n  form.addEventListener(\"submit\", async (event) => {\n    event.preventDefault(); // native constraints passed before submit\n    const email = new FormData(form).get(\"email\");\n    status.textContent = `Invitation prepared for ${email}.`;\n  });\n</script>",
+              "walkthrough": [
+                "The required email input is checked by the browser before the submit event runs.",
+                "FormData reads the successful named controls; controls without a name are omitted.",
+                "The handler prevents navigation because this example takes responsibility for handling the submission.",
+                "In a real request, show pending state, await the response, and announce success or a useful error based on the result."
+              ]
+            },
+            "misconceptions": [
+              "Client-side validation is for usability, not a security boundary; validate on the server too.",
+              "The submit event is preferable to listening only for a button click because Enter-key submission and other submitters are included.",
+              "A status message should describe an outcome that occurred; do not announce success before an asynchronous request succeeds."
+            ],
+            "check": {
+              "prompt": "A form has required and type=\"email\", but the application must also reject addresses from a blocked domain. Where should each check happen?",
+              "answer": "Keep required and basic email-format constraints in HTML for immediate browser feedback, add the domain rule in application logic for user feedback, and enforce all relevant rules again on the server.",
+              "explanation": "Native constraints help users quickly, while server validation remains authoritative because client code can be bypassed."
+            }
+          }
         },
         {
           "title": "Focus and keyboard behavior",
-          "focus": "Keep a logical tab order, visible focus, and predictable submission behavior."
+          "focus": "Keep a logical tab order, visible focus, and predictable submission behavior.",
+          "teaching": {
+            "objectives": [
+              "Preserve a logical keyboard sequence and a visible focus indicator for every interactive control.",
+              "Move focus deliberately after dynamic form errors or state changes without disrupting users."
+            ],
+            "explanation": [
+              "Native controls participate in the document tab order according to their position. Avoid positive tabindex values: they create a second ordering system that becomes brittle when controls are added or moved. Use DOM order that matches the visual and task sequence. Keep a visible focus indicator with :focus-visible, and do not remove the browser outline unless an equally visible replacement is present.",
+              "When custom validation finds an error, place concise text near the relevant field, set aria-invalid=\"true\", and relate the message with aria-describedby. If submission reveals several errors, provide a summary with links to fields and consider moving focus to the summary or first invalid control. Restore or manage focus after closing dialogs and other temporary UI. Test with keyboard alone and verify that focus is never hidden behind fixed content."
+            ],
+            "example": {
+              "code": "<label for=\"quantity\">Number of seats</label>\n<input id=\"quantity\" name=\"quantity\" type=\"number\" min=\"1\" required aria-describedby=\"quantity-help\">\n<p id=\"quantity-help\">Enter at least one seat.</p>\n<button type=\"submit\">Continue</button>\n\n<style>\n  :focus-visible {\n    outline: 3px solid #075e9a;\n    outline-offset: 3px;\n  }\n</style>",
+              "walkthrough": [
+                "Source order puts the label, field, instruction, and action in the expected reading and keyboard sequence.",
+                "The visible focus outline helps keyboard users locate the active control; offset separates it from the control edge.",
+                "The helper text is associated with the input and can be included in its accessible description.",
+                "If validation adds an error, update the description relationship and focus strategy so the user can discover and correct it."
+              ]
+            },
+            "misconceptions": [
+              "A mouse-only visual check cannot establish keyboard accessibility; operate the complete form without a pointer.",
+              "Positive tabindex values do not fix poor document order and often make navigation unpredictable.",
+              "Moving focus on every keystroke or announcing redundant updates can make a form harder to use."
+            ],
+            "check": {
+              "prompt": "A form uses tabindex=\"1\" and tabindex=\"2\" to force focus order, and CSS removes every outline. What is a robust correction?",
+              "answer": "Remove the positive tabindex values, arrange controls in the correct DOM order, and provide a clear :focus-visible indicator.",
+              "explanation": "Natural order is stable as the form changes, and visible focus makes keyboard position perceivable."
+            }
+          }
         },
         {
           "title": "Autocomplete and input assistance",
-          "focus": "Use autocomplete tokens and input modes so people can fill forms faster on any device."
+          "focus": "Use autocomplete tokens and input modes so people can fill forms faster on any device.",
+          "teaching": {
+            "objectives": [
+              "Use standard autocomplete tokens for common user data and choose inputmode for convenient virtual keyboards.",
+              "Keep browser assistance optional and preserve privacy, clarity, and control."
+            ],
+            "explanation": [
+              "The autocomplete attribute accepts defined tokens that describe the purpose of a value, such as name, email, street-address, postal-code, and current-password. Correct tokens can help browsers and assistive technology identify fields and offer saved values. Use the token that matches the field, and group related address fields with an appropriate section when a page collects multiple addresses.",
+              "inputmode is a hint about the virtual keyboard, not validation. For example, inputmode=\"numeric\" can request a numeric keypad for a code while the value remains text, which preserves leading zeros. Use type=\"tel\" for telephone numbers and type=\"email\" for email addresses. Do not disable autocomplete broadly to force users to type; turn it off only for a specific value where saved suggestions would be inappropriate."
+            ],
+            "example": {
+              "code": "<label for=\"full-name\">Full name</label>\n<input id=\"full-name\" name=\"name\" autocomplete=\"name\" required>\n\n<label for=\"email\">Email</label>\n<input id=\"email\" name=\"email\" type=\"email\" autocomplete=\"email\" required>\n\n<label for=\"postal-code\">Postal code</label>\n<input id=\"postal-code\" name=\"postalCode\" inputmode=\"numeric\" autocomplete=\"postal-code\">\n\n<label for=\"verification-code\">Verification code</label>\n<input id=\"verification-code\" name=\"code\" inputmode=\"numeric\" autocomplete=\"one-time-code\">",
+              "walkthrough": [
+                "Autocomplete tokens describe data purpose and can help the browser fill familiar information accurately.",
+                "The postal code remains text, so leading zeros are preserved; inputmode only suggests a convenient keyboard.",
+                "The one-time-code token can help compatible systems offer a received verification code.",
+                "Labels remain visible and meaningful whether values are entered manually or supplied by browser assistance."
+              ]
+            },
+            "misconceptions": [
+              "inputmode does not validate or change the underlying value type.",
+              "Autocomplete does not guarantee a particular browser prompt; support and user settings vary.",
+              "Autocomplete tokens should describe the actual field purpose, not be selected only to influence browser behavior."
+            ],
+            "check": {
+              "prompt": "A one-time verification code may start with zero, and mobile users should see a numeric keypad. Which input hints preserve the value correctly?",
+              "answer": "Use a text input with inputmode=\"numeric\" and autocomplete=\"one-time-code\". The keyboard hint does not remove leading zeros or validate the code.",
+              "explanation": "Text preserves the identifier exactly; inputmode and autocomplete provide assistance without imposing numeric arithmetic semantics."
+            }
+          }
         }
       ],
       "battery": [
