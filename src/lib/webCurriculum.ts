@@ -14,8 +14,20 @@ export interface WebCurriculumSection {
   id: string
   title: string
   outcome: string
-  lessons: { title: string; focus: string }[]
+  lessons: WebCurriculumLesson[]
   battery: WebCurriculumChallenge[]
+}
+
+export interface WebCurriculumLesson {
+  title: string
+  focus: string
+  teaching?: {
+    objectives: string[]
+    explanation: string[]
+    example: { code: string; walkthrough: string[] }
+    misconceptions: string[]
+    check: { prompt: string; answer: string; explanation: string }
+  }
 }
 
 export interface WebCurriculumElective {

@@ -2,6 +2,8 @@ import { Link } from '@tanstack/react-router'
 import { WEB_FUNDAMENTALS, UI_ELECTIVES, webChallengeProjectSlug } from '../lib/webCurriculum'
 
 const KIND_LABEL = { learn: 'Understand', build: 'Build', debug: 'Debug', review: 'Review' } as const
+const authoredLessonCount = WEB_FUNDAMENTALS.flatMap((section) => section.lessons)
+  .filter((lesson) => lesson.teaching).length
 
 export function WebCurriculum() {
   return <section className="island-shell rounded-2xl p-5" aria-labelledby="web-curriculum-title">
@@ -10,14 +12,38 @@ export function WebCurriculum() {
     <p className="max-w-3xl text-sm">Work through browser, HTML, CSS, and JavaScript foundations before choosing a client-side framework or styling system. Each section has focused lessons and a practice battery that mixes understanding, building, debugging, and review.</p>
     <div className="my-4 rounded-xl border border-[var(--line)] p-3 text-sm" role="note">
       <strong>Pathway status:</strong> The curriculum order and section batteries are available. The playground can preview work, but browser challenge evaluation and server-backed section mastery are still being built, so these exercises do not yet unlock later sections or count as completed mastery.
+      <p className="mb-0 mt-2">Detailed study material is authored for {authoredLessonCount} of {WEB_FUNDAMENTALS.reduce((total, section) => total + section.lessons.length, 0)} lesson topics so far.</p>
     </div>
     <ol className="space-y-3 pl-5">
       {WEB_FUNDAMENTALS.map((section, index) => <li key={section.id}>
         <details className="rounded-xl border border-[var(--line)] p-3">
           <summary className="cursor-pointer font-semibold">{index}. {section.title}<span className="ml-2 text-xs font-normal text-[var(--sea-ink-soft)]">{section.lessons.length} lesson topics · {section.battery.length} core challenges</span></summary>
           <p className="mt-3 text-sm">{section.outcome}</p>
+          <p className="text-xs text-[var(--sea-ink-soft)]">{section.lessons.filter((lesson) => lesson.teaching).length} of {section.lessons.length} lesson topics have detailed study material.</p>
           <h3 className="mb-1 mt-4 text-sm font-semibold">Lesson battery</h3>
-          <ul className="list-disc space-y-1 pl-5 text-sm">{section.lessons.map((lesson) => <li key={lesson.title}><strong>{lesson.title}:</strong> {lesson.focus}</li>)}</ul>
+          <ul className="list-disc space-y-3 pl-5 text-sm">{section.lessons.map((lesson) => <li key={lesson.title}>
+            <strong>{lesson.title}:</strong> {lesson.focus}
+            {lesson.teaching && <details className="mt-2 rounded-lg border border-[var(--line)] p-3">
+              <summary className="cursor-pointer font-medium">Study {lesson.title}</summary>
+              <h4 className="mb-1 mt-3 font-semibold">Learning objectives</h4>
+              <ul className="list-disc space-y-1 pl-5">{lesson.teaching.objectives.map((objective) => <li key={objective}>{objective}</li>)}</ul>
+              {lesson.teaching.explanation.map((paragraph) => <p key={paragraph} className="my-3">{paragraph}</p>)}
+              <h4 className="mb-1 mt-3 font-semibold">Worked example</h4>
+              <pre className="overflow-x-auto rounded-lg bg-[var(--bg-base)] p-3 text-xs"><code>{lesson.teaching.example.code}</code></pre>
+              <ol className="my-2 list-decimal space-y-1 pl-5">{lesson.teaching.example.walkthrough.map((step) => <li key={step}>{step}</li>)}</ol>
+              <h4 className="mb-1 mt-3 font-semibold">Common misconceptions</h4>
+              <ul className="list-disc space-y-1 pl-5">{lesson.teaching.misconceptions.map((item) => <li key={item}>{item}</li>)}</ul>
+              <section className="mt-3 rounded-lg border border-[var(--line)] p-3" aria-label={`${lesson.title} knowledge check`}>
+                <h4 className="m-0 font-semibold">Quick check</h4>
+                <p>{lesson.teaching.check.prompt}</p>
+                <details className="rounded border border-[var(--line)] p-2">
+                  <summary className="cursor-pointer">Reveal answer: {lesson.title}</summary>
+                  <p className="mb-1 mt-2">{lesson.teaching.check.answer}</p>
+                  <p className="m-0 text-[var(--sea-ink-soft)]">{lesson.teaching.check.explanation}</p>
+                </details>
+              </section>
+            </details>}
+          </li>)}</ul>
           <h3 className="mb-1 mt-4 text-sm font-semibold">Core challenge battery</h3>
           <ul className="space-y-2 pl-0">{section.battery.map((challenge) => <li key={challenge.id} className="list-none rounded-lg border border-[var(--line)] p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">{KIND_LABEL[challenge.kind]}</p>

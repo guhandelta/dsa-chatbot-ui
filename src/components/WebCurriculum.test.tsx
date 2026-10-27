@@ -1,5 +1,6 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
+import curriculumData from '../content/curricula/web-fundamentals.json'
 import { WEB_FUNDAMENTALS, webChallengeProjectSlug } from '../lib/webCurriculum'
 
 vi.mock('@tanstack/react-router', () => ({
@@ -11,6 +12,7 @@ import { ChallengeBrief, WebCurriculum } from './WebCurriculum'
 afterEach(cleanup)
 
 it('defines an ordered, substantial common web fundamentals spine with a battery in every section', () => {
+  expect(curriculumData.schemaVersion).toBe(2)
   expect(WEB_FUNDAMENTALS).toHaveLength(13)
   expect(WEB_FUNDAMENTALS[0].title).toBe('How the browser builds a page')
   expect(WEB_FUNDAMENTALS.at(-1)?.title).toBe('Web fundamentals capstone')
@@ -45,6 +47,22 @@ it('defines an ordered, substantial common web fundamentals spine with a battery
   expect(WEB_FUNDAMENTALS.reduce((total, section) => total + section.lessons.length, 0)).toBe(65)
   expect(challengeProjects).toHaveLength(41)
   expect(WEB_FUNDAMENTALS.flatMap((section) => section.battery).filter((challenge) => challenge.starterFiles).length).toBe(41)
+})
+
+it('provides a complete detailed lesson module for the browser foundations section', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'browser')
+  expect(section?.lessons).toHaveLength(4)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.explanation, lesson.title).not.toBe('')
+  }
 })
 
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
@@ -349,6 +367,20 @@ it('renders lesson batteries, same-section challenge links, and the current asse
   const firstLink = container.querySelector(`a[data-search*="${firstChallenge.id}"]`)
   expect(firstLink?.getAttribute('data-search')).toContain(webChallengeProjectSlug(WEB_FUNDAMENTALS[0].id, firstChallenge.id))
   expect(screen.getByText(/Client-side component UI:/)).toBeTruthy()
+})
+
+it('reveals self-guided lesson content and keeps the answer behind an explicit action', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
+  sectionDetails.open = true
+  expect(screen.getByText('Detailed study material is authored for 4 of 65 lesson topics so far.')).toBeTruthy()
+  fireEvent.click(screen.getByText('Study The web platform'))
+  expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
+  const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
+  expect(answerDisclosure.open).toBe(false)
+  fireEvent.click(answerDisclosure.querySelector('summary')!)
+  expect(answerDisclosure.open).toBe(true)
+  expect(screen.getByText(/Use a <button> element first/)).toBeTruthy()
 })
 
 it('loads a known challenge brief in the editor and ignores malformed challenge identifiers', () => {

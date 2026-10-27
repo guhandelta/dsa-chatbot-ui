@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "fundamentals": [
     {
       "id": "browser",
@@ -8,19 +8,128 @@
       "lessons": [
         {
           "title": "The web platform",
-          "focus": "HTML describes structure, CSS presentation, JavaScript behavior, and the browser provides runtime services."
+          "focus": "HTML describes structure, CSS presentation, JavaScript behavior, and the browser provides runtime services.",
+          "teaching": {
+            "objectives": [
+              "Explain what HTML, CSS, JavaScript, and browser APIs each contribute.",
+              "Trace a user action from markup to a visible response."
+            ],
+            "explanation": [
+              "A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.",
+              "These layers cooperate through standard interfaces. The browser parses HTML into a DOM tree, applies CSS rules, and exposes DOM elements to JavaScript. A button's behavior should start with a real button element, which already supports keyboard activation and focus, rather than a styled generic container."
+            ],
+            "example": {
+              "code": "<button id=\"save-button\" type=\"button\">Save draft</button>\n<p id=\"save-status\" role=\"status\" aria-live=\"polite\"></p>\n<script>\n  const button = document.querySelector('#save-button');\n  const status = document.querySelector('#save-status');\n  button.addEventListener('click', () => {\n    status.textContent = 'Draft saved in this demo.';\n  });\n</script>",
+              "walkthrough": [
+                "HTML provides a keyboard-operable control and a status region.",
+                "JavaScript subscribes to the button's click event, then changes text content.",
+                "The browser updates the rendered page and announces the status change to assistive technology."
+              ]
+            },
+            "misconceptions": [
+              "JavaScript does not replace semantic HTML; using the correct element gives users built-in behavior.",
+              "A browser API is not the same as an external library. APIs are capabilities provided by the browser runtime."
+            ],
+            "check": {
+              "prompt": "A clickable <div> looks like a button but cannot be activated with the keyboard by default. Which layer should you fix first, and why?",
+              "answer": "Use a <button> element first. HTML semantics provide keyboard activation and focus behavior; CSS can style it, and JavaScript can add the action.",
+              "explanation": "Starting with the semantic control reduces custom code and gives assistive technologies a correct role."
+            }
+          }
         },
         {
           "title": "DOM, CSSOM, and rendering",
-          "focus": "Relate source markup and styles to the document tree, style rules, layout, paint, and interaction."
+          "focus": "Relate source markup and styles to the document tree, style rules, layout, paint, and interaction.",
+          "teaching": {
+            "objectives": [
+              "Describe the DOM and CSSOM as browser representations of source files.",
+              "Put parsing, style calculation, layout, paint, and compositing in a useful order."
+            ],
+            "explanation": [
+              "The HTML parser creates the DOM (Document Object Model), a tree of elements and text. The CSS parser creates the CSSOM (CSS Object Model), a representation of applicable style rules. The browser matches rules to elements and computes styles, then calculates geometry (layout), draws pixels (paint), and combines layers (compositing).",
+              "This sequence is a useful model, not a promise that every update repeats every stage. Changing an element's width usually affects layout and later stages. Changing opacity can often be handled later in the pipeline. Browser optimizations vary, so measure before assuming a property is cheap."
+            ],
+            "example": {
+              "code": "<main class=\"notice\">\n  <h1>Studio hours</h1>\n  <p>Open weekdays, 9:00–17:00.</p>\n</main>",
+              "walkthrough": [
+                "The parser creates main, h1, and p nodes in the DOM.",
+                "A matching .notice rule contributes declarations to computed style.",
+                "The browser lays out the text and box, paints visible pixels, then composites layers for display."
+              ]
+            },
+            "misconceptions": [
+              "The DOM is not the original HTML string; it is a live object model built from parsed markup.",
+              "A repaint and a relayout are different costs. A visual change does not always require recalculating geometry."
+            ],
+            "check": {
+              "prompt": "You change a card's background color without changing its size or position. Which pipeline work is generally needed, and which stage may be avoided?",
+              "answer": "The browser must update the card's painted appearance. It may avoid recalculating layout because geometry did not change; exact optimizations depend on the browser.",
+              "explanation": "This tests the pipeline model while allowing for implementation-specific optimization."
+            }
+          }
         },
         {
           "title": "Inspecting a running page",
-          "focus": "Use the Elements, Styles, Console, and Network panels to form and test a debugging hypothesis."
+          "focus": "Use the Elements, Styles, Console, and Network panels to form and test a debugging hypothesis.",
+          "teaching": {
+            "objectives": [
+              "Use browser developer tools to locate a rendering or behavior defect.",
+              "Change one suspected cause at a time and verify it with evidence."
+            ],
+            "explanation": [
+              "Debug from an observable symptom. Reproduce it, inspect the relevant element and computed styles, check the console for script errors, and check the Network panel for missing files. Then form a small hypothesis: for example, a selector does not match, a stylesheet failed to load, or an event handler never ran.",
+              "Change one cause at a time. Retest the original case and a nearby case after each fix. Developer-tool edits are temporary; record the source-file change and reload to verify the actual project, not only the inspector's in-memory override."
+            ],
+            "example": {
+              "code": "<link rel=\"stylesheet\" href=\"style.css\">\n<p class=\"status-ready\">Profile ready</p>",
+              "walkthrough": [
+                "Symptom: the status text has no expected color.",
+                "Inspect the paragraph's computed styles and see whether a matching rule appears.",
+                "Check Network: a 404 for style.css points to the filename or path. If the file loaded, inspect selector matching and cascade instead.",
+                "Fix the root cause in the source and reload to confirm."
+              ]
+            },
+            "misconceptions": [
+              "Seeing a CSS declaration in a file does not prove that the browser loaded it or that it wins the cascade.",
+              "Repeatedly changing unrelated styles makes the cause harder to isolate."
+            ],
+            "check": {
+              "prompt": "A rule appears in styles.css, but the element does not show its color. Name two distinct checks that separate a loading problem from a selector/cascade problem.",
+              "answer": "Check the Network panel for a successful stylesheet request, then inspect the element's Styles/Computed panels to see whether the selector matches and whether another declaration wins.",
+              "explanation": "Each check tests a different stage: resource loading versus rule matching and cascade."
+            }
+          }
         },
         {
           "title": "Project structure and version control",
-          "focus": "Name files and folders clearly, and save a working history with Git so each change can be reviewed or reverted."
+          "focus": "Name files and folders clearly, and save a working history with Git so each change can be reviewed or reverted.",
+          "teaching": {
+            "objectives": [
+              "Organize a small static project so each file has a clear purpose.",
+              "Use Git commits as reviewable checkpoints and avoid committing secrets."
+            ],
+            "explanation": [
+              "Keep the browser entry document easy to find, use predictable file names, and group related assets in folders only when that improves navigation. Relative URLs such as ./styles.css resolve from the HTML document's location, so moving a file can break a reference even when its contents are unchanged.",
+              "Git records snapshots. Check git status to see edits, stage only the files for a coherent change, and commit with a message that says what changed. A commit makes review and rollback easier; it is not a substitute for backups or remote collaboration. Never add credentials or private keys to a repository."
+            ],
+            "example": {
+              "code": "web-studio/\n├── index.html\n├── styles.css\n└── script.js\n\n# inspect, stage selected files, and save a checkpoint\ngit status\ngit add index.html styles.css script.js\ngit commit -m \"Add workshop page structure\"",
+              "walkthrough": [
+                "index.html is the entry document and links the sibling CSS and JavaScript files.",
+                "git status reveals the current working-tree changes before staging.",
+                "git add names the intended files; git commit records a labeled snapshot."
+              ]
+            },
+            "misconceptions": [
+              "A folder structure does not make code modular by itself; file boundaries should have a clear purpose.",
+              "Staging every file blindly can include generated output or secrets. Review status before committing."
+            ],
+            "check": {
+              "prompt": "You changed two source files and see an unfamiliar .env file in git status. What should you do before staging?",
+              "answer": "Inspect the file and status, determine whether it contains local configuration or secrets, and exclude it (for example with .gitignore) if it should not be versioned. Stage only the intended source files.",
+              "explanation": "Reviewing the exact staged set prevents accidental disclosure and keeps commits focused."
+            }
+          }
         }
       ],
       "battery": [
