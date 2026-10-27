@@ -109,19 +109,49 @@
           "id": "html-semantics-repair-a-document-outline",
           "title": "Repair a document outline",
           "task": "Fix heading order, landmark placement, and invalid nesting in a starter article.",
-          "kind": "debug"
+          "kind": "debug",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Trail journal</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <header>\n    <h1>Trail journal</h1>\n    <div class=\"page-links\"><a href=\"#coastal-route\">Coastal route</a></div>\n  </header>\n  <main>\n    <article>\n      <h4 id=\"coastal-route\">Coastal route</h4>\n      <p>We followed the marked path above the water.\n        <div class=\"field-note\">The tide was rising near the lookout.</div>\n      </p>\n      <h2>What to bring</h2>\n      <ul><li>Water</li><li>A light jacket</li></ul>\n    </article>\n  </main>\n  <footer><p>Notes by the trail team.</p></footer>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  color: #18324a;\n  font-family: system-ui, sans-serif;\n  line-height: 1.6;\n  margin: 0;\n}\n\nheader, main, footer {\n  margin-inline: auto;\n  max-width: 48rem;\n  padding: 1rem;\n}\n\n.page-links, .field-note {\n  background: #edf5f2;\n  padding: 0.75rem;\n}\n"
+            }
+          ]
         },
         {
           "id": "html-semantics-build-an-information-page",
           "title": "Build an information page",
           "task": "Create an article with a meaningful heading structure, navigation, links, and an informative image.",
-          "kind": "build"
+          "kind": "build",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>City garden guide</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <header>\n    <h1>City garden guide</h1>\n    <!-- Add a navigation landmark with descriptive links to page sections. -->\n  </header>\n  <main>\n    <p class=\"intro\">A practical guide to growing food in a small shared space.</p>\n    <!-- Build a semantic article with a heading hierarchy and useful link. -->\n    <!-- Use this offline illustration as an informative image and write useful alt text. -->\n    <figure>\n      <img src=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 120'%3E%3Crect width='240' height='120' fill='%23e8f2df'/%3E%3Cpath d='M30 90h180' stroke='%2376543a' stroke-width='12'/%3E%3Ccircle cx='75' cy='55' r='18' fill='%234a8c54'/%3E%3Ccircle cx='120' cy='45' r='20' fill='%234a8c54'/%3E%3Ccircle cx='165' cy='55' r='18' fill='%234a8c54'/%3E%3C/svg%3E\" alt=\"\">\n      <figcaption>A small raised bed with three leafy plants.</figcaption>\n    </figure>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  color: #20352d;\n  font-family: system-ui, sans-serif;\n  line-height: 1.6;\n  margin: 0;\n}\n\nheader, main {\n  margin-inline: auto;\n  max-width: 48rem;\n  padding: 1rem;\n}\n\n.intro {\n  font-size: 1.15rem;\n}\n\na {\n  color: #075e46;\n}\n\n:focus-visible {\n  outline: 3px solid #a34b00;\n  outline-offset: 3px;\n}\n"
+            }
+          ]
         },
         {
           "id": "html-semantics-semantic-choice-check",
           "title": "Semantic choice check",
           "task": "Choose native elements for navigation, emphasis, quotations, dates, and tabular data, then explain the choices.",
-          "kind": "learn"
+          "kind": "learn",
+          "starterFiles": [
+            {
+              "name": "index.html",
+              "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Community garden update</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"site-header\">\n    <h1>Community garden update</h1>\n    <div class=\"links\"><a href=\"#harvest\">Harvest report</a><a href=\"#visits\">Visitor hours</a></div>\n  </div>\n  <main>\n    <section id=\"harvest\">\n      <h2>Harvest report</h2>\n      <p><span class=\"important\">The first tomatoes are ready.</span></p>\n      <p class=\"quote\">“Small steps make a garden grow.”</p>\n      <p>Last updated: October 12, 2026</p>\n    </section>\n    <section id=\"visits\">\n      <h2>Visitor hours</h2>\n      <div class=\"row\"><span>Weekdays</span><span>9:00–17:00</span></div>\n      <div class=\"row\"><span>Weekends</span><span>10:00–14:00</span></div>\n    </section>\n  </main>\n</body>\n</html>\n"
+            },
+            {
+              "name": "styles.css",
+              "content": "body {\n  color: #24352d;\n  font-family: system-ui, sans-serif;\n  line-height: 1.6;\n  margin: 0;\n}\n\n.site-header, main {\n  margin-inline: auto;\n  max-width: 48rem;\n  padding: 1rem;\n}\n\n.links {\n  display: flex;\n  gap: 1rem;\n}\n\n.important {\n  font-weight: 700;\n}\n\n.quote {\n  border-inline-start: 0.25rem solid #557565;\n  margin-inline: 0;\n  padding-inline-start: 1rem;\n}\n\n.row {\n  display: flex;\n  justify-content: space-between;\n  padding-block: 0.5rem;\n}\n"
+            }
+          ]
         }
       ]
     },

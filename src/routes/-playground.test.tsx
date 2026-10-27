@@ -88,6 +88,21 @@ it('seeds a new browser challenge from its curriculum starter files', async () =
   expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
 })
 
+it('seeds a new HTML semantics challenge with its authored multi-file project', async () => {
+  const project = webChallengeProjectSlug('html-semantics', 'html-semantics-repair-a-document-outline')
+  state.search = { project, template: 'html-css-js', section: 'html-semantics', challenge: 'html-semantics-repair-a-document-outline' }
+  vi.mocked(openPlayground).mockResolvedValue({ slug: project, template: 'html-css-js', entry: 'index.html', revision: null, updated_at: null, files })
+  render(<Page />)
+  expect(await screen.findByRole('heading', { name: 'Repair a document outline' })).toBeTruthy()
+  const html = await screen.findByRole('textbox', { name: 'index.html editor' }) as HTMLTextAreaElement
+  expect(html.value).toContain('<h4 id="coastal-route">')
+  expect(html.value).toContain('<div class="field-note">')
+  fireEvent.click(screen.getByRole('tab', { name: 'styles.css' }))
+  const css = await screen.findByRole('textbox', { name: 'styles.css editor' }) as HTMLTextAreaElement
+  expect(css.value).toContain('.field-note')
+  expect(screen.getByRole('button', { name: 'Reset to starter project' })).toBeTruthy()
+})
+
 it('confirms and autosaves a challenge reset to its starter files', async () => {
   const challenge = 'browser-trace-a-page-load'
   const project = webChallengeProjectSlug('browser', challenge)
