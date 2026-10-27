@@ -18,9 +18,9 @@ jobs:
       - run: npm run build
       - name: Browser smoke tests
         run: |
-          ./node_modules/.bin/vite dev --port 3000 --host 0.0.0.0 --strictPort > "$RUNNER_TEMP/vite.log" 2>&1 &
-          vite_pid=$!
-          trap 'kill "$vite_pid" 2>/dev/null || true' EXIT
+          ./node_modules/.bin/vite preview --port 3000 --host 0.0.0.0 --strictPort > "$RUNNER_TEMP/vite.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
 
           ready=false
           for attempt in {1..60}; do
@@ -28,7 +28,7 @@ jobs:
               ready=true
               break
             fi
-            if ! kill -0 "$vite_pid" 2>/dev/null; then
+            if ! kill -0 "$preview_pid" 2>/dev/null; then
               cat "$RUNNER_TEMP/vite.log"
               exit 1
             fi
@@ -37,7 +37,7 @@ jobs:
 
           if [ "$ready" != true ]; then
             cat "$RUNNER_TEMP/vite.log"
-            echo "Vite did not become ready at http://127.0.0.1:3000 within 60 seconds."
+            echo "Vite preview did not become ready at http://127.0.0.1:3000 within 60 seconds."
             exit 1
           fi
 
