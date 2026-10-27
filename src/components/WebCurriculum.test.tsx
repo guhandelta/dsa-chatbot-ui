@@ -65,6 +65,25 @@ it('provides a complete detailed lesson module for the browser foundations secti
   }
 })
 
+it('provides detailed study content for the complete HTML semantics module', () => {
+  const section = WEB_FUNDAMENTALS.find((item) => item.id === 'html-semantics')
+  expect(section?.lessons).toHaveLength(4)
+  for (const lesson of section?.lessons ?? []) {
+    expect(lesson.teaching, lesson.title).toBeDefined()
+    expect(lesson.teaching?.objectives.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.explanation.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.example.code.trim(), lesson.title).not.toBe('')
+    expect(lesson.teaching?.example.walkthrough.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.misconceptions.length, lesson.title).toBeGreaterThanOrEqual(2)
+    expect(lesson.teaching?.check.prompt, lesson.title).not.toBe('')
+    expect(lesson.teaching?.check.answer, lesson.title).not.toBe('')
+  }
+  expect(section?.lessons[0].teaching?.example.code).toContain('<!doctype html>')
+  expect(section?.lessons[1].teaching?.example.code).toContain('<table>')
+  expect(section?.lessons[2].teaching?.example.code).toContain('<main>')
+  expect(section?.lessons[3].teaching?.example.code).toContain('data-action')
+})
+
 it('provides complete offline starter workspaces for each browser-native forms exercise', () => {
   const forms = WEB_FUNDAMENTALS.find((section) => section.id === 'forms')
   expect(forms?.battery).toHaveLength(3)
@@ -373,7 +392,7 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   const { container } = render(<WebCurriculum />)
   const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li > details')!
   sectionDetails.open = true
-  expect(screen.getByText('Detailed study material is authored for 4 of 65 lesson topics so far.')).toBeTruthy()
+  expect(screen.getByText('Detailed study material is authored for 8 of 65 lesson topics so far.')).toBeTruthy()
   fireEvent.click(screen.getByText('Study The web platform'))
   expect(screen.getByText('A browser is both a document renderer and a runtime. HTML describes meaningful content and controls; CSS determines their presentation; JavaScript responds to events and updates the document. Browser APIs expose capabilities such as storage, networking, timers, and accessibility-related state.')).toBeTruthy()
   const answerDisclosure = container.querySelector<HTMLDetailsElement>('[aria-label="The web platform knowledge check"] details')!
@@ -381,6 +400,19 @@ it('reveals self-guided lesson content and keeps the answer behind an explicit a
   fireEvent.click(answerDisclosure.querySelector('summary')!)
   expect(answerDisclosure.open).toBe(true)
   expect(screen.getByText(/Use a <button> element first/)).toBeTruthy()
+})
+
+it('renders HTML semantics lessons in the same accessible lesson format', () => {
+  const { container } = render(<WebCurriculum />)
+  const sectionDetails = container.querySelector<HTMLDetailsElement>('ol > li:nth-child(2) > details')!
+  sectionDetails.open = true
+  expect(sectionDetails.querySelector('p.text-xs')?.textContent).toContain('4 of 4 lesson topics have detailed study material.')
+  fireEvent.click(screen.getByText('Study Document skeleton and metadata'))
+  expect(screen.getByText(/The doctype declaration tells the browser to use standards mode/)).toBeTruthy()
+  const check = container.querySelector<HTMLDetailsElement>('[aria-label="Document skeleton and metadata knowledge check"] details')!
+  expect(check.open).toBe(false)
+  fireEvent.click(check.querySelector('summary')!)
+  expect(check.open).toBe(true)
 })
 
 it('loads a known challenge brief in the editor and ignores malformed challenge identifiers', () => {

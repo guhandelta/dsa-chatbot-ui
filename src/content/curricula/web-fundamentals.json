@@ -202,19 +202,131 @@
       "lessons": [
         {
           "title": "Document skeleton and metadata",
-          "focus": "Doctype, language, title, character encoding, viewport, and metadata that describes the document."
+          "focus": "Doctype, language, title, character encoding, viewport, and metadata that describes the document.",
+          "teaching": {
+            "objectives": [
+              "Identify the minimum document metadata needed for a robust HTML page.",
+              "Explain how document language and title support accessibility and browser behavior."
+            ],
+            "explanation": [
+              "The doctype declaration tells the browser to use standards mode. The html element is the document root; its lang attribute identifies the primary language of the page text. In the head, declare UTF-8 early, set a useful page title, and include a viewport declaration for layouts that adapt to device width. The body contains the document's visible content.",
+              "Metadata should describe the actual page. A description can help summaries in some contexts, but browsers and search systems may choose other text. The title appears in browser tabs, history, and assistive-technology context, so make it specific and concise. Keep the language tag accurate; it helps pronunciation and language-sensitive processing."
+            ],
+            "example": {
+              "code": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Neighborhood Repair Workshops</title>\n  <meta name=\"description\" content=\"Find free repair workshops at the Northside Library.\">\n</head>\n<body>\n  <main><h1>Repair workshops</h1></main>\n</body>\n</html>",
+              "walkthrough": [
+                "The doctype precedes the root element so the document uses standards mode.",
+                "lang=\"en\" declares the page's primary language; use a suitable BCP 47 language tag for other languages or regional variants.",
+                "The encoding and viewport declarations support reliable text decoding and device-width layout.",
+                "The title names this page rather than repeating a generic site label."
+              ]
+            },
+            "misconceptions": [
+              "The viewport meta element does not make a page responsive by itself; CSS must still adapt layout.",
+              "A meta description is not a guaranteed search-result snippet and should not be treated as a ranking switch."
+            ],
+            "check": {
+              "prompt": "A page has a useful visible heading but its browser tab says 'Untitled'. Which metadata should you add, and which element should contain the visible page heading?",
+              "answer": "Add a descriptive <title> inside <head>; keep the visible page heading in a heading element such as <h1> inside <body>.",
+              "explanation": "The document title and visible heading serve different contexts. One labels the page outside the content; the other structures and names its visible content."
+            }
+          }
         },
         {
           "title": "Text, links, images, lists, and tables",
-          "focus": "Choose elements by meaning; write descriptive links and text alternatives; use tables for tabular data."
+          "focus": "Choose elements by meaning; write descriptive links and text alternatives; use tables for tabular data.",
+          "teaching": {
+            "objectives": [
+              "Choose semantic elements for text, navigation, images, lists, and tabular data.",
+              "Write links and alternative text that make sense outside their visual context."
+            ],
+            "explanation": [
+              "Use elements according to the meaning of the content. Headings create a navigable outline; paragraphs group prose; lists represent related items; anchors navigate to a resource or location. A link's text should describe its destination instead of relying on 'click here'.",
+              "An image's alt text depends on its purpose. Describe meaningful information conveyed by the image. Use alt=\"\" when an image is decorative or its information is already fully provided nearby. Tables are for relationships among data, not visual page layout; include a caption where useful, header cells, and scope so relationships remain understandable."
+            ],
+            "example": {
+              "code": "<h2>Upcoming sessions</h2>\n<ul>\n  <li><a href=\"/workshops/repair-basics\">Repair basics, Saturday at 10:00</a></li>\n</ul>\n<figure>\n  <img src=\"tool-library.jpg\" alt=\"Volunteers sorting hand tools on labeled shelves\">\n  <figcaption>Tools available at the repair desk</figcaption>\n</figure>\n<table>\n  <caption>Workshop capacity</caption>\n  <thead><tr><th scope=\"col\">Session</th><th scope=\"col\">Seats</th></tr></thead>\n  <tbody><tr><th scope=\"row\">Repair basics</th><td>12</td></tr></tbody>\n</table>",
+              "walkthrough": [
+                "The unordered list groups a set of available sessions.",
+                "The descriptive link text identifies its destination without needing surrounding visual cues.",
+                "The image alt describes relevant visual information; the caption gives context for the figure.",
+                "The table caption names the data, and scoped header cells associate labels with their columns and row."
+              ]
+            },
+            "misconceptions": [
+              "Alt text is not a filename or a place to repeat every nearby sentence; choose it based on the image's role.",
+              "A table is not the right tool for aligning cards or page columns; use CSS layout for presentation."
+            ],
+            "check": {
+              "prompt": "A decorative divider image adds no information, and a page has a small table of session names and seat counts. What should the divider's alt value be, and which table cells should be headers?",
+              "answer": "Use alt=\"\" for the decorative divider. Mark the column labels as <th scope=\"col\"> and, when a row label identifies a record, use <th scope=\"row\"> for it.",
+              "explanation": "Empty alternative text lets assistive technology skip decoration. Header relationships make tabular data easier to navigate."
+            }
+          }
         },
         {
           "title": "Landmarks and content structure",
-          "focus": "Use main, header, nav, article, section, aside, and footer according to their semantics."
+          "focus": "Use main, header, nav, article, section, aside, and footer according to their semantics.",
+          "teaching": {
+            "objectives": [
+              "Use landmark elements to express a page's major regions.",
+              "Distinguish a self-contained article from a thematic section and complementary content."
+            ],
+            "explanation": [
+              "Landmarks provide recognizable regions for navigation. A page generally has one main element for its unique central content, a header for introductory or navigational material, nav for a major navigation group, and footer for closing or related information. Header and footer can also belong to article or section contexts, so their meaning depends on placement.",
+              "Use article for a composition that could stand on its own, such as a post or event listing. Use section to group a thematic part of a page, normally with a heading. Aside is related but complementary content. Do not add landmarks solely for styling; CSS classes can handle visual grouping without changing meaning."
+            ],
+            "example": {
+              "code": "<header>\n  <a href=\"/\">Northside Library</a>\n  <nav aria-label=\"Primary\"><a href=\"/events\">Events</a></nav>\n</header>\n<main>\n  <h1>Community events</h1>\n  <article>\n    <h2>Repair cafe</h2>\n    <p>Bring a household item and work with a volunteer.</p>\n  </article>\n  <aside aria-label=\"Related information\">Step-free entrance available.</aside>\n</main>\n<footer><p>Contact the library team</p></footer>",
+              "walkthrough": [
+                "The page header contains site identity and a primary navigation landmark.",
+                "Main identifies the unique central content; its h1 gives that content a title.",
+                "The repair cafe item is independently meaningful, so article is appropriate.",
+                "The accommodation note complements the event information, while footer contains closing contact information."
+              ]
+            },
+            "misconceptions": [
+              "A section is not just a generic wrapper: use it for a thematic group, usually with a heading.",
+              "Adding multiple unlabeled nav elements can make landmark navigation ambiguous; label distinct navigation groups when needed."
+            ],
+            "check": {
+              "prompt": "A page has a standalone event card with a title, date, and description, followed by a page-wide list of all events. Which element could represent the card, and which element should contain the page's central content?",
+              "answer": "The standalone card can be an <article>; the page-wide central content belongs in <main>.",
+              "explanation": "Article expresses self-contained content; main identifies the page's primary content area."
+            }
+          }
         },
         {
           "title": "Attributes and element relationships",
-          "focus": "Understand global attributes, IDs, classes, data attributes, and valid parent-child relationships."
+          "focus": "Understand global attributes, IDs, classes, data attributes, and valid parent-child relationships.",
+          "teaching": {
+            "objectives": [
+              "Use id, class, and data-* attributes for distinct purposes.",
+              "Check that attributes and child elements are valid for their HTML context."
+            ],
+            "explanation": [
+              "An id identifies one element in a document and is useful for fragment links, labels, and scripts; keep it unique. A class is a reusable set of tokens for styling or selecting groups. A data-* attribute stores an application-specific string on an element; it does not create behavior automatically. Global attributes such as lang, hidden, and tabindex have broader applicability, but each still has semantics and constraints.",
+              "HTML elements have content models that define what children are allowed. For example, a button may contain phrasing content but cannot contain another interactive control. A label should be associated with its form control. Invalid nesting can be repaired differently by browsers and can confuse accessibility tools, so validate markup rather than relying on visual appearance alone."
+            ],
+            "example": {
+              "code": "<label for=\"email\">Email address</label>\n<input id=\"email\" name=\"email\" type=\"email\" autocomplete=\"email\">\n<button class=\"save-button\" type=\"button\" data-action=\"save-draft\">\n  Save draft\n</button>\n<a href=\"#workshop-details\">Workshop details</a>\n<section id=\"workshop-details\" aria-labelledby=\"details-title\">\n  <h2 id=\"details-title\">Workshop details</h2>\n</section>",
+              "walkthrough": [
+                "The label's for value matches the input's unique id, providing an explicit accessible name.",
+                "The class can be reused by other save buttons; the data-action value is a string for application code to read.",
+                "The fragment link targets a unique section id in the same document.",
+                "The section's aria-labelledby references an existing heading id to name the region."
+              ]
+            },
+            "misconceptions": [
+              "A data-action attribute is only data; JavaScript must read it and implement behavior.",
+              "Adding ARIA does not repair invalid element nesting or replace native HTML semantics."
+            ],
+            "check": {
+              "prompt": "Two buttons need the same visual style, while a script should identify one of them as the save action. Which attributes fit these needs, and what must remain unique?",
+              "answer": "Use a shared class for styling and a data-action attribute for the script's action value. Any id used by either button must be unique within the document.",
+              "explanation": "Classes group elements, data attributes carry application-specific values, and ids provide unique document identifiers."
+            }
+          }
         }
       ],
       "battery": [
