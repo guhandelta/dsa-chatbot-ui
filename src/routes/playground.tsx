@@ -134,7 +134,7 @@ function PlaygroundEditor({ slug, template: requested, section, challenge, start
     files: body.files, template: body.template, revision: body.revision, force: body.force,
   }), [slug])
   const autosave = useAutosave(`playground:${slug}`, 'web', ready, 1000, saver)
-  useSupportTask({ id: `playground:${slug}`, title: `UI practice · ${slug}`, busy: !ready || running,
+  const reportLearning = useSupportTask({ id: `playground:${slug}:${section ?? 'general'}:${challenge ?? 'project'}`, title: `UI practice · ${slug}`, busy: !ready || running,
     save: async () => { autosave.schedule({ files, entry: 'index.html', template }); await autosave.flushChecked() } })
 
   const render = useCallback((current: WorkspaceFile[]) => {
@@ -144,7 +144,7 @@ function PlaygroundEditor({ slug, template: requested, section, challenge, start
     setFrameKey((k) => k + 1)
   }, [])
 
-  const run = useCallback(async (current: WorkspaceFile[]) => {
+  const run = useCallback(async (current: WorkspaceFile[], intentional = false) => {
     setRunning(true)
     setError(null)
     try {
@@ -153,9 +153,11 @@ function PlaygroundEditor({ slug, template: requested, section, challenge, start
         const result = await transpileTypeScript(current)
         compiled.current = result.outputs
         setDiagnostics(result.diagnostics)
+        if (intentional) reportLearning(result.diagnostics.length ? 'difficulty' : 'attempt')
       } else {
         compiled.current = {}
         setDiagnostics([])
+        if (intentional) reportLearning('attempt')
       }
       render(current)
     } catch (e) {
@@ -163,7 +165,7 @@ function PlaygroundEditor({ slug, template: requested, section, challenge, start
     } finally {
       setRunning(false)
     }
-  }, [render])
+  }, [render, reportLearning])
 
   useEffect(() => {
     let alive = true
@@ -215,7 +217,7 @@ function PlaygroundEditor({ slug, template: requested, section, challenge, start
   latest.current = { files, run }
   const onMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => void latest.current.run(latest.current.files))
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => void latest.current.run(latest.current.files, true))
   }
   const jump = (file: string | null, line: number | null) => {
     if (!file || !line) return
@@ -235,7 +237,7 @@ function PlaygroundEditor({ slug, template: requested, section, challenge, start
     <div className="pg-grid" onKeyDown={(e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !(e.target as HTMLElement).closest('.monaco-editor')) {
         e.preventDefault()
-        void run(files)
+        void run(files, true)
       }
     }}>
       <section className="island-shell rounded-2xl p-5" aria-label="Project files">
@@ -268,7 +270,7 @@ function PlaygroundEditor({ slug, template: requested, section, challenge, start
             options={{ minimap: { enabled: false }, fontSize: 14, ariaLabel: `${current.name} editor` }} />
         </div>
         <div className="ws-row">
-          <button type="button" className="primary-btn" disabled={running} onClick={() => void run(files)}
+          <button type="button" className="primary-btn" disabled={running} onClick={() => void run(files, true)}
             aria-keyshortcuts="Control+Enter Meta+Enter">
             {running ? 'Running…' : 'Run preview'}
           </button>

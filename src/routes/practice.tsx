@@ -44,7 +44,7 @@ import { CheckpointsPanel } from "../components/workspace/CheckpointsPanel";
 import { ProgressPanel } from "../components/workspace/ProgressPanel";
 import { SessionSummaryCard } from "../components/workspace/SessionSummaryCard";
 import { useAutosave } from "../components/workspace/useAutosave";
-import { practiceTopicKey, useSupportTask } from "../lib/learningSupport";
+import { isDraftText, practiceTopicKey, useLearningDraft, useSupportTask } from "../lib/learningSupport";
 import { StrikesPanel } from "../components/workspace/StrikesPanel";
 import type { AnalysisResult, Evidence, Provider } from "../types";
 
@@ -193,7 +193,7 @@ export function PracticeWorkspace({
   const [revealing, setRevealing] = useState(false);
   const { setBalance, user } = useAuth();
   const [practice, setPractice] = useState<PracticeReply | null>(null);
-  const [reflection, setReflection] = useState("");
+  const [reflection, setReflection] = useLearningDraft(`reflection:${language}:${problemId}`, "", isDraftText);
   const sessionRef = useRef<PracticeReply | null>(null);
   const sessionSlot = `dsa_practice:${user?.id ?? "local"}:${problemId}:${language}:${provider}`;
   const context = useRef(sessionSlot);

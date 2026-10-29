@@ -12,13 +12,23 @@ function isQuizDraft(value: unknown): value is QuizDraft {
   const d = value as QuizDraft
   if (!Number.isInteger(d.index) || d.index < 0 || !Array.isArray(d.results) || d.results.length > 5) return false
   const validResult = (r: QuizResult) => r && typeof r.item_id === 'string' && typeof r.correct === 'boolean'
-    && typeof r.score === 'number' && Number.isFinite(r.score) && Array.isArray(r.rewards) && typeof r.feedback === 'string'
+    && typeof r.score === 'number' && Number.isFinite(r.score) && r.score >= 0 && r.score <= 1 && Array.isArray(r.rewards)
+    && r.rewards.every(reward => reward && typeof reward.key === 'string' && typeof reward.reason === 'string' && typeof reward.amount === 'number' && typeof reward.balance === 'number')
+    && typeof r.feedback === 'string' && typeof r.expected === 'string' && typeof r.explanation === 'string' && typeof r.complete === 'boolean'
+    && (r.misconception === undefined || typeof r.misconception === 'string')
+    && (!r.tests || (typeof r.tests.status === 'string' && typeof r.tests.passed === 'number' && typeof r.tests.total === 'number'
+      && (!r.tests.first_failure || (typeof r.tests.first_failure.case === 'number' && Array.isArray(r.tests.first_failure.args)))))
   if (!d.results.every(validResult) || (d.result !== null && !validResult(d.result))) return false
   if (d.quiz === null) return d.index === 0 && d.result === null && d.results.length === 0
-  return !!d.quiz && typeof d.quiz.quiz_id === 'string' && Array.isArray(d.quiz.items) && d.quiz.items.length > 0 && d.quiz.items.length <= 5
+  return !!d.quiz && typeof d.quiz.quiz_id === 'string' && typeof d.quiz.node_title === 'string' && Array.isArray(d.quiz.items) && d.quiz.items.length > 0 && d.quiz.items.length <= 5
     && d.index < d.quiz.items.length && d.quiz.total === d.quiz.items.length && d.quiz.items.every(i => i && typeof i.id === 'string'
       && typeof i.prompt === 'string' && Object.hasOwn(LABELS, i.type)
+      && typeof i.concept === 'string' && (i.level === null || typeof i.level === 'string')
+      && (i.code === undefined || typeof i.code === 'string') && (i.starter === undefined || typeof i.starter === 'string')
+      && (i.type !== 'fix_bug' || typeof i.code === 'string') && (i.type !== 'write_snippet' || typeof i.starter === 'string')
       && (!['mcq', 'mcq_code'].includes(i.type) || (Array.isArray(i.choices) && i.choices.every(c => typeof c === 'string'))))
+    && d.results.length <= d.quiz.total && d.results.every(result => d.quiz!.items.some(item => item.id === result.item_id))
+    && (d.result === null || d.result.item_id === d.quiz.items[d.index].id)
 }
 
 const LABELS: Record<QuizItem['type'], string> = {
@@ -33,8 +43,8 @@ function initialResponse(item: QuizItem) {
   return ''
 }
 
-export function QuizItemView({ item, onAnswer, busy }: { item: QuizItem; busy: boolean; onAnswer: (response: string | number) => void }) {
-  const [response, setResponse] = useLearningDraft(`quiz-answer:${item.id}`, initialResponse(item), isDraftText)
+export function QuizItemView({ item, onAnswer, busy, draftScope = 'standalone' }: { item: QuizItem; busy: boolean; onAnswer: (response: string | number) => void; draftScope?: string }) {
+  const [response, setResponse] = useLearningDraft(`quiz-answer:${draftScope}:${item.id}`, initialResponse(item), isDraftText)
   const choice = item.type === 'mcq' || item.type === 'mcq_code'
   const code = item.type === 'fix_bug' || item.type === 'write_snippet'
   return <form onSubmit={(e) => { e.preventDefault(); if (response.trim()) onAnswer(choice ? Number(response) : response) }}>
@@ -155,7 +165,7 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
   const earned = results.flatMap((r) => r.rewards)
   return <section className="island-shell rounded-2xl p-4">
     <p className="mb-3 text-sm">{quiz.node_title} · question {Math.min(index + 1, quiz.total)} of {quiz.total}</p>
-    {!result && <QuizItemView key={item.id} item={item} busy={busy} onAnswer={(r) => void submit(r)} />}
+    {!result && <QuizItemView key={item.id} item={item} draftScope={quiz.quiz_id} busy={busy} onAnswer={(r) => void submit(r)} />}
     {result && <QuizFeedback result={result} />}
     {error && <div className="error-banner mt-3" role="alert">{error}</div>}
     {result && !finished && <button type="button" className="primary-btn mt-3" onClick={() => { setIndex(index + 1); setResult(null) }}>Next question</button>}

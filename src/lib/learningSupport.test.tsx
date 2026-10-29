@@ -9,7 +9,8 @@ function Editor({ id = 'arrays', save, busy = false }: { id?: string; save?: () 
   return <><input aria-label="Draft" value={text} onChange={e => setText(e.target.value)} />
     <button onClick={() => report('difficulty')}>Failed check</button>
     <button onClick={() => report('success')}>Passed check</button>
-    <button onClick={() => report('attempt')}>Attempt</button></>
+    <button onClick={() => report('attempt')}>Attempt</button>
+    <button onClick={() => { report('difficulty'); report('difficulty'); report('difficulty'); report('success'); report('difficulty'); report('difficulty') }}>Burst checks</button></>
 }
 function App({ owner = 'alice', id = 'arrays', save, busy = false }: { owner?: string; id?: string; save?: () => Promise<void>; busy?: boolean }) {
   return <LearningSupportProvider key={owner} owner={owner} fallback={null}><Editor id={id} save={save} busy={busy} /></LearningSupportProvider>
@@ -127,6 +128,34 @@ describe('learning support', () => {
     for (let i = 0; i < 3; i++) fireEvent.click(screen.getByText('Failed check'))
     fireEvent.click(screen.getByText('Passed check'))
     expect(screen.queryByText(/A few attempts/)).toBeNull()
+    expect(screen.getByRole('progressbar').getAttribute('value')).toBe('1')
+  })
+
+  it('does not erase a milestone recorded in another tab', () => {
+    render(<App />)
+    writeRecord('alice', 'arrays', { ...freshRecord(), milestones: [true, false, false, false] })
+    fireEvent.click(screen.getByText('Failed check'))
+    expect(readRecord('alice', 'arrays').milestones).toEqual([true, true, false, false])
+  })
+
+  it('keeps thousands of repeated actions bounded and monotonic', () => {
+    render(<App />)
+    for (let i = 0; i < 1000; i++) {
+      fireEvent.click(screen.getByText(i % 7 === 0 ? 'Passed check' : 'Failed check'))
+      if (i % 31 === 0) fireEvent.click(screen.getByRole('button', { name: /Review feedback/ }))
+      const progress = readRecord('alice', 'arrays')
+      expect(progress.milestones[1]).toBe(true)
+      expect(progress.difficulties).toBeLessThanOrEqual(100)
+      expect(progress.milestones.filter(Boolean).length).toBeLessThanOrEqual(4)
+    }
+  })
+
+  it('processes batched results in order without dropping failures or replaying earlier events', () => {
+    render(<App />)
+    fireEvent.click(screen.getByText('Burst checks'))
+    expect(readRecord('alice', 'arrays').difficulties).toBe(2)
+    fireEvent.click(screen.getByText('Failed check'))
+    expect(readRecord('alice', 'arrays').difficulties).toBe(3)
     expect(screen.getByRole('progressbar').getAttribute('value')).toBe('1')
   })
 })

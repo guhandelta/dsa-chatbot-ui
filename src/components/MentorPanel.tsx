@@ -6,6 +6,7 @@ import { askMentor, fetchEntitlement, getApiErrorMessage } from "../lib/api";
 import { fetchNextHint } from "../lib/studyApi";
 import { useAuth } from "../lib/auth";
 import type { Entitlement, MentorResponse, Provider } from "../types";
+import { isDraftText, useLearningDraft, useLearningPauseGuard } from "../lib/learningSupport";
 
 interface Props {
   problemId: string;
@@ -37,9 +38,10 @@ function MentorContext({
 }: Props) {
   const { setBalance } = useAuth();
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
-  const [reasoning, setReasoning] = useState("");
+  const [reasoning, setReasoning] = useLearningDraft(`mentor:${language}:${problemId}`, "", isDraftText);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(false);
+  useLearningPauseGuard(loading);
   const [error, setError] = useState<string | null>(null);
   const [nextCost, setNextCost] = useState<number | null>(null);
 

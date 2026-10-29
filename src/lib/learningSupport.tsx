@@ -120,7 +120,8 @@ function SupportPanel({ owner, task, signals, saveDrafts }: { owner: string; tas
   const lastSignal = useRef(signals.at(-1)?.serial ?? 0)
   useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
   const update = (change: (value: LearningRecord) => LearningRecord) => {
-    const next = { ...change(latest.current), updatedAt: new Date().toISOString() }
+    const stored = readRecord(owner, task.id)
+    const next = { ...change({ ...latest.current, milestones: latest.current.milestones.map((done, i) => done || stored.milestones[i]) }), updatedAt: new Date().toISOString() }
     latest.current = next; setRecord(next)
     try { writeRecord(owner, task.id, next); setError('') }
     catch { setError('Browser storage is unavailable. Keep this page open; progress cannot be saved on this device.') }
@@ -144,7 +145,8 @@ function SupportPanel({ owner, task, signals, saveDrafts }: { owner: string; tas
       await task.save?.()
       await saveDrafts()
       if (!alive.current) return
-      const next = { ...latest.current, paused: true, updatedAt: new Date().toISOString() }
+      const stored = readRecord(owner, task.id)
+      const next = { ...latest.current, milestones: latest.current.milestones.map((done, i) => done || stored.milestones[i]), paused: true, updatedAt: new Date().toISOString() }
       writeRecord(owner, task.id, next)
       const href = window.location.pathname + window.location.search
       if (/^\/(chat|practice|track|playground|learn)(\/|\?|$)/.test(href)) {
