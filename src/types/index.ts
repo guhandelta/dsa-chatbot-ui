@@ -312,6 +312,26 @@ export interface KnowledgeSourceInventory {
   retrieval_status: string
   publication_review: string
   executable_examples: string
+  factual_review?: string
+  factual_evidence?: {
+    records_with_checked_claims: number
+    claims_checked: number
+    stale_records: number
+    review_method: string
+    reviewed_claims: Array<{ record_id: string; claims: Array<{ claim: string; sources: string[] }> }>
+  }
+  execution_evidence?: {
+    evidence_status: string
+    passed: number
+    failed: number
+    blocked: number
+    stale: number
+    checked_content_count: number
+    fixture_case_checks: number
+    last_checked_at: string | null
+    by_language: Record<string, Partial<Record<'passed' | 'failed' | 'blocked' | 'stale', number>>>
+    scope: string
+  }
   pedagogical_review: string
   quality_status: string
 }

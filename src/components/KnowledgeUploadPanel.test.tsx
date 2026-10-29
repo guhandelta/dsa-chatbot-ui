@@ -110,8 +110,55 @@ describe('KnowledgeUploadPanel — teacher', () => {
     })
     render(<KnowledgeUploadPanel isAdmin />)
     expect(await screen.findByText('data/reference_library/records.jsonl')).toBeTruthy()
-    expect(screen.getByText(/42 records · not certified/)).toBeTruthy()
-    expect(screen.getByText(/Execution: not_recorded/)).toBeTruthy()
+    expect(screen.getByText(/42 records · Review not recorded/)).toBeTruthy()
+    expect(screen.getByText(/Execution: Not recorded for this source/)).toBeTruthy()
+  })
+
+  it('shows bounded execution evidence without implying factual certification', async () => {
+    m.fetchKnowledgeInventory.mockResolvedValue({
+      generated_from: 'current local data files', semantics: {}, limitations: [],
+      sources: [{
+        source_id: 'authored:content-catalog', source_type: 'authored_markdown',
+        path: 'data/content + data/dsa_problems', content_sha256: 'current', record_count: 20,
+        by_language: { python: 20 }, by_subject: { python: 20 }, provenance: 'Authored examples',
+        retrieval_status: 'available', publication_review: 'not_applicable',
+        executable_examples: 'tests_passed_for_recorded_cases', pedagogical_review: 'not_recorded',
+        factual_review: 'not_recorded', quality_status: 'not_certified',
+        execution_evidence: { evidence_status: 'available', passed: 4, failed: 1, blocked: 2, stale: 3,
+          checked_content_count: 7, fixture_case_checks: 24, last_checked_at: '2026-10-29T00:00:00Z',
+          by_language: { python: { passed: 4, failed: 1, blocked: 2, stale: 3 } }, scope: 'Recorded cases only' },
+      }],
+    })
+    render(<KnowledgeUploadPanel isAdmin />)
+    expect(await screen.findByText(/Execution checks: 4 passed · 1 failed · 2 blocked · 3 outdated/)).toBeTruthy()
+    expect(screen.getByText(/Factual review: not recorded · Teaching review: not recorded/)).toBeTruthy()
+    expect(screen.getByText(/Outdated results are excluded from current passes/)).toBeTruthy()
+    expect(screen.queryByText(/20 records · not certified/)).toBeNull()
+    expect(screen.getByText(/7 distinct content items checked · 24 passing fixture cases/)).toBeTruthy()
+  })
+
+  it('shows reviewed claims and primary sources as partial evidence', async () => {
+    m.fetchKnowledgeInventory.mockResolvedValue({
+      generated_from: 'current local data files', semantics: {}, limitations: [],
+      sources: [{
+        source_id: 'reference_library:records.jsonl', source_type: 'packaged_file',
+        path: 'reference_library/records.jsonl', content_sha256: 'source', record_count: 42,
+        by_language: { typescript: 42 }, by_subject: { typescript: 42 }, provenance: 'Reference corpus',
+        retrieval_status: 'available', publication_review: 'not_applicable', executable_examples: 'not_recorded',
+        pedagogical_review: 'not_recorded', factual_review: 'partial_claim_review', quality_status: 'not_certified',
+        factual_evidence: { records_with_checked_claims: 1, claims_checked: 1, stale_records: 0,
+          review_method: 'Assistant comparison with cited primary documentation', reviewed_claims: [{
+            record_id: 'typescript-assertions', claims: [{ claim: 'Assertions do not validate runtime data.',
+              sources: ['https://www.typescriptlang.org/docs/handbook/2/everyday-types.html'] }],
+          }] },
+      }],
+    })
+    render(<KnowledgeUploadPanel isAdmin />)
+    expect(await screen.findByText(/Partial claim checks recorded/)).toBeTruthy()
+    expect(screen.getByText(/Full-record review is still pending/)).toBeTruthy()
+    expect(screen.getByText('Assertions do not validate runtime data.')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'https://www.typescriptlang.org/docs/handbook/2/everyday-types.html' }).getAttribute('href'))
+      .toBe('https://www.typescriptlang.org/docs/handbook/2/everyday-types.html')
   })
 
   it('requires a file before uploading', async () => {

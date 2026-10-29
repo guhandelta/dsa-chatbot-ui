@@ -206,7 +206,7 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
 
       <section className="mb-5 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4" aria-labelledby="kb-inventory-title">
         <h3 id="kb-inventory-title" className="mb-1 text-base font-bold text-[var(--sea-ink)]">Packaged curriculum and knowledge sources</h3>
-        <p className="mb-3 text-sm text-[var(--sea-ink-soft)]">Counts and fingerprints describe what is stored. They do not certify correctness or teaching quality.</p>
+        <p className="mb-3 text-sm text-[var(--sea-ink-soft)]">Execution checks, factual review and teaching review are tracked separately. Passing examples checks their recorded test cases; it does not certify every explanation.</p>
         {inventoryError ? <p role="status" className="text-sm text-[var(--sea-ink-soft)]">Packaged inventory unavailable: {inventoryError}</p> : !inventory ? (
           <p className="text-sm text-[var(--sea-ink-soft)]" role="status">Loading packaged inventory…</p>
         ) : (
@@ -215,17 +215,44 @@ export function KnowledgeUploadPanel({ isAdmin }: { isAdmin: boolean }) {
               <li key={source.source_id} className="rounded-lg border border-[var(--line)] p-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <strong className="text-sm text-[var(--sea-ink)]">{source.path}</strong>
-                  <span className="text-xs text-[var(--sea-ink-soft)]">{source.record_count.toLocaleString()} records · {source.quality_status.replaceAll('_', ' ')}</span>
+                  <span className="text-xs text-[var(--sea-ink-soft)]">{source.record_count.toLocaleString()} records · {source.execution_evidence && (source.execution_evidence.passed + source.execution_evidence.failed + source.execution_evidence.blocked + source.execution_evidence.stale > 0) ? 'Execution evidence recorded' : source.factual_evidence?.records_with_checked_claims ? 'Partial claim checks recorded' : source.quality_status === 'not_certified' ? 'Review not recorded' : source.quality_status.replaceAll('_', ' ')}</span>
                 </div>
-                <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Languages: {Object.keys(source.by_language).join(', ') || 'none recorded'} · Retrieval: {source.retrieval_status} · Execution: {source.executable_examples} · Pedagogical review: {source.pedagogical_review}</p>
+                <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Languages: {Object.keys(source.by_language).join(', ') || 'none recorded'} · Retrieval: {source.retrieval_status}</p>
+                <div className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3">
+                  {source.execution_evidence && (source.execution_evidence.passed + source.execution_evidence.failed + source.execution_evidence.blocked + source.execution_evidence.stale > 0) ? <>
+                    <p className="text-sm font-semibold text-[var(--sea-ink)]">Execution checks: {source.execution_evidence.passed} passed · {source.execution_evidence.failed} failed · {source.execution_evidence.blocked} blocked · {source.execution_evidence.stale} outdated</p>
+                    <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">{source.execution_evidence.checked_content_count} distinct content items checked · {source.execution_evidence.fixture_case_checks} passing fixture cases. Each check covers one content item in one language.</p>
+                    <details className="mt-2 text-xs text-[var(--sea-ink-soft)]">
+                      <summary className="cursor-pointer">Results by language</summary>
+                      <ul className="mt-1 space-y-1">{Object.entries(source.execution_evidence.by_language).map(([language, counts]) => <li key={language}>{language}: {counts.passed ?? 0} passed · {counts.failed ?? 0} failed · {counts.blocked ?? 0} blocked · {counts.stale ?? 0} outdated</li>)}</ul>
+                    </details>
+                    {source.execution_evidence.last_checked_at && <p className="mt-2 text-xs text-[var(--sea-ink-soft)]">Last current check: {new Date(source.execution_evidence.last_checked_at).toLocaleString()}</p>}
+                    {source.execution_evidence.stale > 0 && <p role="status" className="mt-2 text-xs text-[var(--sea-ink-soft)]">Outdated results are excluded from current passes. Re-run verification after source or verifier changes.</p>}
+                  </> : <p className="text-xs text-[var(--sea-ink-soft)]">Execution: {source.execution_evidence?.evidence_status === 'invalid' ? 'Evidence could not be read' : 'Not recorded for this source'}</p>}
+                  <p className="mt-2 text-xs text-[var(--sea-ink-soft)]">Factual review: {(source.factual_review ?? 'not_recorded').replaceAll('_', ' ')} · Teaching review: {source.pedagogical_review.replaceAll('_', ' ')}</p>
+                  {!!source.factual_evidence?.records_with_checked_claims && <div className="mt-2 text-xs text-[var(--sea-ink-soft)]">
+                    <p>{source.factual_evidence.claims_checked} claims checked against primary documentation across {source.factual_evidence.records_with_checked_claims} references. Full-record review is still pending.</p>
+                    <details className="mt-1">
+                      <summary className="cursor-pointer">Reviewed claims and sources</summary>
+                      <p className="mt-1">{source.factual_evidence.review_method}</p>
+                      <ul className="mt-2 space-y-2">{source.factual_evidence.reviewed_claims.map((review) => <li key={review.record_id}>
+                        <p className="break-all font-medium">{review.record_id}</p>
+                        <ul className="mt-1 space-y-1">{review.claims.map((claim, index) => <li key={index}>{claim.claim}<ul>{claim.sources.map((url) => <li key={url}><a className="break-all underline" href={url} target="_blank" rel="noreferrer">{url}</a></li>)}</ul></li>)}</ul>
+                      </li>)}</ul>
+                    </details>
+                  </div>}
+                </div>
                 <details className="mt-1 text-xs text-[var(--sea-ink-soft)]">
                   <summary className="cursor-pointer">Subject scope ({Object.keys(source.by_subject).length})</summary>
                   <p className="mt-1">{Object.entries(source.by_subject).map(([subject, count]) => `${subject} (${count})`).join(' · ') || 'No subjects recorded'}</p>
                 </details>
-                {source.by_declared_version && <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Declared versions: {Object.entries(source.by_declared_version).map(([version, count]) => `${version} (${count})`).join(', ')}</p>}
+                <details className="mt-2 text-xs text-[var(--sea-ink-soft)]">
+                  <summary className="cursor-pointer">Source provenance and version details</summary>
+                {source.by_declared_version && <p className="mt-1">Declared versions: {Object.entries(source.by_declared_version).map(([version, count]) => `${version} (${count})`).join(', ')}</p>}
                 {source.declared_version != null && <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Dataset version: {source.declared_version}{source.declared_status ? ` · status ${source.declared_status}` : ''}</p>}
                 {source.provenance_coverage && <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">Source provenance recorded for {source.provenance_coverage.records_with_provenance.toLocaleString()} / {source.record_count.toLocaleString()} records ({source.provenance_coverage.distinct_labels.toLocaleString()} distinct labels)</p>}
                 <p className="mt-1 break-all text-xs text-[var(--sea-ink-soft)]">SHA-256: {source.content_sha256 ?? 'unavailable'} · {source.provenance}</p>
+                </details>
               </li>
             ))}
           </ul>
