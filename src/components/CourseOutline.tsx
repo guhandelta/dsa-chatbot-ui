@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { fetchCourse, fetchCourseReading, type Course, type CourseReading } from '../lib/courseApi'
 import { getApiErrorMessage } from '../lib/api'
+import { useLearningDraft, useSupportTask } from '../lib/learningSupport'
+
+type ReadingChoice = { module: string; source: string } | null
+const isReadingChoice = (value: unknown): value is ReadingChoice => value === null || (typeof value === 'object'
+  && typeof (value as ReadingChoice)?.module === 'string' && typeof (value as ReadingChoice)?.source === 'string')
 
 export function CourseOutline({ language }: { language: string }) {
   const [course, setCourse] = useState<Course | null>(null)
@@ -9,6 +14,8 @@ export function CourseOutline({ language }: { language: string }) {
   const [reading, setReading] = useState<CourseReading | null>(null)
   const [readingError, setReadingError] = useState<string | null>(null)
   const [loadingReading, setLoadingReading] = useState(false)
+  const [choice, setChoice] = useLearningDraft<ReadingChoice>(`reading:${language}`, null, isReadingChoice)
+  useSupportTask(choice ? { id: `reading:${language}:${choice.module}:${choice.source}`, title: reading?.title ?? `${language} · course reading`, busy: loadingReading } : null)
   const request = useRef(0)
   const readingPanel = useRef<HTMLElement>(null)
   useEffect(() => { if (reading) readingPanel.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }) }, [reading])
@@ -20,7 +27,7 @@ export function CourseOutline({ language }: { language: string }) {
       .catch((e) => { if (active) setError(getApiErrorMessage(e)) })
     return () => { active = false; ++request.current }
   }, [language])
-  const read = async (moduleId: string, sourceId: string) => {
+  const read = useCallback(async (moduleId: string, sourceId: string) => {
     const version = ++request.current
     setLoadingReading(true); setReadingError(null); setReading(null)
     try {
@@ -28,7 +35,12 @@ export function CourseOutline({ language }: { language: string }) {
       if (version === request.current) setReading(value)
     } catch (e) { if (version === request.current) setReadingError(getApiErrorMessage(e)) }
     finally { if (version === request.current) setLoadingReading(false) }
-  }
+  }, [language])
+  useEffect(() => {
+    if (choice && course?.modules.some(module => module.id === choice.module && module.sources.some(source => source.id === choice.source))) {
+      void read(choice.module, choice.source)
+    }
+  }, [course, choice, read])
   return <section className="island-shell rounded-2xl p-5" aria-label="Language course">
     {error && <p className="error-banner" role="alert">Course could not be loaded: {error}</p>}
     {!course && !error && <p role="status">Loading course outline…</p>}
@@ -48,7 +60,7 @@ export function CourseOutline({ language }: { language: string }) {
           <p className="mt-3 mb-1 text-sm font-semibold">Readings from your library</p>
           {module.source_status === 'partial' && <p className="text-sm">Some assigned readings are currently unavailable.</p>}
           {module.sources.length === 0 && <p className="text-sm">A suitable reading still needs to be authored or mapped for this module.</p>}
-          <div className="flex flex-wrap gap-2">{module.sources.map((source) => <button key={source.id} type="button" className="mini-btn" onClick={() => void read(module.id, source.id)}>Read: {source.title}</button>)}</div>
+          <div className="flex flex-wrap gap-2">{module.sources.map((source) => <button key={source.id} type="button" className="mini-btn" onClick={() => setChoice({ module: module.id, source: source.id })}>Read: {source.title}</button>)}</div>
         </details>
       </li>)}</ol>
       <section className="mt-4">

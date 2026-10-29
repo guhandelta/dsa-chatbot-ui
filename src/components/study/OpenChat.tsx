@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchChatCapabilities, fetchReferenceSubjects } from '../../lib/api'
 import { ChatWindow } from '../ChatWindow'
 import type { ChatProvider } from '../../types'
+import { useSupportTask } from '../../lib/learningSupport'
 
 interface Props {
   language: string
@@ -26,6 +27,7 @@ export function OpenChat({ language, languages, provider, userId, initialSubject
   const references = library.isError ? [] : (library.data ?? []).filter(
     (item) => item.language === language && item.retrievable_records > 0 && languages.includes(item.language))
   const subject = references.find((item) => item.id === subjectId)
+  useSupportTask({ id: `reference:${language}:${subject?.id ?? 'general'}`, title: `${language} · ${subject?.id.replaceAll('-', ' ') ?? 'General tutor'}` })
   return <>
     {references.length > 0 && <section className="mb-4 rounded-xl border border-[var(--line)] p-4">
       <label className="block text-sm font-semibold" htmlFor="reference-subject">Learning material (optional)</label>

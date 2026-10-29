@@ -9,6 +9,7 @@ import type { ChatProvider } from '../../types'
 import { RichText } from './RichText'
 import { DebugChallenges } from './DebugChallenges'
 import type { DebugChallenge } from '../../lib/studyApi'
+import { isDraftText, useLearningDraft, useLearningPauseGuard } from '../../lib/learningSupport'
 
 interface Turn { id: string; question: string; reply: StudyReply }
 
@@ -24,6 +25,7 @@ function useStudyThread(mode: MessageMode, { language, focusId, provider, onAllo
   const { setBalance } = useAuth()
   const [turns, setTurns] = useState<Turn[]>([])
   const [loading, setLoading] = useState(false)
+  useLearningPauseGuard(loading)
   const [error, setError] = useState<string | null>(null)
   const threadId = turns.at(-1)?.reply.thread_id
   const session = useRef(0)
@@ -73,8 +75,7 @@ export interface ExplainProps extends Shared {
 
 export function ExplainMode(props: ExplainProps) {
   const thread = useStudyThread('explain', props)
-  const [input, setInput] = useState('')
-  useEffect(() => { setInput('') }, [props.language, props.focusId])
+  const [input, setInput] = useLearningDraft(`explain:${props.language}:${props.focusId ?? 'next'}`, '', isDraftText)
   const submit = async () => {
     const text = input.trim()
     if (!text || thread.loading) return
@@ -125,17 +126,18 @@ export function ExplainMode(props: ExplainProps) {
 }
 
 export function DebugMode(props: Shared) {
-  const [challengeId, setChallengeId] = useState<string | undefined>()
+  const scope = `debug:${props.language}:${props.focusId ?? 'next'}`
+  const [challengeId, setChallengeId] = useLearningDraft<string | undefined>(`${scope}:challenge`, undefined, (v): v is string | undefined => v === undefined || typeof v === 'string')
   const thread = useStudyThread('debug', props, challengeId)
-  const [code, setCode] = useState('')
-  const [failure, setFailure] = useState('')
-  const [thinking, setThinking] = useState('')
-  const [fix, setFix] = useState('')
+  const [code, setCode] = useLearningDraft(`${scope}:code`, '', isDraftText)
+  const [failure, setFailure] = useLearningDraft(`${scope}:failure`, '', isDraftText)
+  const [thinking, setThinking] = useLearningDraft(`${scope}:thinking`, '', isDraftText)
+  const [fix, setFix] = useLearningDraft(`${scope}:fix`, '', isDraftText)
   const [logged, setLogged] = useState<string | null>(null)
   const [resolveError, setResolveError] = useState<string | null>(null)
   const resolutionSession = useRef(0)
   useEffect(() => {
-    setLogged(null); setResolveError(null); setFix(''); setCode(''); setFailure(''); setThinking(''); setChallengeId(undefined)
+    setLogged(null); setResolveError(null)
     resolutionSession.current += 1
     return () => { resolutionSession.current += 1 }
   }, [props.language, props.focusId])
@@ -198,8 +200,7 @@ export function CompareMode(props: Shared & { languages: string[] }) {
   const [selected, setSecond] = useState(others[0] ?? '')
   const second = others.includes(selected) ? selected : others[0] ?? ''
   const thread = useStudyThread('compare', props, second)
-  const [question, setQuestion] = useState('')
-  useEffect(() => { setQuestion('') }, [props.language, props.focusId, second])
+  const [question, setQuestion] = useLearningDraft(`compare:${props.language}:${props.focusId ?? 'next'}:${second}`, '', isDraftText)
   const submit = async () => {
     // The input is disabled while a comparison is running.
     if (!question.trim() || thread.loading) return

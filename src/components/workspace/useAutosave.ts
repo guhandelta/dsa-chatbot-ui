@@ -102,5 +102,10 @@ export function useAutosave(problemId: string, language: string, enabled: boolea
     return () => window.removeEventListener('beforeunload', warn)
   }, [])
 
-  return { status, error, savedAt, schedule, flush, adopt, keepMine: () => flush(true) }
+  const flushChecked = async () => {
+    if (!enabled) throw new Error('Workspace saving is unavailable')
+    await flush()
+    if (blocked.current || pending.current) throw new Error('Workspace still has unsaved changes')
+  }
+  return { status, error, savedAt, schedule, flush, flushChecked, adopt, keepMine: () => flush(true) }
 }

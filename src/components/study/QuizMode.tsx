@@ -4,6 +4,22 @@ import { useEffect, useRef, useState } from 'react'
 import { getApiErrorMessage } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { answerQuiz, startQuiz, type QuizItem, type QuizResult, type QuizStarted } from '../../lib/studyApi'
+import { isDraftText, useLearningDraft, useLearningFeedback, useLearningPauseGuard } from '../../lib/learningSupport'
+
+type QuizDraft = { quiz: QuizStarted | null; index: number; result: QuizResult | null; results: QuizResult[] }
+function isQuizDraft(value: unknown): value is QuizDraft {
+  if (!value || typeof value !== 'object') return false
+  const d = value as QuizDraft
+  if (!Number.isInteger(d.index) || d.index < 0 || !Array.isArray(d.results) || d.results.length > 5) return false
+  const validResult = (r: QuizResult) => r && typeof r.item_id === 'string' && typeof r.correct === 'boolean'
+    && typeof r.score === 'number' && Number.isFinite(r.score) && Array.isArray(r.rewards) && typeof r.feedback === 'string'
+  if (!d.results.every(validResult) || (d.result !== null && !validResult(d.result))) return false
+  if (d.quiz === null) return d.index === 0 && d.result === null && d.results.length === 0
+  return !!d.quiz && typeof d.quiz.quiz_id === 'string' && Array.isArray(d.quiz.items) && d.quiz.items.length > 0 && d.quiz.items.length <= 5
+    && d.index < d.quiz.items.length && d.quiz.total === d.quiz.items.length && d.quiz.items.every(i => i && typeof i.id === 'string'
+      && typeof i.prompt === 'string' && Object.hasOwn(LABELS, i.type)
+      && (!['mcq', 'mcq_code'].includes(i.type) || (Array.isArray(i.choices) && i.choices.every(c => typeof c === 'string'))))
+}
 
 const LABELS: Record<QuizItem['type'], string> = {
   mcq: 'Multiple choice', mcq_code: 'Read the code', short_answer: 'Type the output',
@@ -18,8 +34,7 @@ function initialResponse(item: QuizItem) {
 }
 
 export function QuizItemView({ item, onAnswer, busy }: { item: QuizItem; busy: boolean; onAnswer: (response: string | number) => void }) {
-  const [response, setResponse] = useState<string>(initialResponse(item))
-  useEffect(() => setResponse(initialResponse(item)), [item])
+  const [response, setResponse] = useLearningDraft(`quiz-answer:${item.id}`, initialResponse(item), isDraftText)
   const choice = item.type === 'mcq' || item.type === 'mcq_code'
   const code = item.type === 'fix_bug' || item.type === 'write_snippet'
   return <form onSubmit={(e) => { e.preventDefault(); if (response.trim()) onAnswer(choice ? Number(response) : response) }}>
@@ -69,14 +84,17 @@ interface Props {
 
 export function QuizMode({ language, focusId, onComplete }: Props) {
   const { setBalance } = useAuth()
+  const reportLearning = useLearningFeedback()
   const [count, setCount] = useState(4)
-  const [quiz, setQuiz] = useState<QuizStarted | null>(null)
-  const [index, setIndex] = useState(0)
-  const [result, setResult] = useState<QuizResult | null>(null)
-  const [results, setResults] = useState<QuizResult[]>([])
+  const [snapshot, setSnapshot] = useLearningDraft<QuizDraft>(`quiz:${language}:${focusId ?? 'next'}`,
+    { quiz: null, index: 0, result: null, results: [] }, isQuizDraft)
+  const { quiz, index, result, results } = snapshot
+  const setIndex = (index: number) => setSnapshot(previous => ({ ...previous, index }))
+  const setResult = (result: QuizResult | null) => setSnapshot(previous => ({ ...previous, result }))
   const [busy, setBusy] = useState(false)
+  useLearningPauseGuard(busy)
   const [error, setError] = useState<string | null>(null)
-  useEffect(() => { setQuiz(null); setResults([]); setResult(null); setError(null) }, [language, focusId])
+  useEffect(() => { setError(null) }, [language, focusId])
   const session = useRef(0)
   useEffect(() => {
     session.current += 1
@@ -89,7 +107,7 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
     try {
       const started = await startQuiz(language, focusId, count)
       if (requestSession !== session.current) return
-      setQuiz(started); setIndex(0); setResult(null); setResults([])
+      setSnapshot({ quiz: started, index: 0, result: null, results: [] })
     } catch (err) {
       if (requestSession === session.current) setError(getApiErrorMessage(err))
     } finally {
@@ -103,7 +121,8 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
     try {
       const graded = await answerQuiz(current.quiz_id, current.items[index].id, response)
       if (requestSession !== session.current) return
-      setResult(graded); setResults((prev) => [...prev, graded])
+      setSnapshot(previous => ({ ...previous, result: graded, results: [...previous.results, graded] }))
+      reportLearning(graded.correct ? 'success' : 'difficulty')
       // Stage and streak rewards credit peppercorns; keep the header in sync.
       if (graded.rewards.length) setBalance(graded.rewards[graded.rewards.length - 1].balance)
       if (graded.complete) onComplete?.()

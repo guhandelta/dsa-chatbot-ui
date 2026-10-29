@@ -14,6 +14,7 @@ import { NodeCard } from './NodeCard'
 import { PathPanel } from './PathPanel'
 import { QuizMode } from './QuizMode'
 import { TopicQuestionsSection } from './TopicQuestionsSection'
+import { useSupportTask } from '../../lib/learningSupport'
 
 interface Props {
   language: string
@@ -51,6 +52,7 @@ export function StudyWorkspace({ language, languages, mode, focus, provider, sub
   const collection = !focus && subject ? subject : undefined
   const unsupportedUnitFocus = !!focus?.startsWith('explain:') && (language !== 'javascript' || !focus.startsWith(`explain:${language}:`))
   const resolvedFocus = collection ? `subject:${collection}` : node?.id ?? focus
+  useSupportTask({ id: `study:${language}:${resolvedFocus ?? 'next'}`, title: `${language} · ${collection ?? node?.title ?? 'Study Room'}` })
   const shared = { language, focusId: resolvedFocus, focusTitle: collection?.replaceAll('-', ' ') ?? node?.title, provider, onAllowance: setAllowance }
 
   const handleFocus = (nodeId: string) => {

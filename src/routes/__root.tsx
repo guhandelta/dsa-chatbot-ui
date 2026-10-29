@@ -6,6 +6,7 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { ErrorPopupManager } from '../components/ErrorPopupManager'
 import { AuthProvider } from '../lib/auth'
+import { LearningSupport } from '../components/LearningSupport'
 
 import '../styles.css'
 
@@ -18,7 +19,7 @@ function RootComponent() {
     <AuthProvider>
       <Header />
       <ErrorPopupManager />
-      <Outlet />
+      <LearningSupport><Outlet /></LearningSupport>
       <Footer />
       {/* Devtools only in dev builds — never shipped to production */}
       {import.meta.env.DEV && (

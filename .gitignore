@@ -20,3 +20,6 @@ cypress/videos/
 
 # Built by scripts/build-preview-runtime.mjs before dev and build
 public/preview/
+
+# Generated local artifacts
+output/

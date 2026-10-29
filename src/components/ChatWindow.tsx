@@ -1,5 +1,6 @@
 // Main chat interface: renders message history, errors, and the input box.
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { isDraftText, useLearningDraft, useLearningPauseGuard } from '../lib/learningSupport'
 import { useChat } from '../hooks/useChat'
 import { MessageBubble } from './MessageBubble'
 import type { ChatProvider } from '../types'
@@ -16,7 +17,8 @@ interface Props {
 
 export function ChatWindow({ provider, language, track = 'dsa', focusId, subject, chatCost = 1, retrievalMode = 'standard' }: Props) {
   const { messages, loading, error, sendMessage } = useChat(provider, language, track, focusId, subject, retrievalMode)
-  const [input, setInput] = useState('')
+  const [input, setInput] = useLearningDraft(`chat:${language}:${track}:${focusId ?? subject ?? 'general'}`, '', isDraftText)
+  useLearningPauseGuard(loading)
   const bottomRef = useRef<HTMLDivElement>(null)
   const starterPrompts = [
     'Give me a small hint for Two Sum without showing the solution.',

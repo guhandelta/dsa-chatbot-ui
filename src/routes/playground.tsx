@@ -13,6 +13,7 @@ import { PREVIEW_SANDBOX, autoRefreshable, buildPreview, loadReactRuntime, needs
 import type { WorkspaceFile } from '../lib/workspaceApi'
 import { FileTabs } from '../components/workspace/FileTabs'
 import { useAutosave, type Saver } from '../components/workspace/useAutosave'
+import { useSupportTask } from '../lib/learningSupport'
 import { ChallengeBrief, WebCurriculum } from '../components/WebCurriculum'
 import { WEB_FUNDAMENTALS, webChallengeProjectSlug } from '../lib/webCurriculum'
 
@@ -133,6 +134,8 @@ function PlaygroundEditor({ slug, template: requested, section, challenge, start
     files: body.files, template: body.template, revision: body.revision, force: body.force,
   }), [slug])
   const autosave = useAutosave(`playground:${slug}`, 'web', ready, 1000, saver)
+  useSupportTask({ id: `playground:${slug}`, title: `UI practice · ${slug}`, busy: !ready || running,
+    save: async () => { autosave.schedule({ files, entry: 'index.html', template }); await autosave.flushChecked() } })
 
   const render = useCallback((current: WorkspaceFile[]) => {
     token.current = crypto.randomUUID()

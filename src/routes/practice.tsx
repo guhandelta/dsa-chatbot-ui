@@ -44,6 +44,7 @@ import { CheckpointsPanel } from "../components/workspace/CheckpointsPanel";
 import { ProgressPanel } from "../components/workspace/ProgressPanel";
 import { SessionSummaryCard } from "../components/workspace/SessionSummaryCard";
 import { useAutosave } from "../components/workspace/useAutosave";
+import { practiceTopicKey, useSupportTask } from "../lib/learningSupport";
 import { StrikesPanel } from "../components/workspace/StrikesPanel";
 import type { AnalysisResult, Evidence, Provider } from "../types";
 
@@ -201,6 +202,12 @@ export function PracticeWorkspace({
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const isCurrent = () => mounted.current && context.current === sessionSlot;
   const autosave = useAutosave(problemId, language, serverWorkspace);
+  const reportLearning = useSupportTask({ id: practiceTopicKey(problemId, language), title: `${language} · ${problemId}`,
+    busy: loading || running || !ready,
+    save: async () => {
+      autosave.schedule({ files, entry, template });
+      await autosave.flushChecked();
+    } });
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
   const jumpTo = useRef<{ file: string; line: number } | null>(null);
 
@@ -232,7 +239,9 @@ export function PracticeWorkspace({
     sessionStorage.setItem(sessionSlot, value.session_id);
     if (value.analysis) setAnalysis(value.analysis);
     if (value.evidence) setEvidence(value.evidence);
-    if (value.tests) setTestRun({ result: { ...value.tests, source_map: value.source_map }, source: "evaluation" });
+    if (value.tests) {
+      setTestRun({ result: { ...value.tests, source_map: value.source_map }, source: "evaluation" });
+    }
     if (value.solution_available) setAvailable(true);
     if (value.peppercorns_remaining !== null)
       setBalance(value.peppercorns_remaining);
@@ -338,8 +347,9 @@ export function PracticeWorkspace({
       const result = await runWorkspaceTests(problemId, {
         language, files, entry, practice_session_id: sessionRef.current?.session_id,
       });
-      if (!mounted.current) return;
+      if (!isCurrent()) return;
       setTestRun({ result, source: "run" });
+      if (result.status === "passed" || result.status === "failed") reportLearning(result.status === "passed" ? "success" : "difficulty");
       setAnnouncement(result.status === "passed" ? `All ${result.total} tests passed.` : `${result.passed} of ${result.total} tests passed.`);
       void refreshWorkspace();
     } catch (e) {
@@ -359,7 +369,10 @@ export function PracticeWorkspace({
     try {
       await autosave.flush();
       const sid = await ensureSession();
-      applyPractice(await practiceAction(sid, "submit", code, "", undefined, workspacePayload));
+      const value = await practiceAction(sid, "submit", code, "", undefined, workspacePayload);
+      if (!isCurrent()) return;
+      applyPractice(value);
+      if (value.tests?.status === "passed" || value.tests?.status === "failed") reportLearning(value.tests.status === "passed" ? "success" : "difficulty");
       void refreshWorkspace();
       setStrikeRefresh((n) => n + 1);
     } catch (e) {

@@ -7,18 +7,20 @@ import { fetchTrackItems, fetchContentItem, fetchCurriculumProgress, getApiError
 import { hasToken } from '../../lib/auth'
 import { LANGUAGE_LABELS, useLanguageAccess } from '../../lib/languageAccess'
 import type { ContentMeta, Mode, Provider, Track } from '../../types'
+import { useSupportTask } from '../../lib/learningSupport'
 
 export const Route = createFileRoute('/track/$track')({
   beforeLoad: () => { if (!hasToken()) throw redirect({ to: '/login' }) },
-  validateSearch: (search: Record<string, unknown>): { mode: Mode } => ({
+  validateSearch: (search: Record<string, unknown>): { mode: Mode; focus?: string } => ({
     mode: search.mode === 'practice' ? 'practice' : search.mode === 'learn' ? 'learn' : 'browse',
+    ...(typeof search.focus === 'string' ? { focus: search.focus } : {}),
   }),
   component: TrackPage,
 })
 
 function TrackPage() {
   const { track } = Route.useParams()
-  const { mode } = Route.useSearch()
+  const { mode, focus: focusId } = Route.useSearch()
   const navigate = useNavigate()
   const access = useLanguageAccess()
   const student = access.data?.role === 'student'
@@ -31,6 +33,7 @@ function TrackPage() {
   const [difficulty, setDifficulty] = useState('')
   const [completed, setCompleted] = useState<string[]>([])
   const [totalExercises, setTotalExercises] = useState(0)
+  useSupportTask(focus ? { id: `lesson:${language}:${focus.id}`, title: focus.title } : null)
   useEffect(() => {
     let active = true
     setCompleted([])
@@ -47,9 +50,12 @@ function TrackPage() {
       .catch((e) => { if (active) setError(getApiErrorMessage(e)) })
     return () => { active = false }
   }, [track, language, difficulty])
+  useEffect(() => {
+    if (focusId) setFocus(items.find(item => item.id === focusId) ?? null)
+  }, [items, focusId])
 
   const visible = items.filter((item) => track !== 'language' || supplemental || (item.order > 0 && item.order < 100))
-  const switchMode = (next: Mode) => navigate({ to: '/track/$track', params: { track }, search: { mode: next } })
+  const switchMode = (next: Mode) => navigate({ to: '/track/$track', params: { track }, search: { mode: next, ...(focus ? { focus: focus.id } : {}) } })
   if (!['language', 'dsa', 'algorithm'].includes(track)) return <main className="page-wrap py-8"><p>This subject is planned for a later release.</p><Link to="/learn">Back to learning</Link></main>
 
   return <main className="page-wrap px-4 py-8">
@@ -70,7 +76,7 @@ function TrackPage() {
     <div className="track-layout">
       <aside className="island-shell rounded-2xl p-4">
         <p className="mb-3 text-sm">{LANGUAGE_LABELS[language] ?? language} · {visible.length} topics{track === 'language' ? ` · ${completed.length}/${totalExercises} exercises passed` : ''}</p>
-        <ul className="item-list">{visible.map((item) => <li key={item.id}><button type="button" onClick={() => setFocus(item)} className={`item-btn ${focus?.id === item.id ? 'is-active' : ''}`}>
+        <ul className="item-list">{visible.map((item) => <li key={item.id}><button type="button" onClick={() => { setFocus(item); void navigate({ to: '/track/$track', params: { track }, search: { mode, focus: item.id } }) }} className={`item-btn ${focus?.id === item.id ? 'is-active' : ''}`}>
           <span>{completed.includes(item.id) ? '✓ ' : ''}{item.order > 0 && item.order < 100 ? `${item.order}. ` : ''}{item.title}</span>
           <span className="text-xs">{item.level ?? item.difficulty}{item.has_tests ? ' · exercise' : ' · lesson'}</span>
         </button></li>)}</ul>
