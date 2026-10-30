@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { DebugCatalog, DebugChallenge } from '../../lib/studyApi'
 
-const api = vi.hoisted(() => ({ fetchDebugCatalog: vi.fn(), nextDebugChallenge: vi.fn(), reviewDebugChallenge: vi.fn() }))
+const api = vi.hoisted(() => ({ fetchDebugCatalog: vi.fn(), nextDebugChallenge: vi.fn(), assessDebugChallenge: vi.fn() }))
 vi.mock('../../lib/studyApi', () => api)
 vi.mock('../../lib/api', () => ({ getApiErrorMessage: (e: Error) => e.message }))
 import { DebugChallenges } from './DebugChallenges'
@@ -20,7 +20,8 @@ const catalog = (current: DebugChallenge | null = null): DebugCatalog => ({
     current: id === 'python' && d === 'easy' ? current : null,
   })) })),
 })
-beforeEach(() => { vi.resetAllMocks(); api.fetchDebugCatalog.mockResolvedValue(catalog()); api.nextDebugChallenge.mockResolvedValue(problem()); api.reviewDebugChallenge.mockResolvedValue({ status: 'reviewed' }) })
+const assessment = { score: 1, reasoning_score: 1, transfer_score: 1, passed: true, feedback: 'Good trace. Try a zero-count case.', grading: 'rubric-model' as const }
+beforeEach(() => { localStorage.clear(); vi.resetAllMocks(); api.fetchDebugCatalog.mockResolvedValue(catalog()); api.nextDebugChallenge.mockResolvedValue(problem()); api.assessDebugChallenge.mockResolvedValue({ status: 'reviewed', understanding: assessment }) })
 afterEach(cleanup)
 
 it('offers all levels and only the server-authorized language/framework subjects', async () => {
@@ -42,7 +43,7 @@ it('draws an unseen problem in the selected framework and difficulty', async () 
   await screen.findByText('An average is truncated')
   expect(api.nextDebugChallenge).toHaveBeenCalledWith('python','python-fastapi','extreme')
   expect(select).toHaveBeenLastCalledWith(problem())
-  expect(screen.getByText(/code is not run or automatically graded/i)).toBeTruthy()
+  expect(screen.getByText(/Code is not executed/i)).toBeTruthy()
 })
 
 it('resumes the saved current problem without drawing another on refresh', async () => {
@@ -54,17 +55,34 @@ it('resumes the saved current problem without drawing another on refresh', async
   expect(api.nextDebugChallenge).not.toHaveBeenCalled()
 })
 
-it('saves a diagnosis as self-review without claiming a test pass', async () => {
+it('evaluates the diagnosis and follow-up without claiming a test pass', async () => {
   api.fetchDebugCatalog.mockResolvedValue(catalog(problem()))
   render(<DebugChallenges language="python" onSelect={vi.fn()} />)
   await screen.findByText('An average is truncated')
-  const save = screen.getByRole('button', { name: 'Save my diagnosis' }) as HTMLButtonElement
+  const save = screen.getByRole('button', { name: 'Check my diagnosis' }) as HTMLButtonElement
   expect(save.disabled).toBe(true)
   fireEvent.change(screen.getByLabelText('Challenge diagnosis'), { target: { value: 'Integer division truncates. Add a fractional-input regression test.' } })
+  expect(save.disabled).toBe(true)
+  fireEvent.change(screen.getByLabelText('Reasoning check'), { target: { value: 'Floor division drops the fraction.' } })
+  fireEvent.change(screen.getByLabelText('Follow-up check'), { target: { value: '7 / 2 should be 3.5 rather than 3.' } })
   fireEvent.click(save)
   await screen.findByText('Diagnosis saved. Choose the next unseen problem or a harder level.')
-  expect(api.reviewDebugChallenge).toHaveBeenCalledWith('a-1', 'Integer division truncates. Add a fractional-input regression test.')
+  expect(api.assessDebugChallenge).toHaveBeenCalledWith('a-1', 'Integer division truncates. Add a fractional-input regression test.', 'Floor division drops the fraction.', '7 / 2 should be 3.5 rather than 3.')
   expect(screen.queryByText('Tests passed')).toBeNull()
+})
+
+it('retains the diagnosis and permits revision after a partial understanding result', async () => {
+  api.fetchDebugCatalog.mockResolvedValue(catalog(problem()))
+  api.assessDebugChallenge.mockResolvedValue({ status: 'assigned', understanding: { ...assessment, passed: false, score: 0.5 } })
+  render(<DebugChallenges language="python" onSelect={vi.fn()} />)
+  await screen.findByText('An average is truncated')
+  fireEvent.change(screen.getByLabelText('Challenge diagnosis'), { target: { value: 'My incomplete diagnosis.' } })
+  fireEvent.change(screen.getByLabelText('Reasoning check'), { target: { value: 'A trace.' } })
+  fireEvent.change(screen.getByLabelText('Follow-up check'), { target: { value: 'A test.' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Check my diagnosis' }))
+  await screen.findByText(/Keep building on your diagnosis/)
+  expect((screen.getByLabelText('Challenge diagnosis') as HTMLTextAreaElement).value).toBe('My incomplete diagnosis.')
+  expect(screen.getByRole('button', { name: 'Check my diagnosis' })).toBeTruthy()
 })
 
 it('does not silently repeat an exhausted level', async () => {

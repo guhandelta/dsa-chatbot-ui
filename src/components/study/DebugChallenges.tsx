@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { getApiErrorMessage } from '../../lib/api'
-import { fetchDebugCatalog, nextDebugChallenge, reviewDebugChallenge, type DebugCatalog, type DebugChallenge, type DebugDifficulty } from '../../lib/studyApi'
+import { fetchDebugCatalog, nextDebugChallenge, assessDebugChallenge, type DebugCatalog, type DebugChallenge, type DebugDifficulty } from '../../lib/studyApi'
+import { UnderstandingFields, useUnderstandingDraft } from './UnderstandingCheck'
+import { isDraftText, useLearningDraft, useLearningFeedback, useLearningPauseGuard } from '../../lib/learningSupport'
 
 const SUBJECT_LABELS: Record<string, string> = {
   python: 'Python', javascript: 'JavaScript', java: 'Java', typescript: 'TypeScript',
@@ -24,8 +26,11 @@ export function DebugChallenges({ language, focusId, onSelect }: Props) {
   const [subject, setSubject] = useState(language)
   const [difficulty, setDifficulty] = useState<DebugDifficulty>('easy')
   const [challenge, setChallenge] = useState<DebugChallenge | null>(null)
-  const [diagnosis, setDiagnosis] = useState('')
+  const [diagnosis, setDiagnosis] = useLearningDraft(`debug-diagnosis:${language}:${challenge?.attempt_id ?? 'none'}`, '', isDraftText)
+  const understanding = useUnderstandingDraft(`debug:${language}:${challenge?.attempt_id ?? 'none'}`)
+  const reportLearning = useLearningFeedback()
   const [busy, setBusy] = useState(false)
+  useLearningPauseGuard(busy)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const version = useRef(0)
@@ -37,7 +42,7 @@ export function DebugChallenges({ language, focusId, onSelect }: Props) {
   useEffect(() => {
     const request = ++version.current
     setCatalog(null); setChallenge(null); setSubject(language); setDifficulty('easy')
-    setError(null); setLoading(true); setBusy(false); setDiagnosis('')
+    setError(null); setLoading(true); setBusy(false)
     selectRef.current(null)
     loadCatalog().then(data => {
       if (request !== version.current) return
@@ -59,7 +64,7 @@ export function DebugChallenges({ language, focusId, onSelect }: Props) {
   const level = currentSubject?.levels.find(l => l.difficulty === difficulty)
   const changeScope = (nextSubject: string, nextDifficulty: DebugDifficulty) => {
     ++version.current
-    setSubject(nextSubject); setDifficulty(nextDifficulty); setError(null); setDiagnosis('')
+    setSubject(nextSubject); setDifficulty(nextDifficulty); setError(null)
     const saved = catalog?.subjects.find(s => s.id === nextSubject)?.levels.find(l => l.difficulty === nextDifficulty)?.current ?? null
     setChallenge(saved); selectRef.current(saved)
   }
@@ -69,7 +74,7 @@ export function DebugChallenges({ language, focusId, onSelect }: Props) {
     try {
       const item = await (focusId ? nextDebugChallenge(language, subject, difficulty, focusId) : nextDebugChallenge(language, subject, difficulty))
       if (request !== version.current) return
-      setChallenge(item); setDiagnosis(''); selectRef.current(item)
+      setChallenge(item); selectRef.current(item)
       const updated = await loadCatalog()
       if (request === version.current) setCatalog(updated)
     } catch (e) {
@@ -77,19 +82,20 @@ export function DebugChallenges({ language, focusId, onSelect }: Props) {
     } finally { if (request === version.current) setBusy(false) }
   }
   const review = async () => {
-    if (!challenge || diagnosis.trim().length < 10) return
+    if (busy || !challenge || diagnosis.trim().length < 10 || !understanding.reasoning.trim() || !understanding.transfer.trim()) return
     const request = ++version.current
     setBusy(true); setError(null)
     try {
-      await reviewDebugChallenge(challenge.attempt_id, diagnosis.trim())
+      const assessed = await assessDebugChallenge(challenge.attempt_id, diagnosis.trim(), understanding.reasoning, understanding.transfer)
       if (request !== version.current) return
-      setChallenge({ ...challenge, status: 'reviewed' }); setDiagnosis('')
+      setChallenge({ ...challenge, status: assessed.status, understanding_result: assessed.understanding })
+      reportLearning(assessed.understanding.passed ? 'success' : 'difficulty')
       const updated = await loadCatalog()
       if (request === version.current) setCatalog(updated)
     } catch (e) { if (request === version.current) setError(getApiErrorMessage(e)) }
     finally { if (request === version.current) setBusy(false) }
   }
-  const ownCode = () => { setChallenge(null); setDiagnosis(''); selectRef.current(null) }
+  const ownCode = () => { setChallenge(null); selectRef.current(null) }
 
   return <div className="mb-5 rounded-xl border border-[var(--line)] p-4" aria-label="Debugging challenges">
     <h3 className="m-0 mb-2 text-lg font-bold">Debug this topic</h3>
@@ -107,7 +113,7 @@ export function DebugChallenges({ language, focusId, onSelect }: Props) {
             {catalog.difficulties.map(d => <option key={d} value={d}>{label(d)}</option>)}
           </select></label>
       </div>
-      <p className="text-sm" role="status">{level?.remaining ?? 0} unseen of {level?.total ?? 0} problems · {level?.reviewed ?? 0} self-reviewed at this level</p>
+      <p className="text-sm" role="status">{level?.remaining ?? 0} unseen of {level?.total ?? 0} problems · {level?.reviewed ?? 0} reviewed at this level</p>
       {!catalog.subjects.length && <p>Coming soon — debugging problems for this topic. You can discuss your own relevant code below; unrelated topics will not be substituted.</p>}
       <button type="button" className="primary-btn mt-2" onClick={() => void next()} disabled={busy || !level?.remaining}>
         {busy ? 'Saving…' : challenge ? 'Next unseen problem' : 'Get a debugging problem'}</button>
@@ -124,11 +130,16 @@ export function DebugChallenges({ language, focusId, onSelect }: Props) {
       <p className="text-sm">{challenge.failure}</p>
       <pre className="quiz-code my-3 overflow-x-auto rounded-lg p-3"><code>{challenge.code}</code></pre>
       <p className="text-sm">{challenge.goal}</p>
-      <p className="cost-note">Reasoning challenge. Review is self-reported; code is not run or automatically graded. No mastery credit is awarded. Embedded scenarios are for simulation and analysis, not hardware execution.</p>
+      <p className="cost-note">Diagnosis and follow-up receive rubric feedback. Code is not executed, and no pathway mastery credit is awarded. Embedded scenarios are for simulation and analysis, not hardware execution.</p>
+      {challenge.understanding_result && <div role="status" className="quiz-feedback">
+        <p>{challenge.understanding_result.passed ? 'Understanding demonstrated.' : 'Keep building on your diagnosis.'} Score: {Math.round(challenge.understanding_result.score * 100)}%</p>
+        <p>{challenge.understanding_result.feedback}</p>
+      </div>}
       {challenge.status === 'reviewed' ? <p role="status">Diagnosis saved. Choose the next unseen problem or a harder level.</p> : <>
         <label className="selector mt-3 block"><span className="selector-label">Your diagnosis and regression test</span>
-          <textarea aria-label="Challenge diagnosis" className="train-textarea" rows={3} value={diagnosis} disabled={busy} onChange={e => setDiagnosis(e.target.value)} /></label>
-        <button type="button" className="mini-btn mt-2" onClick={() => void review()} disabled={busy || diagnosis.trim().length < 10}>Save my diagnosis</button>
+          <textarea aria-label="Challenge diagnosis" className="train-textarea" rows={3} maxLength={4000} value={diagnosis} disabled={busy} onChange={e => setDiagnosis(e.target.value)} /></label>
+        <UnderstandingFields prompts={challenge.understanding ?? { reasoning: 'Explain the specific cause or state change using this snippet.', transfer: 'Give a concrete regression test: input or setup, expected result, and why it catches this issue.' }} draft={understanding} busy={busy} />
+        <button type="button" className="mini-btn mt-2" onClick={() => void review()} disabled={busy || diagnosis.trim().length < 10 || !understanding.reasoning.trim() || !understanding.transfer.trim()}>Check my diagnosis</button>
       </>}
     </article>}
   </div>

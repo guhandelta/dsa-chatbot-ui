@@ -5,6 +5,7 @@ import { getApiErrorMessage } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { answerQuiz, startQuiz, type QuizItem, type QuizResult, type QuizStarted } from '../../lib/studyApi'
 import { isDraftText, useLearningDraft, useLearningFeedback, useLearningPauseGuard } from '../../lib/learningSupport'
+import { UnderstandingFields, useUnderstandingDraft, isUnderstandingPrompts, isUnderstandingResult } from './UnderstandingCheck'
 
 type QuizDraft = { quiz: QuizStarted | null; index: number; result: QuizResult | null; results: QuizResult[] }
 function isQuizDraft(value: unknown): value is QuizDraft {
@@ -12,6 +13,7 @@ function isQuizDraft(value: unknown): value is QuizDraft {
   const d = value as QuizDraft
   if (!Number.isInteger(d.index) || d.index < 0 || !Array.isArray(d.results) || d.results.length > 5) return false
   const validResult = (r: QuizResult) => r && typeof r.item_id === 'string' && typeof r.correct === 'boolean'
+    && (r.understanding === undefined || isUnderstandingResult(r.understanding))
     && typeof r.score === 'number' && Number.isFinite(r.score) && r.score >= 0 && r.score <= 1 && Array.isArray(r.rewards)
     && r.rewards.every(reward => reward && typeof reward.key === 'string' && typeof reward.reason === 'string' && typeof reward.amount === 'number' && typeof reward.balance === 'number')
     && typeof r.feedback === 'string' && typeof r.expected === 'string' && typeof r.explanation === 'string' && typeof r.complete === 'boolean'
@@ -23,6 +25,7 @@ function isQuizDraft(value: unknown): value is QuizDraft {
   return !!d.quiz && typeof d.quiz.quiz_id === 'string' && typeof d.quiz.node_title === 'string' && Array.isArray(d.quiz.items) && d.quiz.items.length > 0 && d.quiz.items.length <= 5
     && d.index < d.quiz.items.length && d.quiz.total === d.quiz.items.length && d.quiz.items.every(i => i && typeof i.id === 'string'
       && typeof i.prompt === 'string' && Object.hasOwn(LABELS, i.type)
+      && (i.understanding === undefined || isUnderstandingPrompts(i.understanding))
       && typeof i.concept === 'string' && (i.level === null || typeof i.level === 'string')
       && (i.code === undefined || typeof i.code === 'string') && (i.starter === undefined || typeof i.starter === 'string')
       && (i.type !== 'fix_bug' || typeof i.code === 'string') && (i.type !== 'write_snippet' || typeof i.starter === 'string')
@@ -43,11 +46,19 @@ function initialResponse(item: QuizItem) {
   return ''
 }
 
-export function QuizItemView({ item, onAnswer, busy, draftScope = 'standalone' }: { item: QuizItem; busy: boolean; onAnswer: (response: string | number) => void; draftScope?: string }) {
+export function QuizItemView({ item, onAnswer, busy, draftScope = 'standalone' }: { item: QuizItem; busy: boolean; onAnswer: (response: string | number, understanding?: { reasoning: string; transfer: string }) => void; draftScope?: string }) {
   const [response, setResponse] = useLearningDraft(`quiz-answer:${draftScope}:${item.id}`, initialResponse(item), isDraftText)
   const choice = item.type === 'mcq' || item.type === 'mcq_code'
+  const understanding = useUnderstandingDraft(`quiz:${draftScope}:${item.id}`)
+  const [checkingUnderstanding, setCheckingUnderstanding] = useState(false)
+  const complete = choice || (!!understanding.reasoning.trim() && !!understanding.transfer.trim())
   const code = item.type === 'fix_bug' || item.type === 'write_snippet'
-  return <form onSubmit={(e) => { e.preventDefault(); if (response.trim()) onAnswer(choice ? Number(response) : response) }}>
+  return <form onSubmit={(e) => {
+    e.preventDefault()
+    if (busy || !response.trim()) return
+    if (!choice && !checkingUnderstanding) { setCheckingUnderstanding(true); return }
+    if (complete) onAnswer(choice ? Number(response) : response, choice ? undefined : { reasoning: understanding.reasoning, transfer: understanding.transfer })
+  }}>
     <p className="island-kicker mb-1">{LABELS[item.type]}{item.level ? ` · ${item.level}` : ''}</p>
     <p className="mb-2 font-semibold">{item.prompt}</p>
     {item.code && !code && <pre className="quiz-code"><code>{item.code}</code></pre>}
@@ -67,7 +78,9 @@ export function QuizItemView({ item, onAnswer, busy, draftScope = 'standalone' }
       <textarea className="train-textarea font-mono" rows={10} aria-label="Your code" value={response} onChange={(e) => setResponse(e.target.value)} spellCheck={false} />
       <p className="cost-note">Graded by running {item.test_count} hidden tests on <code>{item.function}</code> in {item.language}.</p>
     </>}
-    <button type="submit" className="primary-btn mt-2" disabled={busy || !response.trim()}>{busy ? 'Checking…' : 'Check answer'}</button>
+    {checkingUnderstanding && <UnderstandingFields prompts={item.understanding} draft={understanding} busy={busy} />}
+    {checkingUnderstanding && <p className="cost-note">Your answer and both checks are evaluated together. Reference answers appear after submission.</p>}
+    <button type="submit" className="primary-btn mt-2" disabled={busy || !response.trim() || (checkingUnderstanding && !complete)}>{busy ? 'Checking…' : !choice && !checkingUnderstanding ? 'Continue to understanding check' : 'Check answer'}</button>
   </form>
 }
 
@@ -76,6 +89,7 @@ export function QuizFeedback({ result }: { result: QuizResult }) {
   return <div className={`quiz-feedback ${result.correct ? 'is-correct' : 'is-wrong'}`} role="status">
     <p className="m-0 font-semibold">{result.correct ? 'Correct' : result.score > 0 ? `Partly right (${Math.round(result.score * 100)}%)` : 'Not yet'}</p>
     <p className="my-1">{result.feedback}</p>
+    {result.understanding && <p className="my-1 text-sm">Reasoning: {Math.round(result.understanding.reasoning_score * 100)}% · Follow-up: {Math.round(result.understanding.transfer_score * 100)}%. Rubric assessment; this does not establish authorship.</p>}
     {result.misconception && <p className="my-1 text-sm">What your answer suggests: {result.misconception}</p>}
     {tests?.first_failure && <p className="my-1 font-mono text-sm">Test {tests.first_failure.case}: input {JSON.stringify(tests.first_failure.args)} expected {JSON.stringify(tests.first_failure.expected)}, got {JSON.stringify(tests.first_failure.got)}</p>}
     <details className="mt-1"><summary>{result.grading === 'tests' ? 'Reference solution' : 'Model answer'}</summary>
@@ -124,12 +138,14 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
       if (requestSession === session.current) setBusy(false)
     }
   }
-  const submit = async (response: string | number) => {
+  const submit = async (response: string | number, understanding?: { reasoning: string; transfer: string }) => {
     const requestSession = session.current
     const current = quiz!  // answers are only possible while a quiz is shown
     setBusy(true); setError(null)
     try {
-      const graded = await answerQuiz(current.quiz_id, current.items[index].id, response)
+      const graded = understanding
+        ? await answerQuiz(current.quiz_id, current.items[index].id, response, understanding)
+        : await answerQuiz(current.quiz_id, current.items[index].id, response)
       if (requestSession !== session.current) return
       setSnapshot(previous => ({ ...previous, result: graded, results: [...previous.results, graded] }))
       reportLearning(graded.correct ? 'success' : 'difficulty')
@@ -165,7 +181,7 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
   const earned = results.flatMap((r) => r.rewards)
   return <section className="island-shell rounded-2xl p-4">
     <p className="mb-3 text-sm">{quiz.node_title} · question {Math.min(index + 1, quiz.total)} of {quiz.total}</p>
-    {!result && <QuizItemView key={item.id} item={item} draftScope={quiz.quiz_id} busy={busy} onAnswer={(r) => void submit(r)} />}
+    {!result && <QuizItemView key={item.id} item={item} draftScope={quiz.quiz_id} busy={busy} onAnswer={(r, u) => void submit(r, u)} />}
     {result && <QuizFeedback result={result} />}
     {error && <div className="error-banner mt-3" role="alert">{error}</div>}
     {result && !finished && <button type="button" className="primary-btn mt-3" onClick={() => { setIndex(index + 1); setResult(null) }}>Next question</button>}

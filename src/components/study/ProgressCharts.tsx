@@ -30,7 +30,7 @@ export function ProgressCharts({ language }: { language: string }) {
   }, [language, retry])
   return <section className="island-shell rounded-2xl p-4" aria-label="Progress by section">
     <h2 className="m-0 text-lg font-bold">Your progress in {language === 'cpp' ? 'C++' : language === 'csharp' ? 'C#' : language}</h2>
-    <p className="my-2 text-sm">Each section measures different work. Green: completed · Amber: started but unfinished · Unfilled: remaining. Debugging measures self-review activity.</p>
+    <p className="my-2 text-sm">Each section measures different work. Green: completed · Amber: started but unfinished · Unfilled: remaining. Debugging measures reviewed investigations, including earlier self-reviews; it does not establish executed-code mastery.</p>
     {error && <div role="alert"><p>{error}</p><button className="mini-btn" onClick={() => setRetry(n => n + 1)}>Retry progress charts</button></div>}
     {!error && !data && <p role="status">Loading progress charts…</p>}
     <div className="grid gap-4 sm:grid-cols-2">

@@ -20,6 +20,12 @@ const started: QuizStarted = { quiz_id: 'q1', node_id: 'python:stage-01', node_t
 const correct: QuizResult = { item_id: 'i1', correct: true, score: 1, grading: 'exact', feedback: 'Correct.', expected: '4', explanation: '',
   answered: 1, total: 1, complete: true, rewards: [] }
 const quiz = () => <LearningSupportProvider owner="alice" fallback={{ id: 'values', title: 'Values' }}><QuizMode language="python" focusId="python:stage-01" /></LearningSupportProvider>
+function submitTyped() {
+  fireEvent.click(screen.getByRole('button', { name: 'Continue to understanding check' }))
+  fireEvent.change(screen.getByLabelText('Reasoning check'), { target: { value: 'Two groups of two give four.' } })
+  fireEvent.change(screen.getByLabelText('Follow-up check'), { target: { value: '2 + 3 gives 5 by adding one more.' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Check answer' }))
+}
 beforeEach(() => { localStorage.clear(); vi.clearAllMocks(); auth.user = { id: 'alice' }; route.pathname = '/learn'; route.href = '/learn' })
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
@@ -36,9 +42,9 @@ it('restores the exact quiz and unsent answer after pause and reload without sta
   expect((screen.getByLabelText('Your answer') as HTMLInputElement).value).toBe('4')
   expect(startQuiz).toHaveBeenCalledTimes(1)
   fireEvent.click(screen.getByRole('button', { name: 'Resume learning' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Check answer' }))
+  submitTyped()
   await screen.findByLabelText('Quiz summary')
-  expect(answerQuiz).toHaveBeenCalledWith('q1', 'i1', '4')
+  expect(answerQuiz).toHaveBeenCalledWith('q1', 'i1', '4', { reasoning: 'Two groups of two give four.', transfer: '2 + 3 gives 5 by adding one more.' })
   await waitFor(() => expect(screen.getByRole('progressbar').getAttribute('value')).toBe('1'))
 })
 
@@ -48,7 +54,7 @@ it('restores the graded quiz summary without grading again or crediting rewards 
   const view = render(quiz())
   fireEvent.click(screen.getByRole('button', { name: 'Start quiz' }))
   fireEvent.change(await screen.findByLabelText('Your answer'), { target: { value: '4' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Check answer' }))
+  submitTyped()
   await screen.findByLabelText('Quiz summary')
   view.unmount()
   render(quiz())

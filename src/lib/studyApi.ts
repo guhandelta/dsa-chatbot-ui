@@ -98,6 +98,7 @@ export interface StudyReply {
 }
 
 export interface QuizItem {
+  understanding?: UnderstandingPrompts
   id: string
   type: QuizType
   prompt: string
@@ -117,6 +118,8 @@ export interface QuizStarted { quiz_id: string; node_id: string; node_title: str
 export interface Reward { key: string; amount: number; reason: string; balance: number }
 
 export interface QuizResult {
+  understanding?: UnderstandingResult
+  answer_score?: number
   item_id: string
   correct: boolean
   score: number
@@ -234,8 +237,8 @@ export async function startQuiz(language: string, nodeId: string | undefined, co
   return (await api.post<QuizStarted>('/study/quiz', { language, node_id: nodeId, count })).data
 }
 
-export async function answerQuiz(quizId: string, itemId: string, response: string | number): Promise<QuizResult> {
-  return (await api.post<QuizResult>(`/study/quiz/${encodeURIComponent(quizId)}/answer`, { item_id: itemId, response })).data
+export async function answerQuiz(quizId: string, itemId: string, response: string | number, understanding?: { reasoning: string; transfer: string }): Promise<QuizResult> {
+  return (await api.post<QuizResult>(`/study/quiz/${encodeURIComponent(quizId)}/answer`, { item_id: itemId, response, ...understanding })).data
 }
 
 export async function fetchQuizSummary(quizId: string): Promise<QuizSummary> {
@@ -265,7 +268,13 @@ export async function fetchNextHint(problemId: string, language: string): Promis
 }
 
 export type DebugDifficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'extreme'
+export interface UnderstandingPrompts { reasoning: string; transfer: string }
+export interface UnderstandingResult {
+  reasoning_score: number; transfer_score: number; score: number; passed: boolean; feedback: string; grading: 'rubric-model'
+}
 export interface DebugChallenge {
+  understanding?: UnderstandingPrompts
+  understanding_result?: UnderstandingResult | null
   id: string
   attempt_id: string
   language: string
@@ -279,8 +288,9 @@ export interface DebugChallenge {
   code_language: string
   status: 'assigned' | 'reviewed'
   task_kind: 'repair' | 'trace'
-  assessment: 'self-review'
-  automatically_graded: false
+  assessment: 'self-review' | 'understanding-check' | 'rubric-model'
+  automatically_graded: boolean
+  code_executed?: boolean
 }
 export interface DebugLevel {
   difficulty: DebugDifficulty
@@ -303,6 +313,10 @@ export async function nextDebugChallenge(language: string, subject: string, diff
 }
 export async function reviewDebugChallenge(attemptId: string, diagnosis: string): Promise<{ status: string }> {
   return (await api.post<{ status: string }>(`/study/debug/challenges/${encodeURIComponent(attemptId)}/review`, { diagnosis })).data
+}
+
+export async function assessDebugChallenge(attemptId: string, diagnosis: string, reasoning: string, transfer: string): Promise<{ status: 'assigned' | 'reviewed'; understanding: UnderstandingResult }> {
+  return (await api.post(`/study/debug/challenges/${encodeURIComponent(attemptId)}/assess`, { diagnosis, reasoning, transfer })).data
 }
 
 

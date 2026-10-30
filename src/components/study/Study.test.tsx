@@ -270,6 +270,12 @@ const graded = (over: Partial<QuizResult> = {}): QuizResult => ({
 })
 
 describe('Quiz mode', () => {
+  const checkTyped = () => {
+    fireEvent.click(screen.getByText('Continue to understanding check'))
+    fireEvent.change(screen.getByLabelText('Reasoning check'), { target: { value: 'Trace this specific operation.' } })
+    fireEvent.change(screen.getByLabelText('Follow-up check'), { target: { value: 'Change an input and justify the result.' } })
+    fireEvent.click(screen.getByText('Check answer'))
+  }
   it('runs a mixed-format quiz to its summary', async () => {
     study.startQuiz.mockResolvedValue({ quiz_id: 'quiz1', node_id: 'python:stage-01', node_title: 'Values', total: 6, items: quizItems })
     study.answerQuiz
@@ -297,24 +303,24 @@ describe('Quiz mode', () => {
     expect(await screen.findByText('Not yet')).toBeTruthy()
     next()
     fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: '2' } })
-    fireEvent.click(screen.getByText('Check answer'))
+    checkTyped()
     await screen.findByText('Model answer')
     next()
     fireEvent.change(screen.getByLabelText('Your explanation'), { target: { value: 'My words' } })
-    fireEvent.click(screen.getByText('Check answer'))
+    checkTyped()
     expect(await screen.findByText('Partly right (50%)')).toBeTruthy()
     expect(screen.getByText('What your answer suggests: defaults are per call')).toBeTruthy()
     expect(screen.getByText(/treat this score as approximate/)).toBeTruthy()
     next()
     expect((screen.getByLabelText('Your code') as HTMLTextAreaElement).value).toBe('def f(): return 1')
     fireEvent.change(screen.getByLabelText('Your code'), { target: { value: 'def f(): return 2' } })
-    fireEvent.click(screen.getByText('Check answer'))
-    expect(study.answerQuiz).toHaveBeenLastCalledWith('quiz1', 'q5', 'def f(): return 2')
+    checkTyped()
+    expect(study.answerQuiz).toHaveBeenLastCalledWith('quiz1', 'q5', 'def f(): return 2', expect.objectContaining({ reasoning: 'Trace this specific operation.' }))
     expect(await screen.findByText('Test 3: input [7,2] expected 3, got 3.5')).toBeTruthy()
     expect(screen.getByText('Reference solution')).toBeTruthy()
     next()
     expect((screen.getByLabelText('Your code') as HTMLTextAreaElement).value).toBe('def g():\n    pass')
-    fireEvent.click(screen.getByText('Check answer'))
+    checkTyped()
     expect(await screen.findByLabelText('Quiz summary')).toBeTruthy()
     expect(screen.getByText(/Score: 58% \(3 of 6 correct\)/)).toBeTruthy()
     expect(screen.getByText('Score at least two thirds to pass these checks.')).toBeTruthy()
@@ -347,7 +353,7 @@ describe('Quiz mode', () => {
   it('does not submit an empty response', () => {
     const onAnswer = vi.fn()
     render(<QuizItemView item={quizItems[2]} busy={false} onAnswer={onAnswer} />)
-    fireEvent.submit(screen.getByText('Check answer').closest('form')!)
+    fireEvent.submit(screen.getByText('Continue to understanding check').closest('form')!)
     expect(onAnswer).not.toHaveBeenCalled()
   })
 
