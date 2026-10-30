@@ -183,7 +183,11 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
     <p className="mb-3 text-sm">{quiz.node_title} · question {Math.min(index + 1, quiz.total)} of {quiz.total}</p>
     {!result && <QuizItemView key={item.id} item={item} draftScope={quiz.quiz_id} busy={busy} onAnswer={(r, u) => void submit(r, u)} />}
     {result && <QuizFeedback result={result} />}
-    {error && <div className="error-banner mt-3" role="alert">{error}</div>}
+    {error && <div className="error-banner mt-3" role="alert">
+      <p>{error}</p>
+      <p className="text-sm">You can pause and keep this draft, or restart the quiz. Submitted answers stay recorded; an unfinished quiz earns no completion credit.</p>
+      <button type="button" className="mini-btn" disabled={busy} onClick={() => void begin()}>Restart quiz</button>
+    </div>}
     {result && !finished && <button type="button" className="primary-btn mt-3" onClick={() => { setIndex(index + 1); setResult(null) }}>Next question</button>}
     {finished && <div className="mt-4" aria-label="Quiz summary">
       <h3 className="m-0 text-base font-bold">Score: {Math.round((score / quiz.total) * 100)}% ({results.filter((r) => r.correct).length} of {quiz.total} correct)</h3>

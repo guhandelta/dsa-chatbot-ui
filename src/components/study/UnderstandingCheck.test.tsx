@@ -1,8 +1,14 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { QuizItemView } from './QuizMode'
+import { QuizMode } from './QuizMode'
 import { LearningSupportProvider } from '../../lib/learningSupport'
 import type { QuizItem } from '../../lib/studyApi'
+
+const api = vi.hoisted(() => ({ startQuiz: vi.fn(), answerQuiz: vi.fn() }))
+vi.mock('../../lib/studyApi', () => api)
+vi.mock('../../lib/auth', () => ({ useAuth: () => ({ setBalance: vi.fn() }) }))
+vi.mock('../../lib/api', () => ({ getApiErrorMessage: (error: Error) => error.message }))
 
 beforeEach(() => localStorage.clear())
 afterEach(cleanup)
@@ -61,4 +67,24 @@ it('does not submit during an in-flight check even if a form event is forced', (
   fireEvent.change(screen.getByLabelText('Your answer'), { target: { value: '42' } })
   fireEvent.submit(screen.getByRole('button', { name: 'Checking…' }).closest('form')!)
   expect(onAnswer).not.toHaveBeenCalled()
+})
+
+it('keeps drafts after a grading outage and allows a new quiz without a completion callback', async () => {
+  const onComplete = vi.fn()
+  api.startQuiz.mockResolvedValueOnce({ quiz_id: 'q1', node_title: 'Values', total: 1, items: [item('python')] })
+    .mockResolvedValueOnce({ quiz_id: 'q2', node_title: 'Values', total: 1, items: [{ ...item('python'), id: 'new-item' }] })
+  api.answerQuiz.mockRejectedValueOnce(new Error('The grader is unavailable.'))
+  render(<QuizMode language="python" onComplete={onComplete} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Start quiz' }))
+  fireEvent.change(await screen.findByLabelText('Your answer'), { target: { value: '42' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Continue to understanding check' }))
+  fireEvent.change(screen.getByLabelText('Reasoning check'), { target: { value: 'Saved reasoning.' } })
+  fireEvent.change(screen.getByLabelText('Follow-up check'), { target: { value: 'Saved variation.' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Check answer' }))
+  await screen.findByRole('alert')
+  expect((screen.getByLabelText('Reasoning check') as HTMLTextAreaElement).value).toBe('Saved reasoning.')
+  fireEvent.click(screen.getByRole('button', { name: 'Restart quiz' }))
+  await screen.findByRole('button', { name: 'Continue to understanding check' })
+  expect(onComplete).not.toHaveBeenCalled()
+  expect((screen.getByLabelText('Your answer') as HTMLInputElement).value).toBe('')
 })
