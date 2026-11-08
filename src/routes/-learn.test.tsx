@@ -38,6 +38,17 @@ it('shows courses and readable framework and embedded collections without author
   expect(screen.queryByText('800 readable references · 800 source records')).toBeNull()
 })
 
+it('shows Design Patterns as reference lessons without a practice link', async () => {
+  mocks.fetchTracks.mockResolvedValue({ ...tracks('python'), tracks: [
+    { track: 'design-patterns', label: 'Design Patterns', blurb: 'Pattern choices', count: 13 },
+  ] })
+  render(<LearnHub />)
+  expect(await screen.findByText('Design Patterns')).toBeTruthy()
+  expect(screen.getByText(/Graded practice and mastery tracking are in development/)).toBeTruthy()
+  expect(screen.getByText('Explore lessons')).toBeTruthy()
+  expect(screen.queryByText('Practice')).toBeNull()
+})
+
 it('switches both the course and collections with the saved learning language', async () => {
   mocks.setPreferredLanguage.mockResolvedValue({ preferred_language: 'css' })
   mocks.fetchTracks.mockResolvedValueOnce(tracks('python')).mockResolvedValue(tracks('css'))

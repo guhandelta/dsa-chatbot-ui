@@ -33,6 +33,7 @@ function TrackPage() {
   const [difficulty, setDifficulty] = useState('')
   const [completed, setCompleted] = useState<string[]>([])
   const [totalExercises, setTotalExercises] = useState(0)
+  const activeMode: Mode = track === 'design-patterns' ? 'browse' : mode
   useSupportTask(focus ? { id: `lesson:${language}:${focus.id}`, title: focus.title } : null)
   useEffect(() => {
     let active = true
@@ -56,19 +57,20 @@ function TrackPage() {
 
   const visible = items.filter((item) => track !== 'language' || supplemental || (item.order > 0 && item.order < 100))
   const switchMode = (next: Mode) => navigate({ to: '/track/$track', params: { track }, search: { mode: next, ...(focus ? { focus: focus.id } : {}) } })
-  if (!['language', 'dsa', 'algorithm'].includes(track)) return <main className="page-wrap py-8"><p>This subject is planned for a later release.</p><Link to="/learn">Back to learning</Link></main>
+  if (!['language', 'dsa', 'algorithm', 'design-patterns'].includes(track)) return <main className="page-wrap py-8"><p>This subject is planned for a later release.</p><Link to="/learn">Back to learning</Link></main>
 
   return <main className="page-wrap px-4 py-8">
     <Link to="/learn">← Learning home</Link>
-    <h1 className="display-title mt-3 text-3xl font-bold">{track === 'language' ? 'Your language path' : 'DSA workouts'}</h1>
+    <h1 className="display-title mt-3 text-3xl font-bold">{track === 'language' ? 'Your language path' : track === 'design-patterns' ? 'Design Patterns' : 'DSA workouts'}</h1>
     <p className="my-3 text-[var(--sea-ink-soft)]">{track === 'language'
       ? 'The same foundations for everyone. Follow the sequence, or use each exercise as a mastery check and move ahead.'
+      : track === 'design-patterns' ? 'Follow a suggested reading order for when and why to use each pattern. These are reference lessons; graded practice and mastery tracking are in development.'
       : 'Choose a technique to study or a problem to solve. Solutions become available after evaluation when you choose to reveal them.'}</p>
     <div className="controls mb-4">
-      {(['browse', 'learn', 'practice'] as Mode[]).map((m) => <button key={m} type="button" onClick={() => switchMode(m)} className={`lang-tab ${mode === m ? 'is-active' : ''}`}>{m === 'browse' ? 'Lessons' : m === 'learn' ? 'Ask mentor' : 'Practice'}</button>)}
+      {(track === 'design-patterns' ? ['browse'] : ['browse', 'learn', 'practice']).map((m) => <button key={m} type="button" onClick={() => switchMode(m as Mode)} className={`lang-tab ${mode === m ? 'is-active' : ''}`}>{m === 'browse' ? 'Lessons' : m === 'learn' ? 'Ask mentor' : 'Practice'}</button>)}
       {track === 'language' ? <label><input type="checkbox" checked={supplemental} onChange={(e) => setSupplemental(e.target.checked)} /> Include reference library</label>
-        : <label className="selector">Difficulty<select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}><option value="">Any</option>{['Easy', 'Medium', 'Hard'].map((d) => <option key={d}>{d}</option>)}</select></label>}
-      {mode === 'learn' && !student && <ProviderSelector value={provider} onChange={setProvider} />}
+        : track !== 'design-patterns' && <label className="selector">Difficulty<select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}><option value="">Any</option>{['Easy', 'Medium', 'Hard'].map((d) => <option key={d}>{d}</option>)}</select></label>}
+      {activeMode === 'learn' && !student && <ProviderSelector value={provider} onChange={setProvider} />}
     </div>
     {access.data && !language && <p>No languages are available for your account.</p>}
     {access.isError && <p role="alert">Language access could not be loaded.</p>}
@@ -81,9 +83,9 @@ function TrackPage() {
           <span className="text-xs">{item.level ?? item.difficulty}{item.has_tests ? ' · exercise' : ' · lesson'}</span>
         </button></li>)}</ul>
       </aside>
-      <section>{focus ? mode === 'learn'
+      <section>{focus ? activeMode === 'learn'
         ? <ChatWindow key={`${language}-${focus.id}`} provider={student ? 'auto' : provider} language={language} track={focus.track as Track} focusId={focus.id} chatCost={1} />
-        : <Lesson key={`${language}-${focus.id}`} item={focus} language={language} practice={mode === 'practice'} />
+        : <Lesson key={`${language}-${focus.id}`} item={focus} language={language} practice={activeMode === 'practice'} />
         : <div className="island-shell rounded-2xl p-5">Choose a topic to read its lesson, ask questions, or practice. Interview candidates can start with any DSA problem.</div>}
       </section>
     </div>
