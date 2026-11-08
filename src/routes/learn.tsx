@@ -74,9 +74,10 @@ export function LearnHub() {
         <h3 className="mb-1 text-lg font-bold">{track.label}</h3>
         <p className="mb-3 text-sm">{track.blurb}</p>
         <p className="mb-4 text-xs">{track.count} authored {track.count === 1 ? 'item' : 'items'}</p>
+        {track.track === 'design-patterns' && <p className="mb-3 text-xs">Reference lessons available. Graded practice and mastery tracking are in development.</p>}
         <div className="flex gap-2">
           <Link to="/track/$track" params={{ track: track.track }} search={{ mode: 'browse' }} className="track-btn">Explore lessons</Link>
-          <Link to="/track/$track" params={{ track: track.track }} search={{ mode: 'practice' }} className="track-btn track-btn-alt">Practice</Link>
+          {track.track !== 'design-patterns' && <Link to="/track/$track" params={{ track: track.track }} search={{ mode: 'practice' }} className="track-btn track-btn-alt">Practice</Link>}
         </div>
       </article>)}</div>
     </>}
