@@ -322,6 +322,15 @@ export async function fetchProgressOverview(language: string): Promise<ProgressO
   return (await api.get('/study/progress-overview', { params: { language } })).data
 }
 
+export interface ProfileOverview {
+  languages: ProgressOverview[]
+  student_records: Record<'language' | 'dsa' | 'design-patterns', Partial<Record<'goal' | 'assumption' | 'decision' | 'path_request', number>>>
+  summary_rule: string
+}
+export async function fetchProfileOverview(): Promise<ProfileOverview> {
+  return (await api.get<ProfileOverview>('/study/profile-overview')).data
+}
+
 
 export interface ExplainActivity {
   id: string

@@ -11,6 +11,8 @@ import {
 } from '../lib/api'
 import { hasToken } from '../lib/auth'
 import type { LearningProfileData, Subscription } from '../types'
+import { fetchProfileOverview } from '../lib/studyApi'
+import type { ProfileOverview } from '../lib/studyApi'
 
 export const Route = createFileRoute('/profile')({
   beforeLoad: () => {
@@ -22,6 +24,7 @@ export const Route = createFileRoute('/profile')({
 export function ProfilePage() {
   const [profile, setProfile] = useState<LearningProfileData | null>(null)
   const [subs, setSubs] = useState<Subscription[]>([])
+  const [overview, setOverview] = useState<ProfileOverview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -29,6 +32,7 @@ export function ProfilePage() {
   const load = () => {
     fetchLearningProfile().then(setProfile).catch((e) => setError(getApiErrorMessage(e)))
     fetchSubscriptions().then(setSubs).catch(() => setSubs([]))
+    fetchProfileOverview().then(setOverview).catch((e) => setError(getApiErrorMessage(e)))
   }
   useEffect(load, [])
 
@@ -100,6 +104,33 @@ export function ProfilePage() {
           </p>
         )}
       </section>
+
+      {overview && (
+        <section className="island-shell mb-4 rounded-2xl p-5" aria-label="Learning path progress">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-[var(--kicker)]">Learning paths</h2>
+          <p className="mb-3 text-xs text-[var(--sea-ink-soft)]">{overview.summary_rule}</p>
+          {overview.languages.length ? overview.languages.map((row) => (
+            <div key={row.language} className="mb-4">
+              <h3 className="mb-2 font-semibold capitalize">{row.language}</h3>
+              <ul className="lesson-list">
+                {row.sections.map((section) => (
+                  <li key={section.id}>
+                    <span>{section.title}: {section.metric}</span>
+                    <span className="lesson-count">
+                      {section.completed === null ? 'In development' : `${section.completed} / ${section.total}`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )) : <p className="text-sm text-[var(--sea-ink-soft)]">No active learning paths. Your saved learning records remain in your profile export.</p>}
+          <p className="mt-2 text-xs text-[var(--sea-ink-soft)]">
+            Your recorded goals, assumptions, decisions, and path requests: {' '}
+            {Object.values(overview.student_records).reduce((sum, kinds) =>
+              sum + Object.values(kinds).reduce((count, value) => count + (value ?? 0), 0), 0)}
+          </p>
+        </section>
+      )}
 
       {profile && profile.recurring_errors.length > 0 && (
         <section className="island-shell mb-4 rounded-2xl p-5">
