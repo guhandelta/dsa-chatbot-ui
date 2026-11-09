@@ -80,7 +80,7 @@ describe('PathPanel', () => {
   it('lists stages and modules with status and lets the learner focus a node', () => {
     const onFocus = vi.fn()
     render(<PathPanel path={path()} focusId="python:stage-01" onFocus={onFocus} />)
-    expect(screen.getByText('1/16 nodes mastered')).toBeTruthy()
+    expect(screen.getByText('1/16 path checkpoints completed')).toBeTruthy()
     expect(screen.getByText(/Full path with graded exercises/)).toBeTruthy()
     expect(screen.getByText(/1\. Values and arithmetic \(you are here\)/)).toBeTruthy()
     expect(screen.getByText('Python depth modules')).toBeTruthy()
@@ -341,7 +341,7 @@ describe('Quiz mode', () => {
     fireEvent.click(screen.getByText('Check answer'))
     expect(await screen.findByText('Choose one of the listed options.')).toBeTruthy()
     fireEvent.click(screen.getByText('Check answer'))
-    expect(await screen.findByText('Checks mastered for this node.')).toBeTruthy()
+    expect(await screen.findByText('Checks passed for this node.')).toBeTruthy()
   })
 
   it('does not submit an empty response', () => {
@@ -443,7 +443,7 @@ describe('StudyWorkspace', () => {
 
   it('shows the path without a focus card when the focus is not on it', async () => {
     render(<StudyWorkspace {...props} mode="explain" focus="python:stage-99" />)
-    expect(await screen.findByText('1/16 nodes mastered')).toBeTruthy()
+    expect(await screen.findByText('1/16 path checkpoints completed')).toBeTruthy()
     expect(screen.queryByLabelText('Current focus')).toBeNull()
   })
 
@@ -586,7 +586,7 @@ describe('Honest curriculum reporting', () => {
         missing_content: [{ node_id: 'python:stage-01', missing: ['stage_lesson', 'exercise', 'checks'] }] },
     })
     render(<PathPanel path={curriculum} focusId={null} onFocus={vi.fn()} />)
-    expect(screen.getByText('1/3 nodes mastered')).toBeTruthy()
+    expect(screen.getByText('1/3 path checkpoints completed')).toBeTruthy()
     expect(screen.getByText(/1 nodes with graded work available; 2 without graded work/)).toBeTruthy()
     expect(screen.getByText(/Partial curriculum/)).toBeTruthy()
     expect(screen.queryByText(/Full path with graded exercises/)).toBeNull()

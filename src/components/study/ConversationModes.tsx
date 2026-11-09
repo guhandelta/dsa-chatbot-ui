@@ -86,7 +86,7 @@ export function ExplainMode(props: ExplainProps) {
   return <div className="chat-container island-shell">
     <div className="border-b border-[var(--line)] p-4">
       <h2 className="m-0 font-bold">Understand {props.focusTitle ?? 'the current concept'}</h2>
-      <p className="mt-2 text-sm">Learn the idea, walk through a small correct example, and ask why it works. Each answer saves a takeaway and a common pitfall to your notes. Reflection here does not award a pass; Quiz me and graded exercises check mastery.</p>
+      <p className="mt-2 text-sm">Learn the idea, walk through a small correct example, and ask why it works. Each answer saves a takeaway and a common pitfall to your notes. Reflection here does not award a pass; Quiz me and graded exercises provide assessment checkpoints.</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="mini-btn" onClick={() => setInput(`Explain ${props.focusTitle ?? 'this concept'} step by step with a small worked example.`)}>Walk through an example</button>
         <button type="button" className="mini-btn" onClick={() => setInput(`What is the mental model behind ${props.focusTitle ?? 'this concept'}, and when should I use it?`)}>Explain the mental model</button>

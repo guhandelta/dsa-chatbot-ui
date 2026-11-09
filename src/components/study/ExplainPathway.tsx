@@ -7,7 +7,7 @@ export function ExplainPathway({ node, language, previous, onOpen }: {
 }) {
   return <section className="island-shell mb-4 rounded-2xl p-4" aria-label="Explain learning pathway">
     <h3 className="m-0 font-bold">Build understanding, then prove it</h3>
-    {previous && <p className="text-sm">Builds on: {previous.title}. {previous.complete ? 'Prerequisite mastered.' : 'Revisit this prerequisite if the current topic feels difficult.'}</p>}
+    {previous && <p className="text-sm">Builds on: {previous.title}. {previous.complete ? 'Prerequisite checkpoint complete.' : 'Revisit this prerequisite if the current topic feels difficult.'}</p>}
     <ol className="my-3 space-y-2 pl-5 text-sm">
       <li>Read the topic lesson above. Ask the coach for a mental model and a correct worked example.</li>
       <li>Predict an outcome and explain why. Use the topic questions below to reflect; these are ungraded.</li>

@@ -88,7 +88,7 @@ export function PathPanel({ path, focusId, unlockedNodes, onFocus }: Props) {
   }
   return <aside className="island-shell rounded-2xl p-4" aria-label="Your learning path">
     <p className="island-kicker mb-1">{path.label} path</p>
-    <p className="m-0 text-sm">{path.completed}/{path.total} nodes mastered</p>
+    <p className="m-0 text-sm">{path.completed}/{path.total} path checkpoints completed</p>
     <p className="mt-1 mb-3 text-xs text-[var(--sea-ink-soft)]">{gaps ? 'Partial curriculum: some lessons or assessments are still missing' : VERDICT[path.readiness.verdict]}. {path.mastery_rule}</p>
     {path.available_total !== undefined && <p className="my-1 text-xs">{path.available_total} nodes with graded work available{path.unavailable_total !== undefined ? `; ${path.unavailable_total} without graded work` : ''}.</p>}
     {(path.readiness.spine_lessons !== undefined || path.readiness.spine_checks !== undefined || path.readiness.depth_assessments !== undefined) && <p className="my-1 text-xs text-[var(--sea-ink-soft)]">

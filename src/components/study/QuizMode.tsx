@@ -142,7 +142,7 @@ export function QuizMode({ language, focusId, onComplete }: Props) {
     {result && !finished && <button type="button" className="primary-btn mt-3" onClick={() => { setIndex(index + 1); setResult(null) }}>Next question</button>}
     {finished && <div className="mt-4" aria-label="Quiz summary">
       <h3 className="m-0 text-base font-bold">Score: {Math.round((score / quiz.total) * 100)}% ({results.filter((r) => r.correct).length} of {quiz.total} correct)</h3>
-      <p className="my-1 text-sm">{score / quiz.total >= 2 / 3 ? 'Checks mastered for this node.' : 'Score at least two thirds to pass these checks.'}</p>
+      <p className="my-1 text-sm">{score / quiz.total >= 2 / 3 ? 'Checks passed for this node.' : 'Score at least two thirds to pass these checks.'}</p>
       {weak.length > 0 && <p className="my-1 text-sm">Concepts to review: {weak.join(', ')}</p>}
       {earned.map((r) => <p key={r.key} className="my-1 text-sm" role="status">+{r.amount} peppercorns: {r.reason === 'earn:stage' ? 'stage completed' : 'streak'}</p>)}
       <button type="button" className="mini-btn mt-2" onClick={() => void begin()}>Another quiz</button>

@@ -52,7 +52,7 @@ export function ExplainCourse({ language, focusId, onFocus, onOpen, assessmentOn
     <details className="my-3">
       <summary className="cursor-pointer text-sm font-semibold">Before these tiers: language foundations</summary>
       <div className="my-2 flex flex-wrap gap-2">{data.foundations.map(foundation => <button key={foundation.id} className="mini-btn" onClick={() => onFocus(foundation.id)}>
-        {foundation.title}{foundation.complete ? ' · mastered' : ' · review foundation'}
+        {foundation.title}{foundation.complete ? ' · checkpoint complete' : ' · review foundation'}
       </button>)}</div>
     </details>
     <nav className="grid gap-3" aria-label="Explain tiers and topics">
